@@ -1,0 +1,91 @@
+/**
+ * Простая модалка через Portal (без зависимостей).
+ *
+ * Если потом понадобится фокус-трап, скролл-лок и стек модалок —
+ * заменим внутренности на Radix UI Dialog, наружный API оставим тот же.
+ *
+ * Использование:
+ *   <Modal open={open} onClose={() => setOpen(false)} title="Вход">
+ *     ...
+ *   </Modal>
+ */
+import { useEffect, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
+import { cn } from '@/shared/lib/cn'
+
+interface ModalProps {
+  open: boolean
+  onClose: () => void
+  title?: string
+  children: ReactNode
+  className?: string
+  /** Заблокировать закрытие по клику на overlay (например, во время сабмита). */
+  disableOverlayClose?: boolean
+}
+
+export function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  className,
+  disableOverlayClose,
+}: ModalProps) {
+  // Эскейп закрывает модалку, и блокируем скролл body, пока она открыта.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKey)
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prevOverflow
+    }
+  }, [open, onClose])
+
+  if (!open) return null
+
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-[10000] flex items-center justify-center bg-textPrimary/85 p-4 backdrop-blur-sm"
+      onClick={() => {
+        if (!disableOverlayClose) onClose()
+      }}
+    >
+      <div
+        className={cn(
+          'relative w-full max-w-md rounded-sct-xl bg-white p-6 md:p-8 shadow-2xl animate-fade',
+          className,
+        )}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {title && (
+          <h2 className="mb-6 text-2xl font-900 uppercase italic tracking-tight text-textPrimary">
+            {title}
+          </h2>
+        )}
+        <button
+          type="button"
+          aria-label="Закрыть"
+          onClick={onClose}
+          className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-lg text-textSecondary transition-colors hover:bg-surfaceLight hover:text-textPrimary"
+        >
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M6 18L18 6M6 6l12 12"
+              strokeWidth={2.5}
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
+        {children}
+      </div>
+    </div>,
+    document.body,
+  )
+}
