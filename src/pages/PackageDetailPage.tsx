@@ -4,9 +4,9 @@
  * Раскладка: слева — фото пакета (3:4) + блок акции, справа — состав
  * (список товаров и работ) + итоговая цена + кнопка «Записаться».
  *
- * Кнопка «Записаться» сейчас ведёт на /service-book — booking API ещё не
- * полностью сделан. Когда бэк добавит /create_booking/ — заменим на полный
- * flow выбора филиала/даты.
+ * «Записаться» ведёт на /services/:id/book — упрощённый flow с выбором
+ * машины и желаемой даты. Когда бэк добавит /branches/ и /slots/,
+ * проапгрейдим до полного 4-шагового workflow с филиалом и слотом.
  */
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { usePackageQuery } from '@/features/packages/queries'
@@ -174,8 +174,7 @@ export default function PackageDetailPage() {
 
               <Button
                 size="lg"
-                onClick={() => navigate('/service-book')}
-                title="Записаться можно будет после готовности booking API"
+                onClick={() => navigate(`/services/${data.id}/book`)}
               >
                 Записаться
               </Button>

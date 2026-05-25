@@ -12,6 +12,7 @@ import { Outlet } from 'react-router-dom'
 import { Header } from './Header'
 import { Footer } from './Footer'
 import { Spinner } from '@/shared/ui/Spinner'
+import { AuthModalsHost } from '@/features/auth/AuthModalsHost'
 
 export function Layout() {
   return (
@@ -29,6 +30,9 @@ export function Layout() {
         </Suspense>
       </main>
       <Footer />
+      {/* Модалки login/register живут глобально — открываются с любой страницы
+          через ?modal=login|register. */}
+      <AuthModalsHost />
     </div>
   )
 }

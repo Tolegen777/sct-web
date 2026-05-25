@@ -27,6 +27,12 @@ export const endpoints = {
   // --- Клиент: сервисная книжка ---
   serviceBookPageData: '/api/v1/client_endpoints/service-book/page-data/',
 
+  // --- Клиент: записи на сервис (booking) ---
+  // Бэк сделал частично: list, detail, create. Cancel/edit ещё нет.
+  bookings: '/api/v1/client_endpoints/service-book/bookings/',
+  booking: (id: number) => `/api/v1/client_endpoints/service-book/bookings/${id}/`,
+  createBooking: '/api/v1/client_endpoints/service-book/create_booking/',
+
   // --- Публичный конфигуратор авто (используется в add_car / change) ---
   carsMarks: '/api/v1/cars/marks/',
   carsModels: '/api/v1/cars/models/',

@@ -1,0 +1,93 @@
+/**
+ * Runtime-типы для booking-эндпоинтов.
+ *
+ * Источник — реальные ответы /service-book/bookings/* (см. BACKEND_NOTES).
+ * В schema.yml не описаны, поэтому fully manual.
+ */
+
+export type BookingStatus =
+  | 'CREATED'
+  | 'CONFIRMED'
+  | 'IN_PROGRESS'
+  | 'COMPLETED'
+  | 'CANCELLED'
+  | string
+
+export interface MoneyValue {
+  amount: string | null
+  currency: string
+  display: string
+}
+
+export interface BookingCarRef {
+  id: number
+  title: string
+  full_title: string
+  license_plate: string
+  nickname: string
+  vin_code: string | null
+}
+
+export interface BookingPackageData {
+  id: number
+  title: string
+  slug: string
+  description: string
+  short_description: string
+  final_price: string
+  price: MoneyValue
+  has_promotion: boolean
+}
+
+export interface BookingPermissions {
+  can_edit: boolean
+  can_cancel: boolean
+}
+
+export interface BookingActions {
+  detail_api: string
+  edit_api: string
+  list_api: string
+  create_api: string
+}
+
+export interface Booking {
+  id: number
+  status: BookingStatus
+  status_label: string
+  preferred_datetime: string | null
+  scheduled_datetime: string | null
+  final_datetime: string | null
+  price_snapshot: string | null
+  currency: string
+  price: MoneyValue
+  service_package_title_snapshot: string
+  car_title_snapshot: string
+  license_plate_snapshot: string
+  comment: string
+  staff_comment: string
+  cancel_reason: string
+  current_mileage_km: number | null
+  car: BookingCarRef
+  service_package_data: BookingPackageData
+  service_station_data: unknown // пока всегда null — филиалы в работе
+  permissions: BookingPermissions
+  actions: BookingActions
+  created_at: string
+  updated_at: string
+}
+
+export interface BookingsListResponse {
+  count?: number
+  next?: string | null
+  previous?: string | null
+  results: Booking[]
+}
+
+/** Payload для POST /create_booking/. Уточнено пробами на бэке. */
+export interface CreateBookingPayload {
+  client_car_id: number
+  service_package_id: number
+  preferred_datetime: string // ISO 8601
+  comment?: string
+}

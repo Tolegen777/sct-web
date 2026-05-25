@@ -3,6 +3,7 @@
  * и «История». Активный визит выделяется тёмным фоном и пульсирующей точкой,
  * остальные — белой карточкой.
  */
+import { Link } from 'react-router-dom'
 import type { Appointment } from './types'
 import { cn } from '@/shared/lib/cn'
 import { formatDateTime } from '@/shared/lib/format'
@@ -25,12 +26,13 @@ export function AppointmentCard({ appointment, highlighted }: AppointmentCardPro
     highlighted || isActive ? 'dark' : isCancelled ? 'muted' : 'light'
 
   return (
-    <article
+    <Link
+      to={`/bookings/${appointment.id}`}
       className={cn(
-        'relative overflow-hidden rounded-sct-lg border p-5 transition-all md:p-6',
-        tone === 'dark' && 'border-textPrimary bg-textPrimary text-white shadow-2xl',
-        tone === 'light' && 'border-borderLight bg-white shadow-sct-soft hover:border-brandBlue/40',
-        tone === 'muted' && 'border-borderLight bg-surfaceLight/40 text-textSecondary',
+        'relative block overflow-hidden rounded-sct-lg border p-5 no-underline transition-all md:p-6',
+        tone === 'dark' && 'border-textPrimary bg-textPrimary text-white shadow-2xl hover:bg-textPrimary/90',
+        tone === 'light' && 'border-borderLight bg-white shadow-sct-soft hover:-translate-y-0.5 hover:border-brandBlue/40 hover:shadow-soft-card',
+        tone === 'muted' && 'border-borderLight bg-surfaceLight/40 text-textSecondary hover:border-brandBlue/30',
       )}
     >
       {tone === 'dark' && (
@@ -91,6 +93,6 @@ export function AppointmentCard({ appointment, highlighted }: AppointmentCardPro
           )}
         </div>
       </div>
-    </article>
+    </Link>
   )
 }

@@ -27,12 +27,15 @@ const GaragePage = lazy(() => import('@/pages/GaragePage'))
 const AddCarPage = lazy(() => import('@/pages/AddCarPage'))
 const EditCarPage = lazy(() => import('@/pages/EditCarPage'))
 const ContactsPage = lazy(() => import('@/pages/ContactsPage'))
+const BookingDetailPage = lazy(() => import('@/pages/BookingDetailPage'))
+const BookServicePage = lazy(() => import('@/pages/BookServicePage'))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
 
 const StaffLoginPage = lazy(() => import('@/pages/admin/StaffLoginPage'))
 const AdminPackagesPage = lazy(() => import('@/pages/admin/AdminPackagesPage'))
 const AdminPackageDetailPage = lazy(() => import('@/pages/admin/AdminPackageDetailPage'))
 const AdminPackageEditPage = lazy(() => import('@/pages/admin/AdminPackageEditPage'))
+const AdminCarsPage = lazy(() => import('@/pages/admin/AdminCarsPage'))
 
 export const router = createBrowserRouter([
   {
@@ -56,6 +59,8 @@ export const router = createBrowserRouter([
           { path: '/garage', element: <GaragePage /> },
           { path: '/garage/add', element: <AddCarPage /> },
           { path: '/garage/edit/:id', element: <EditCarPage /> },
+          { path: '/services/:id/book', element: <BookServicePage /> },
+          { path: '/bookings/:id', element: <BookingDetailPage /> },
         ],
       },
 
@@ -81,6 +86,7 @@ export const router = createBrowserRouter([
       { path: 'packages/new', element: <AdminPackageEditPage /> },
       { path: 'packages/:id', element: <AdminPackageDetailPage /> },
       { path: 'packages/:id/edit', element: <AdminPackageEditPage /> },
+      { path: 'cars', element: <AdminCarsPage /> },
     ],
   },
 ])
