@@ -1,25 +1,35 @@
 /**
  * Список услуг для активного автомобиля клиента.
  *
- * Бэк отдаёт два массива пакетов: `regular_packages` и `promotional_packages`.
- * Акционные показываем отдельной секцией сверху.
- * Внутри regular группируем по category — это даёт привычную «полку» по
- * темам (Замена масла, Тормоза, Диагностика…). Категорий нет — показываем
- * плоско.
+ * Layout по дизайну:
+ *   - Узкая плашка активного авто сверху (ActiveCarStrip)
+ *   - Секция «Акции» (PromoCard, 4 в ряд) — берётся из promotional_packages
+ *   - Секция «Спецпредложения» (PromoCard, 4 в ряд) — пока используем
+ *     `is_featured` подмножество regular_packages (если есть)
+ *   - Секция «Все услуги» (ServiceCard, 3 в ряд) — остальные regular
  */
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { usePackagesQuery } from '@/features/packages/queries'
-import { PackageCard } from '@/features/packages/PackageCard'
+import { ActiveCarStrip } from '@/features/packages/ActiveCarStrip'
+import { PromoCard } from '@/features/packages/PromoCard'
+import { ServiceCard } from '@/features/packages/ServiceCard'
 import { Spinner } from '@/shared/ui/Spinner'
 import { Card } from '@/shared/ui/Card'
 import { Button } from '@/shared/ui/Button'
-import type { ClientServicePackage } from '@/shared/api/types'
 
 export default function ServicesPage() {
   const { data, isLoading, isError, refetch } = usePackagesQuery()
 
-  const groupedRegular = useMemo(() => groupByCategory(data?.regular_packages ?? []), [data])
+  // Разделяем regular_packages на «Спецпредложения» (featured) и «Все услуги».
+  // Если featured пуст — секцию «Спецпредложения» скрываем.
+  const { specials, regulars } = useMemo(() => {
+    const all = data?.regular_packages ?? []
+    return {
+      specials: all.filter((p) => p.is_featured),
+      regulars: all.filter((p) => !p.is_featured),
+    }
+  }, [data])
 
   if (isLoading) {
     return (
@@ -63,23 +73,12 @@ export default function ServicesPage() {
     )
   }
 
-  const allEmpty = data.regular_packages.length === 0 && data.promotional_packages.length === 0
+  const allEmpty =
+    data.promotional_packages.length === 0 && data.regular_packages.length === 0
 
   return (
-    <section className="container-sct py-8 md:py-12">
-      <header className="mb-8">
-        <p className="text-[10px] font-900 uppercase tracking-[0.3em] text-brandBlue">
-          Услуги для вашего авто
-        </p>
-        <h1 className="mt-2 text-3xl font-900 uppercase italic tracking-tight text-textPrimary md:text-5xl">
-          {data.active_car.car_title}
-        </h1>
-        <div className="mt-3 inline-flex items-center gap-3 rounded-sct border border-borderLight bg-surfaceLight px-3 py-1.5">
-          <span className="font-mono text-[11px] font-900 uppercase tracking-widest text-textPrimary">
-            {data.active_car.license_plate}
-          </span>
-        </div>
-      </header>
+    <section className="container-sct space-y-10 py-6 md:py-8">
+      <ActiveCarStrip activeCar={data.active_car} />
 
       {allEmpty && (
         <Card className="p-8 text-center">
@@ -93,47 +92,51 @@ export default function ServicesPage() {
       )}
 
       {data.promotional_packages.length > 0 && (
-        <section className="mb-10">
-          <h2 className="mb-4 inline-flex items-center gap-2 text-base font-900 uppercase italic tracking-tight text-textPrimary md:text-xl">
-            <span className="rounded-md bg-brandOrange px-2 py-0.5 text-[10px] font-900 uppercase tracking-widest text-white">
-              Акции
-            </span>
-            Специальные предложения
-          </h2>
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <ServiceSection title="Акции">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
             {data.promotional_packages.map((p) => (
-              <PackageCard key={p.id} pkg={p} />
+              <PromoCard key={p.id} pkg={p} />
             ))}
           </div>
-        </section>
+        </ServiceSection>
       )}
 
-      {groupedRegular.map(([category, items]) => (
-        <section key={category} className="mb-10">
-          <h2 className="mb-4 text-base font-900 uppercase italic tracking-tight text-textPrimary md:text-xl">
-            {category}
-          </h2>
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {items.map((p) => (
-              <PackageCard key={p.id} pkg={p} />
+      {specials.length > 0 && (
+        <ServiceSection title="Спецпредложения">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+            {specials.map((p) => (
+              <PromoCard key={p.id} pkg={p} />
             ))}
           </div>
-        </section>
-      ))}
+        </ServiceSection>
+      )}
+
+      {regulars.length > 0 && (
+        <ServiceSection title="Все услуги">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {regulars.map((p) => (
+              <ServiceCard key={p.id} pkg={p} />
+            ))}
+          </div>
+        </ServiceSection>
+      )}
     </section>
   )
 }
 
-function groupByCategory(packages: ClientServicePackage[]): [string, ClientServicePackage[]][] {
-  const groups = new Map<string, ClientServicePackage[]>()
-  const order: string[] = []
-  for (const pkg of packages) {
-    const name = pkg.category?.name ?? 'Другие услуги'
-    if (!groups.has(name)) {
-      groups.set(name, [])
-      order.push(name)
-    }
-    groups.get(name)!.push(pkg)
-  }
-  return order.map((name) => [name, groups.get(name)!])
+function ServiceSection({
+  title,
+  children,
+}: {
+  title: string
+  children: React.ReactNode
+}) {
+  return (
+    <section>
+      <h2 className="mb-4 text-xl font-900 uppercase italic tracking-tight text-textPrimary md:text-2xl">
+        {title}
+      </h2>
+      {children}
+    </section>
+  )
 }

@@ -1,9 +1,10 @@
 /**
  * Модалка входа.
- * После успеха:
- *  1. Сохраняем токены + профиль через useAuthStore.setSession.
- *  2. Закрываем модалку.
- *  3. Если в URL есть ?next= — редиректим туда (использует RequireAuth).
+ *
+ * Дизайн: заголовок «ВХОД В SCT SERVICE», 2 поля (телефон + пароль),
+ * справа в пароле — иконка «глаз», под пароль — мелкая ссылка «Забыли
+ * пароль?». Большая синяя кнопка «ВОЙТИ». Внизу — «Нет аккаунта?
+ * Зарегистрироваться».
  */
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -21,9 +22,15 @@ interface LoginModalProps {
   open: boolean
   onClose: () => void
   onSwitchToRegister: () => void
+  onForgotPassword: () => void
 }
 
-export function LoginModal({ open, onClose, onSwitchToRegister }: LoginModalProps) {
+export function LoginModal({
+  open,
+  onClose,
+  onSwitchToRegister,
+  onForgotPassword,
+}: LoginModalProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
   const setSession = useAuthStore((s) => s.setSession)
@@ -46,7 +53,6 @@ export function LoginModal({ open, onClose, onSwitchToRegister }: LoginModalProp
     try {
       const data = await loginClient(values)
       if (!data.user) {
-        // На случай если бэк когда-нибудь начнёт возвращать токены без профиля.
         setServerError('Сервер не вернул профиль клиента.')
         return
       }
@@ -57,7 +63,6 @@ export function LoginModal({ open, onClose, onSwitchToRegister }: LoginModalProp
       if (next) navigate(decodeURIComponent(next), { replace: true })
     } catch (err) {
       const parsed = parseApiError(err, 'Неверный телефон или пароль.')
-      // Field-ошибки от бэка — прямо в RHF, чтобы подсветить поле.
       for (const [field, message] of Object.entries(parsed.fields)) {
         if (field === 'phone' || field === 'password') {
           setError(field, { type: 'server', message })
@@ -68,9 +73,9 @@ export function LoginModal({ open, onClose, onSwitchToRegister }: LoginModalProp
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Вход в SCT Service">
+    <Modal open={open} onClose={onClose} title="Вход в SCT Service" size="sm">
       <p className="-mt-2 mb-6 text-sm text-textSecondary">
-        Войдите для доступа к вашему гаражу и сервисной книжке.
+        Войдите в личный кабинет для записи на сервис.
       </p>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Input
@@ -81,32 +86,34 @@ export function LoginModal({ open, onClose, onSwitchToRegister }: LoginModalProp
           {...register('phone')}
           error={errors.phone?.message}
         />
-        <Input
-          label="Пароль"
-          type={showPassword ? 'text' : 'password'}
-          autoComplete="current-password"
-          {...register('password')}
-          error={errors.password?.message}
-          rightSlot={
+        <div>
+          <Input
+            label="Пароль"
+            type={showPassword ? 'text' : 'password'}
+            autoComplete="current-password"
+            {...register('password')}
+            error={errors.password?.message}
+            rightSlot={
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                className="text-textSecondary hover:text-brandBlue"
+                title={showPassword ? 'Скрыть' : 'Показать'}
+                aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+              >
+                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+              </button>
+            }
+          />
+          <div className="mt-2 text-right">
             <button
               type="button"
-              onClick={() => setShowPassword((s) => !s)}
-              className="text-xs font-bold uppercase tracking-widest text-brandBlue"
+              onClick={onForgotPassword}
+              className="text-[11px] font-bold uppercase tracking-widest text-brandBlue hover:underline"
             >
-              {showPassword ? 'Скрыть' : 'Показ'}
+              Забыли пароль?
             </button>
-          }
-        />
-
-        <div className="text-right">
-          <button
-            type="button"
-            disabled
-            title="Скоро будет доступно"
-            className="text-[11px] font-bold uppercase tracking-widest text-textSecondary opacity-60 cursor-not-allowed"
-          >
-            Забыли пароль?
-          </button>
+          </div>
         </div>
 
         {serverError && (
@@ -115,7 +122,7 @@ export function LoginModal({ open, onClose, onSwitchToRegister }: LoginModalProp
           </div>
         )}
 
-        <Button type="submit" fullWidth loading={isSubmitting}>
+        <Button type="submit" fullWidth size="lg" loading={isSubmitting}>
           Войти
         </Button>
 
@@ -124,12 +131,39 @@ export function LoginModal({ open, onClose, onSwitchToRegister }: LoginModalProp
           <button
             type="button"
             onClick={onSwitchToRegister}
-            className="font-bold text-brandBlue hover:underline"
+            className="font-900 uppercase tracking-widest text-brandBlue hover:underline"
           >
             Зарегистрироваться
           </button>
         </div>
       </form>
     </Modal>
+  )
+}
+
+function EyeIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+      />
+      <circle cx="12" cy="12" r="3" strokeWidth={2} />
+    </svg>
+  )
+}
+
+function EyeOffIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M3 3l18 18"
+      />
+    </svg>
   )
 }

@@ -1,38 +1,45 @@
 /**
- * Главная страница.
+ * Главная страница — dashboard для клиента, лендинг для гостя.
  *
- * Для гостя:  Hero → промо-баннер → преимущества SCT.
- * Для клиента: Hero → AuthedDashboard (активное авто, рекомендация, визиты) → промо.
+ * Layout по дизайну:
+ *   Left (8 col):  Hero → Активное авто (только для авторизованных) → Promo
+ *   Right (4 col): «Мой гараж» (только для авторизованных)
  *
- * Модалки login/register живут в Layout (`AuthModalsHost`) — открываются
- * через `?modal=login|register` с любой страницы. Здесь их рендерить
- * не нужно.
+ * Гость: правая колонка скрыта; блок «Активное авто» не показываем —
+ * вместо него только Hero (с CTA «Зарегистрироваться/Войти») + Promo.
  */
 import { useAuthStore } from '@/features/auth/store'
-import { HomeHero } from '@/features/home/Hero'
-import { PromoBanner } from '@/features/home/PromoBanner'
-import { Benefits } from '@/features/home/Benefits'
-import { AuthedDashboard } from '@/features/home/AuthedDashboard'
+import { useCarsQuery } from '@/features/garage/queries'
+import { HomeHero } from '@/features/home/HomeHero'
+import { HomePromoBanner } from '@/features/home/HomePromoBanner'
+import { ActiveCarBlock } from '@/features/home/ActiveCarBlock'
+import { MyGarageColumn } from '@/features/home/MyGarageColumn'
 
 export default function HomePage() {
   const phase = useAuthStore((s) => s.phase)
   const isAuthed = phase === 'authed'
 
-  return (
-    <section className="container-sct space-y-10 py-8 md:space-y-12 md:py-12">
-      <HomeHero />
+  // Для гостя список авто не запрашиваем (вернёт 401).
+  const carsQuery = useCarsQuery()
+  const hasCars = isAuthed && (carsQuery.data?.length ?? 0) > 0
 
-      {isAuthed ? (
-        <>
-          <AuthedDashboard />
-          <PromoBanner />
-        </>
-      ) : (
-        <>
-          <PromoBanner />
-          <Benefits />
-        </>
-      )}
+  return (
+    <section className="container-sct py-6 md:py-8">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
+        {/* Основная колонка */}
+        <div className="space-y-6 lg:col-span-8 lg:space-y-7">
+          <HomeHero hasCars={hasCars} />
+          {isAuthed && <ActiveCarBlock />}
+          <HomePromoBanner />
+        </div>
+
+        {/* Правая колонка — только для авторизованных */}
+        {isAuthed && (
+          <aside className="lg:col-span-4">
+            <MyGarageColumn />
+          </aside>
+        )}
+      </div>
     </section>
   )
 }

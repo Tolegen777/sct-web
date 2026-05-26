@@ -7,6 +7,9 @@ export default {
         // Цвета взяты 1:1 из мокапов SCT
         brandBlue: '#1F5FAF',
         brandBlueDark: '#184A88',
+        // navy* — тёмные оттенки для хедера/футера (из обновлённого дизайна)
+        navy: '#0A1B3D',
+        navyDeep: '#061536',
         brandYellow: '#F2C94C',
         brandOrange: '#F97316',
         surfaceLight: '#F7F8FA',

@@ -53,22 +53,45 @@ export const loginSchema = z.object({
 })
 export type LoginFormValues = z.infer<typeof loginSchema>
 
+/**
+ * В обновлённом дизайне поле для имени одно — без split на имя/фамилию.
+ * Бэк всё ещё ждёт first_name (required) + last_name (optional). На submit
+ * разбиваем `full_name` по первому пробелу: всё до пробела → first_name,
+ * остаток → last_name.
+ */
 export const registerSchema = z
   .object({
-    first_name: z
+    full_name: z
       .string()
       .min(1, 'Введите имя')
-      .max(150, 'Слишком длинное имя'),
-    last_name: z.string().max(150, 'Слишком длинная фамилия'),
+      .max(300, 'Слишком длинное имя'),
     phone: z
       .string()
       .min(1, 'Введите номер телефона')
       .regex(phoneRegex, 'Неверный формат телефона'),
     password: passwordRules,
     password_confirm: z.string().min(1, 'Подтвердите пароль'),
+    promo_code: z.string().max(64, 'Промокод слишком длинный').optional(),
   })
   .refine((data) => data.password === data.password_confirm, {
     message: 'Пароли не совпадают',
     path: ['password_confirm'],
   })
 export type RegisterFormValues = z.infer<typeof registerSchema>
+
+/**
+ * Разбивает одну строку «Имя [Фамилия]» в пару {first_name, last_name}.
+ * Дизайн использует одно поле, а бэк хочет два — split по первому пробелу.
+ */
+export function splitFullName(fullName: string): {
+  first_name: string
+  last_name: string
+} {
+  const trimmed = fullName.trim().replace(/\s+/g, ' ')
+  const idx = trimmed.indexOf(' ')
+  if (idx === -1) return { first_name: trimmed, last_name: '' }
+  return {
+    first_name: trimmed.slice(0, idx),
+    last_name: trimmed.slice(idx + 1),
+  }
+}

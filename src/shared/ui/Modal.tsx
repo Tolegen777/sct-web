@@ -13,12 +13,21 @@ import { useEffect, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/shared/lib/cn'
 
+type ModalSize = 'sm' | 'md' | 'lg'
+
+const sizeClasses: Record<ModalSize, string> = {
+  sm: 'max-w-md',
+  md: 'max-w-2xl',
+  lg: 'max-w-4xl',
+}
+
 interface ModalProps {
   open: boolean
   onClose: () => void
   title?: string
   children: ReactNode
   className?: string
+  size?: ModalSize
   /** Заблокировать закрытие по клику на overlay (например, во время сабмита). */
   disableOverlayClose?: boolean
 }
@@ -29,6 +38,7 @@ export function Modal({
   title,
   children,
   className,
+  size = 'md',
   disableOverlayClose,
 }: ModalProps) {
   // Эскейп закрывает модалку, и блокируем скролл body, пока она открыта.
@@ -59,7 +69,8 @@ export function Modal({
     >
       <div
         className={cn(
-          'relative w-full max-w-md rounded-sct-xl bg-white p-6 md:p-8 shadow-2xl animate-fade',
+          'relative w-full rounded-sct-xl bg-white p-6 md:p-8 shadow-2xl animate-fade',
+          sizeClasses[size],
           className,
         )}
         onClick={(e) => e.stopPropagation()}

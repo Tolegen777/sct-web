@@ -1,14 +1,18 @@
 /**
- * Шапка сайта. Содержит лого, навигацию и блок пользователя справа.
+ * Шапка сайта. Тёмно-синий navy фон, белое лого и навигация.
  *
- * Для guest'а: кнопка «Войти» открывает модалку login (через query ?modal=login).
- * Для authed: показывается аватар с инициалами и быстрый доступ к ЛК.
+ * Стилистика взята из обновлённого дизайна (new_screens/Главная *):
+ *   - sticky тёмный фон `bg-navy`
+ *   - белое лого SCT
+ *   - белые ссылки навигации; активный пункт = белая плашка с тёмным текстом
+ *   - правый блок: guest → светлая кнопка «Войти» (bg-white, text-navy);
+ *                   authed → блок «ПОЛЬЗОВАТЕЛЬ / username» + кружок-аватар
  *
- * Активная ссылка подчёркивается синим — стилистика взята из мокапов.
+ * Активный пункт — выделяется белым «pill» (rounded-lg bg-white text-navy),
+ * остальные — белые ссылки с opacity-70 и hover до 100%.
  */
 import { NavLink, Link, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@/features/auth/store'
-import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/lib/cn'
 
 type NavItem = {
@@ -20,9 +24,8 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { to: '/', label: 'Главная', end: true },
-  { to: '/services', label: 'Услуги' },
-  { to: '/service-book', label: 'Сервисная книжка', authOnly: true },
   { to: '/garage', label: 'Гараж', authOnly: true },
+  { to: '/services', label: 'Услуги' },
   { to: '/contacts', label: 'Контакты' },
 ]
 
@@ -43,57 +46,69 @@ export function Header() {
   const openLogin = () => setSearchParams({ modal: 'login' })
 
   return (
-    <header className="sticky top-0 z-40 border-b border-borderLight bg-white/90 backdrop-blur-md">
+    <header className="sticky top-0 z-40 bg-navy text-white">
       <div className="container-sct flex h-16 items-center justify-between md:h-20">
-        <div className="flex items-center gap-8 md:gap-12">
-          <Link to="/" className="text-xl font-900 uppercase italic tracking-tight text-brandBlue md:text-2xl">
-            SCT <span className="text-textPrimary">Service</span>
-          </Link>
-          <nav className="hidden items-center gap-8 md:flex">
-            {navItems
-              .filter((item) => !item.authOnly || isAuthed)
-              .map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.end}
-                  className={({ isActive }) =>
-                    cn(
-                      'relative text-[11px] font-900 uppercase tracking-widest transition-colors',
-                      isActive
-                        ? 'text-brandBlue after:absolute after:-bottom-1.5 after:left-0 after:h-0.5 after:w-full after:rounded-full after:bg-brandBlue'
-                        : 'text-textSecondary hover:text-brandBlue',
-                    )
-                  }
-                >
-                  {item.label}
-                </NavLink>
-              ))}
-          </nav>
-        </div>
+        {/* Логотип */}
+        <Link
+          to="/"
+          className="flex items-center gap-2 text-xl font-900 uppercase italic tracking-tight text-white md:text-2xl"
+          aria-label="SCT Service — на главную"
+        >
+          <span className="rounded-full border-2 border-white px-2 py-0.5 text-sm md:text-base">
+            SCT
+          </span>
+        </Link>
 
+        {/* Навигация (центр) */}
+        <nav className="hidden items-center gap-1 md:flex">
+          {navItems
+            .filter((item) => !item.authOnly || isAuthed)
+            .map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) =>
+                  cn(
+                    'rounded-lg px-4 py-2 text-[11px] font-900 uppercase tracking-widest transition-colors',
+                    isActive
+                      ? 'bg-white text-navy shadow-md'
+                      : 'text-white/70 hover:text-white',
+                  )
+                }
+              >
+                {item.label}
+              </NavLink>
+            ))}
+        </nav>
+
+        {/* Правая часть */}
         <div className="flex items-center gap-3">
           {isAuthed && profile ? (
             <>
               <div className="hidden text-right md:block">
-                <p className="text-[12px] font-900 uppercase leading-none text-textPrimary">
-                  {profile.first_name || profile.username || 'Клиент'}
+                <p className="text-[10px] font-900 uppercase tracking-widest text-white/60">
+                  Пользователь
                 </p>
                 <button
                   onClick={logout}
-                  className="mt-1 text-[10px] font-bold uppercase tracking-widest text-brandBlue hover:underline"
+                  className="mt-0.5 text-[12px] font-900 uppercase leading-none text-white hover:text-brandYellow"
+                  title="Нажмите, чтобы выйти"
                 >
-                  Выйти
+                  {profile.first_name || profile.username || 'Клиент'}
                 </button>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-borderLight bg-surfaceLight text-sm font-900 text-brandBlue">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white/20 bg-white/10 text-sm font-900 text-white backdrop-blur">
                 {getInitials(profile)}
               </div>
             </>
           ) : (
-            <Button variant="primary" size="sm" onClick={openLogin}>
+            <button
+              onClick={openLogin}
+              className="rounded-lg bg-white px-5 py-2 text-[11px] font-900 uppercase tracking-widest text-navy shadow-md transition-all hover:bg-brandYellow hover:text-textPrimary"
+            >
               Войти
-            </Button>
+            </button>
           )}
         </div>
       </div>
