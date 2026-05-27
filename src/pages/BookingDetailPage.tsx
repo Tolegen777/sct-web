@@ -6,21 +6,24 @@
  * Бэк отдаёт богатую структуру через GET /service-book/bookings/{id}/:
  *   - статус и статус-label
  *   - 3 даты (preferred, scheduled, final)
- *   - snapshot полей (название пакета, авто, госномер) — на случай если
- *     пакет/авто потом изменят
- *   - объект car и service_package_data
- *   - permissions: can_edit, can_cancel — пока бэк не реализовал
- *     соответствующие endpoint'ы (cancel — 404, edit PATCH — 405),
- *     поэтому кнопки disabled с подсказкой
+ *   - snapshot полей (название пакета, авто, госномер)
+ *   - объект car, service_package_data, service_station_data (опц.)
+ *   - permissions: can_edit, can_cancel
  *
- * Когда бэк добавит cancel/edit — кнопки активируются автоматически
- * (логика уже подключена к permissions).
+ * Действия:
+ *   - «Изменить» → EditBookingModal (PATCH /bookings/{id}/) — РАБОТАЕТ
+ *   - «Отменить» → пока заглушка (бэк не подключил cancel-эндпоинт)
+ *
+ * Когда бэк добавит cancel — заменим alert на нормальный confirm + mutate.
  */
+import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useBookingQuery } from '@/features/bookings/queries'
+import { EditBookingModal } from '@/features/bookings/EditBookingModal'
 import { Spinner } from '@/shared/ui/Spinner'
 import { Card } from '@/shared/ui/Card'
 import { Button } from '@/shared/ui/Button'
+import { toast } from '@/shared/ui/Toast'
 import { formatDateTime, formatMileage } from '@/shared/lib/format'
 import { cn } from '@/shared/lib/cn'
 import type { BookingStatus } from '@/features/bookings/types'
@@ -30,6 +33,7 @@ export default function BookingDetailPage() {
   const id = params.id ? Number(params.id) : undefined
   const navigate = useNavigate()
   const { data, isLoading, isError, refetch } = useBookingQuery(id)
+  const [editOpen, setEditOpen] = useState(false)
 
   if (isLoading) {
     return (
@@ -189,20 +193,15 @@ export default function BookingDetailPage() {
         <div className="mt-4 flex flex-col gap-3 md:flex-row md:flex-wrap">
           <Button
             variant="secondary"
-            disabled={!data.permissions.can_edit}
+            disabled={!data.permissions.can_edit || data.status === 'CANCELLED'}
             title={
               data.permissions.can_edit
-                ? 'Изменить дату или комментарий'
-                : 'Изменение пока недоступно'
+                ? 'Изменить филиал, дату или комментарий'
+                : 'Изменение недоступно'
             }
-            onClick={() => {
-              // TODO: PATCH /bookings/{id}/ — пока бэк возвращает 405.
-              alert(
-                'Изменение записи пока недоступно — бэкенд ещё не подключил PATCH-эндпоинт.',
-              )
-            }}
+            onClick={() => setEditOpen(true)}
           >
-            Изменить время
+            Изменить
           </Button>
           <Button
             variant="danger"
@@ -213,8 +212,8 @@ export default function BookingDetailPage() {
                 : 'Отмена пока недоступна'
             }
             onClick={() => {
-              alert(
-                'Отмена записи пока недоступна — бэкенд ещё не подключил cancel-эндпоинт.',
+              toast.warning(
+                'Отмена записи пока недоступна — бэкенд ещё не подключил эндпоинт.',
               )
             }}
           >
@@ -222,9 +221,16 @@ export default function BookingDetailPage() {
           </Button>
         </div>
         <p className="mt-3 text-[10px] font-medium italic text-textSecondary/70">
-          После завершения интеграции бэкенда отмена и редактирование станут активными.
+          Отмена пока недоступна — бэкенд ещё не подключил соответствующий
+          эндпоинт. Редактирование уже работает.
         </p>
       </Card>
+
+      <EditBookingModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        booking={data}
+      />
 
       {/* Служебные */}
       <Card className="bg-surfaceLight p-5 text-[11px] font-bold text-textSecondary">

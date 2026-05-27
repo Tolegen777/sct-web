@@ -71,7 +71,6 @@ export const registerSchema = z
       .regex(phoneRegex, 'Неверный формат телефона'),
     password: passwordRules,
     password_confirm: z.string().min(1, 'Подтвердите пароль'),
-    promo_code: z.string().max(64, 'Промокод слишком длинный').optional(),
   })
   .refine((data) => data.password === data.password_confirm, {
     message: 'Пароли не совпадают',

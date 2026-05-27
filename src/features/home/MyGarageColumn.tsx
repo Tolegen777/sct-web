@@ -15,7 +15,7 @@ import { Link } from 'react-router-dom'
 import { useCarsQuery, useSetDefaultCarMutation } from '@/features/garage/queries'
 import { Card } from '@/shared/ui/Card'
 import { SafeImage } from '@/shared/ui/SafeImage'
-import { Spinner } from '@/shared/ui/Spinner'
+import { Skeleton } from '@/shared/ui/Skeleton'
 import { cn } from '@/shared/lib/cn'
 import { getCarPhoto, getCarTitle } from '@/features/garage/lib'
 
@@ -40,8 +40,9 @@ export function MyGarageColumn() {
       </header>
 
       {isLoading ? (
-        <div className="flex justify-center py-10">
-          <Spinner />
+        <div className="space-y-3">
+          <Skeleton.Row />
+          <Skeleton.Row />
         </div>
       ) : (
         <div className="space-y-3">

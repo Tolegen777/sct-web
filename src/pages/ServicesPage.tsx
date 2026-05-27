@@ -14,12 +14,26 @@ import { usePackagesQuery } from '@/features/packages/queries'
 import { ActiveCarStrip } from '@/features/packages/ActiveCarStrip'
 import { PromoCard } from '@/features/packages/PromoCard'
 import { ServiceCard } from '@/features/packages/ServiceCard'
-import { Spinner } from '@/shared/ui/Spinner'
+import { GuestPrompt } from '@/features/auth/GuestPrompt'
+import { useAuthStore } from '@/features/auth/store'
+import { Skeleton } from '@/shared/ui/Skeleton'
 import { Card } from '@/shared/ui/Card'
 import { Button } from '@/shared/ui/Button'
 
 export default function ServicesPage() {
+  const isAuthed = useAuthStore((s) => s.phase === 'authed')
   const { data, isLoading, isError, refetch } = usePackagesQuery()
+
+  // Гостю показываем приглашение залогиниться вместо ошибки — query
+  // запрос для него не делается (см. usePackagesQuery: enabled: isAuthed).
+  if (!isAuthed) {
+    return (
+      <GuestPrompt
+        title="Услуги доступны после регистрации"
+        description="Пакеты обслуживания подбираются под конкретную модификацию вашего авто. Зарегистрируйтесь — за пару минут добавите машину и увидите подходящие пакеты с актуальными ценами."
+      />
+    )
+  }
 
   // Разделяем regular_packages на «Спецпредложения» (featured) и «Все услуги».
   // Если featured пуст — секцию «Спецпредложения» скрываем.
@@ -33,9 +47,17 @@ export default function ServicesPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <Spinner />
-      </div>
+      <section className="container-sct space-y-8 py-6 md:py-8">
+        <Skeleton.Box className="h-20 w-full" />
+        <div>
+          <Skeleton.Box className="mb-4 h-6 w-32" />
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton.Card key={i} className="h-72" />
+            ))}
+          </div>
+        </div>
+      </section>
     )
   }
 

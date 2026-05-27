@@ -16,7 +16,7 @@ import { useCarsQuery, useDeleteCarMutation, useSetDefaultCarMutation } from '@/
 import { CarCard } from '@/features/garage/CarCard'
 import { DeleteCarDialog } from '@/features/garage/DeleteCarDialog'
 import { EmptyGarage } from '@/features/garage/EmptyGarage'
-import { Spinner } from '@/shared/ui/Spinner'
+import { Skeleton } from '@/shared/ui/Skeleton'
 import { Button } from '@/shared/ui/Button'
 import type { ClientGarageCar } from '@/shared/api/types'
 import { parseApiError } from '@/features/auth/errors'
@@ -29,9 +29,14 @@ export default function GaragePage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <Spinner />
-      </div>
+      <section className="container-sct py-6 md:py-8">
+        <Skeleton.Box className="mb-6 h-10 w-1/2" />
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton.Card key={i} className="h-48" />
+          ))}
+        </div>
+      </section>
     )
   }
 

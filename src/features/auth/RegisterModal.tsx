@@ -1,28 +1,25 @@
 /**
  * Модалка регистрации клиента.
  *
- * Дизайн: одно поле «Имя», телефон, пароль, «Подтвердите пароль», поле
- * «Промокод» (опциональное — раскрывается по клику). Внизу — «Уже
- * зарегистрированы? Войти».
+ * Дизайн: одно поле «Имя», телефон, пароль, «Подтвердите пароль». Внизу —
+ * «Уже зарегистрированы? Войти».
  *
  * Расхождение с API: бэк ждёт first_name + last_name отдельно, но дизайн
  * — одно поле. Поэтому split по первому пробелу в `splitFullName`.
- *
- * Поле promo_code пока отправляется, если введён; если бэк не принимает —
- * упадёт с 400, и мы покажем translated сообщение. ПМ ещё не решил,
- * подключать ли промокод. По BACKEND_NOTES.
  */
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Modal } from '@/shared/ui/Modal'
 import { Input } from '@/shared/ui/Input'
+import { PhoneInput } from '@/shared/ui/PhoneInput'
 import { Button } from '@/shared/ui/Button'
 import { useAuthStore } from './store'
 import { registerClient } from './api'
 import { registerSchema, splitFullName, type RegisterFormValues } from './schemas'
 import { parseApiError } from './errors'
+import { unformatPhone } from '@/shared/lib/phone'
 
 interface RegisterModalProps {
   open: boolean
@@ -31,7 +28,6 @@ interface RegisterModalProps {
 }
 
 export function RegisterModal({ open, onClose, onSwitchToLogin }: RegisterModalProps) {
-  const [showPromo, setShowPromo] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
   const setSession = useAuthStore((s) => s.setSession)
   const navigate = useNavigate()
@@ -41,6 +37,7 @@ export function RegisterModal({ open, onClose, onSwitchToLogin }: RegisterModalP
     register,
     handleSubmit,
     setError,
+    control,
     formState: { errors, isSubmitting },
     reset,
   } = useForm<RegisterFormValues>({
@@ -50,7 +47,6 @@ export function RegisterModal({ open, onClose, onSwitchToLogin }: RegisterModalP
       phone: '',
       password: '',
       password_confirm: '',
-      promo_code: '',
     },
   })
 
@@ -61,11 +57,10 @@ export function RegisterModal({ open, onClose, onSwitchToLogin }: RegisterModalP
       const payload = {
         first_name,
         last_name,
-        phone: values.phone,
+        phone: unformatPhone(values.phone),
         password: values.password,
-        ...(values.promo_code ? { promo_code: values.promo_code } : {}),
       }
-      const data = await registerClient(payload as Parameters<typeof registerClient>[0])
+      const data = await registerClient(payload)
       if (!data.user) {
         setServerError('Сервер не вернул профиль клиента.')
         return
@@ -85,8 +80,7 @@ export function RegisterModal({ open, onClose, onSwitchToLogin }: RegisterModalP
         } else if (
           field === 'phone' ||
           field === 'password' ||
-          field === 'password_confirm' ||
-          field === 'promo_code'
+          field === 'password_confirm'
         ) {
           setError(field, { type: 'server', message })
         }
@@ -98,7 +92,6 @@ export function RegisterModal({ open, onClose, onSwitchToLogin }: RegisterModalP
         'phone',
         'password',
         'password_confirm',
-        'promo_code',
       ]
       const allMapped = Object.keys(parsed.fields).every((f) =>
         knownFields.includes(f),
@@ -124,13 +117,17 @@ export function RegisterModal({ open, onClose, onSwitchToLogin }: RegisterModalP
           hint="Можно с фамилией через пробел"
         />
 
-        <Input
-          label="Номер телефона"
-          placeholder="+7 (___) ___-__-__"
-          autoComplete="tel"
-          inputMode="tel"
-          {...register('phone')}
-          error={errors.phone?.message}
+        <Controller
+          name="phone"
+          control={control}
+          render={({ field }) => (
+            <PhoneInput
+              label="Номер телефона"
+              value={field.value}
+              onChange={field.onChange}
+              error={errors.phone?.message}
+            />
+          )}
         />
 
         <Input
@@ -149,24 +146,6 @@ export function RegisterModal({ open, onClose, onSwitchToLogin }: RegisterModalP
           {...register('password_confirm')}
           error={errors.password_confirm?.message}
         />
-
-        {showPromo ? (
-          <Input
-            label="Промокод"
-            placeholder="SCT-NEW-2026"
-            autoComplete="off"
-            {...register('promo_code')}
-            error={errors.promo_code?.message}
-          />
-        ) : (
-          <button
-            type="button"
-            onClick={() => setShowPromo(true)}
-            className="text-[11px] font-900 uppercase tracking-widest text-brandBlue hover:underline"
-          >
-            + Добавить промокод
-          </button>
-        )}
 
         {serverError && (
           <div className="rounded-sct border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">

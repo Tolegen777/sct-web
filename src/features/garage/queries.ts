@@ -16,6 +16,7 @@ import type {
   ClientGarageCarWriteRequest,
   PatchedClientGarageCarWriteRequest,
 } from '@/shared/api/types'
+import { useAuthStore } from '@/features/auth/store'
 
 export const garageKeys = {
   all: ['garage'] as const,
@@ -26,9 +27,14 @@ export const garageKeys = {
 }
 
 export function useCarsQuery() {
+  // Эндпоинт требует JWT — для гостя гарантированно вернёт 401, поэтому
+  // запрос не делаем. Когда юзер залогинится — query автоматически
+  // запустится (TanStack Query следит за `enabled`).
+  const isAuthed = useAuthStore((s) => s.phase === 'authed')
   return useQuery({
     queryKey: garageKeys.cars(),
     queryFn: fetchCars,
+    enabled: isAuthed,
   })
 }
 

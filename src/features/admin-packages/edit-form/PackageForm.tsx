@@ -22,8 +22,10 @@ import { Select } from '@/shared/ui/Select'
 import { Textarea } from '@/shared/ui/Textarea'
 import { Toggle } from '@/shared/ui/Toggle'
 import { Button } from '@/shared/ui/Button'
+import { toast } from '@/shared/ui/Toast'
 import { parseApiError } from '@/features/auth/errors'
 import { PackageItemAutocomplete } from './PackageItemAutocomplete'
+import { ModificationPicker } from './ModificationPicker'
 import {
   PACKAGE_FORM_DEFAULTS,
   packageFormSchema,
@@ -78,6 +80,13 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
   const watchedPriceMode = form.watch('price_mode')
   const watchedDiscountType = form.watch('discount_type')
   const watchedPromotion = form.watch('has_promotion')
+  const watchedModificationId = form.watch('modification_source_id')
+
+  // Локальная метка вида «Toyota Camry — 2.5 AT (181 л.с.)», которую
+  // показываем под полем после выбора через ModificationPicker. Хранится
+  // в useState (не в форме), потому что бэк её отдельно не возвращает.
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [modificationLabel, setModificationLabel] = useState<string>('')
 
   const computedSummary = computeLocalSummary(watchedItems)
 
@@ -107,6 +116,7 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
         mode === 'create'
           ? await createMut.mutateAsync(payload as Parameters<typeof createMut.mutateAsync>[0])
           : await updateMut.mutateAsync(payload as Parameters<typeof updateMut.mutateAsync>[0])
+      toast.success(mode === 'create' ? 'Пакет создан' : 'Изменения сохранены')
       if (typeof result.id === 'number') {
         navigate(`/admin/packages/${result.id}`, { replace: mode === 'create' })
       } else {
@@ -212,12 +222,54 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
 
       {/* 3. Привязка к авто */}
       <Section title="3. Привязка к автомобилю">
-        <Input
-          label="Modification source ID *"
-          placeholder="Напр: 21795128__21795134"
-          {...form.register('modification_source_id')}
-          hint="Внешний source_id модификации. Список модификаций добавим в следующей итерации."
-          error={form.formState.errors.modification_source_id?.message}
+        <div>
+          <p className="mb-2 block text-[11px] font-800 uppercase tracking-widest text-textSecondary">
+            Модификация авто *
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="min-w-0 flex-1 rounded-sct border border-borderLight bg-surfaceLight px-4 py-3">
+              {watchedModificationId ? (
+                <>
+                  <p className="truncate text-sm font-900 uppercase italic tracking-tight text-textPrimary">
+                    {modificationLabel || 'Модификация выбрана'}
+                  </p>
+                  <p className="mt-1 truncate font-mono text-[10px] text-textSecondary/70">
+                    source_id: {watchedModificationId}
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm font-medium italic text-textSecondary">
+                  Модификация не выбрана
+                </p>
+              )}
+            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setPickerOpen(true)}
+            >
+              {watchedModificationId ? 'Сменить' : 'Выбрать модификацию'}
+            </Button>
+          </div>
+          {form.formState.errors.modification_source_id?.message && (
+            <p className="mt-1.5 text-[11px] font-semibold text-red-600">
+              {form.formState.errors.modification_source_id.message}
+            </p>
+          )}
+          {/* hidden input — RHF регистрирует значение, чтобы submit нёс его в payload */}
+          <input type="hidden" {...form.register('modification_source_id')} />
+        </div>
+
+        <ModificationPicker
+          open={pickerOpen}
+          onClose={() => setPickerOpen(false)}
+          onSelect={(sourceId, label) => {
+            form.setValue('modification_source_id', sourceId, {
+              shouldValidate: true,
+              shouldDirty: true,
+            })
+            setModificationLabel(label)
+          }}
         />
       </Section>
 

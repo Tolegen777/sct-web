@@ -10,6 +10,8 @@
  */
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { usePackageQuery } from '@/features/packages/queries'
+import { useAuthStore } from '@/features/auth/store'
+import { GuestPrompt } from '@/features/auth/GuestPrompt'
 import { Spinner } from '@/shared/ui/Spinner'
 import { Card } from '@/shared/ui/Card'
 import { Button } from '@/shared/ui/Button'
@@ -22,7 +24,18 @@ export default function PackageDetailPage() {
   const navigate = useNavigate()
   const params = useParams<{ id: string }>()
   const id = params.id ? Number(params.id) : undefined
+  const isAuthed = useAuthStore((s) => s.phase === 'authed')
   const { data, isLoading, isError, refetch } = usePackageQuery(id)
+
+  // Для гостя query disabled — показываем приглашение залогиниться.
+  if (!isAuthed) {
+    return (
+      <GuestPrompt
+        title="Услуга доступна после регистрации"
+        description="Чтобы увидеть состав пакета, цену и записаться на сервис, зарегистрируйтесь или войдите."
+      />
+    )
+  }
 
   if (isLoading) {
     return (

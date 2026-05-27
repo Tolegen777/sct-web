@@ -25,7 +25,7 @@ import { BookServiceCTA } from '@/features/service-book/BookServiceCTA'
 import { AppointmentRow } from '@/features/service-book/AppointmentRow'
 import { HistorySection } from '@/features/service-book/HistorySection'
 import { MyGarageColumn } from '@/features/home/MyGarageColumn'
-import { Spinner } from '@/shared/ui/Spinner'
+import { Skeleton } from '@/shared/ui/Skeleton'
 import { Button } from '@/shared/ui/Button'
 import { Card } from '@/shared/ui/Card'
 
@@ -45,9 +45,20 @@ export default function ServiceBookPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <Spinner />
-      </div>
+      <section className="container-sct py-6 md:py-8">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
+          <div className="space-y-5 lg:col-span-8">
+            <Skeleton.Card className="h-32" />
+            <Skeleton.Box className="h-16" />
+            <Skeleton.Box className="h-14" />
+            <Skeleton.Card className="h-28" />
+            <Skeleton.Card className="h-40" />
+          </div>
+          <aside className="lg:col-span-4">
+            <Skeleton.Card className="h-80" />
+          </aside>
+        </div>
+      </section>
     )
   }
 

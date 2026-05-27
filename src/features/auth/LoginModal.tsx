@@ -7,16 +7,18 @@
  * Зарегистрироваться».
  */
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Modal } from '@/shared/ui/Modal'
 import { Input } from '@/shared/ui/Input'
+import { PhoneInput } from '@/shared/ui/PhoneInput'
 import { Button } from '@/shared/ui/Button'
 import { useAuthStore } from './store'
 import { loginClient } from './api'
 import { loginSchema, type LoginFormValues } from './schemas'
 import { parseApiError } from './errors'
+import { unformatPhone } from '@/shared/lib/phone'
 
 interface LoginModalProps {
   open: boolean
@@ -41,6 +43,7 @@ export function LoginModal({
     register,
     handleSubmit,
     setError,
+    control,
     formState: { errors, isSubmitting },
     reset,
   } = useForm<LoginFormValues>({
@@ -51,7 +54,12 @@ export function LoginModal({
   const onSubmit = async (values: LoginFormValues) => {
     setServerError(null)
     try {
-      const data = await loginClient(values)
+      // Отправляем номер без маски — бэк примет с маской тоже, но clean
+      // форма безопаснее.
+      const data = await loginClient({
+        phone: unformatPhone(values.phone),
+        password: values.password,
+      })
       if (!data.user) {
         setServerError('Сервер не вернул профиль клиента.')
         return
@@ -78,13 +86,17 @@ export function LoginModal({
         Войдите в личный кабинет для записи на сервис.
       </p>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <Input
-          label="Номер телефона"
-          placeholder="+7 (___) ___-__-__"
-          autoComplete="tel"
-          inputMode="tel"
-          {...register('phone')}
-          error={errors.phone?.message}
+        <Controller
+          name="phone"
+          control={control}
+          render={({ field }) => (
+            <PhoneInput
+              label="Номер телефона"
+              value={field.value}
+              onChange={field.onChange}
+              error={errors.phone?.message}
+            />
+          )}
         />
         <div>
           <Input

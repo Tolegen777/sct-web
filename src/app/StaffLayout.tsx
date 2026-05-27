@@ -5,9 +5,11 @@
  * стаффа и кнопка Logout, которая дёргает /staff/auth/logout/.
  */
 import { Suspense } from 'react'
-import { Link, NavLink, Outlet } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useStaffAuthStore } from '@/features/staff-auth/store'
 import { Spinner } from '@/shared/ui/Spinner'
+import { ToastViewport } from '@/shared/ui/Toast'
+import { ErrorBoundary } from './ErrorBoundary'
 import { cn } from '@/shared/lib/cn'
 
 const nav = [
@@ -18,6 +20,7 @@ const nav = [
 export function StaffLayout() {
   const user = useStaffAuthStore((s) => s.user)
   const logout = useStaffAuthStore((s) => s.logout)
+  const location = useLocation()
 
   return (
     <div className="flex min-h-screen flex-col bg-surfaceLight/60">
@@ -69,16 +72,19 @@ export function StaffLayout() {
       </header>
 
       <main className="flex-1">
-        <Suspense
-          fallback={
-            <div className="flex min-h-[50vh] items-center justify-center">
-              <Spinner />
-            </div>
-          }
-        >
-          <Outlet />
-        </Suspense>
+        <ErrorBoundary resetKeys={[location.pathname]}>
+          <Suspense
+            fallback={
+              <div className="flex min-h-[50vh] items-center justify-center">
+                <Spinner />
+              </div>
+            }
+          >
+            <Outlet />
+          </Suspense>
+        </ErrorBoundary>
       </main>
+      <ToastViewport />
     </div>
   )
 }

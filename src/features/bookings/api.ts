@@ -4,7 +4,18 @@ import type {
   Booking,
   BookingsListResponse,
   CreateBookingPayload,
+  UpdateBookingPayload,
 } from './types'
+
+/**
+ * Ответ /create_booking/ — обёртка над booking.
+ * Бэк возвращает {success, message, booking}, а не голый Booking.
+ */
+interface CreateBookingResponse {
+  success: boolean
+  message: string
+  booking: Booking
+}
 
 export async function fetchBookings() {
   const response = await http.get<BookingsListResponse | Booking[]>(endpoints.bookings)
@@ -18,7 +29,27 @@ export async function fetchBooking(id: number) {
   return response.data
 }
 
-export async function createBooking(payload: CreateBookingPayload) {
-  const response = await http.post<Booking>(endpoints.createBooking, payload)
-  return response.data
+export async function createBooking(payload: CreateBookingPayload): Promise<Booking> {
+  // Бэк возвращает {success, message, booking}, нормализуем в Booking.
+  const response = await http.post<CreateBookingResponse | Booking>(
+    endpoints.createBooking,
+    payload,
+  )
+  const data = response.data as Partial<CreateBookingResponse> & Partial<Booking>
+  if (data && typeof data === 'object' && 'booking' in data && data.booking) {
+    return data.booking as Booking
+  }
+  return data as Booking
+}
+
+export async function updateBooking(id: number, payload: UpdateBookingPayload): Promise<Booking> {
+  const response = await http.patch<CreateBookingResponse | Booking>(
+    endpoints.booking(id),
+    payload,
+  )
+  const data = response.data as Partial<CreateBookingResponse> & Partial<Booking>
+  if (data && typeof data === 'object' && 'booking' in data && data.booking) {
+    return data.booking as Booking
+  }
+  return data as Booking
 }

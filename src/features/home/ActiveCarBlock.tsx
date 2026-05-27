@@ -21,7 +21,7 @@ import { useServiceBookQuery } from '@/features/service-book/queries'
 import { Card } from '@/shared/ui/Card'
 import { Button } from '@/shared/ui/Button'
 import { SafeImage } from '@/shared/ui/SafeImage'
-import { Spinner } from '@/shared/ui/Spinner'
+import { Skeleton } from '@/shared/ui/Skeleton'
 import { formatMileage, formatDate, formatDateTime } from '@/shared/lib/format'
 
 export function ActiveCarBlock() {
@@ -29,8 +29,19 @@ export function ActiveCarBlock() {
 
   if (isLoading) {
     return (
-      <Card className="flex min-h-[280px] items-center justify-center">
-        <Spinner />
+      <Card className="p-5 md:p-6">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-12 md:gap-6">
+          <Skeleton.Box className="aspect-[4/3] w-full md:col-span-5" />
+          <div className="space-y-4 md:col-span-7">
+            <Skeleton.Box className="h-8 w-3/4" />
+            <Skeleton.Box className="h-3 w-1/2" />
+            <div className="grid grid-cols-3 gap-3">
+              <Skeleton.Box className="h-16" />
+              <Skeleton.Box className="h-16" />
+              <Skeleton.Box className="h-16" />
+            </div>
+          </div>
+        </div>
       </Card>
     )
   }

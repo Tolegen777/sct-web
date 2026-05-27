@@ -13,6 +13,7 @@
  */
 import { NavLink, Link, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@/features/auth/store'
+import { UserMenu } from './UserMenu'
 import { cn } from '@/shared/lib/cn'
 
 type NavItem = {
@@ -29,17 +30,8 @@ const navItems: NavItem[] = [
   { to: '/contacts', label: 'Контакты' },
 ]
 
-function getInitials(profile: { first_name?: string; last_name?: string } | null): string {
-  if (!profile) return '—'
-  const f = profile.first_name?.charAt(0) ?? ''
-  const l = profile.last_name?.charAt(0) ?? ''
-  return (f + l).toUpperCase() || '—'
-}
-
 export function Header() {
   const phase = useAuthStore((s) => s.phase)
-  const profile = useAuthStore((s) => s.profile)
-  const logout = useAuthStore((s) => s.logout)
   const [, setSearchParams] = useSearchParams()
   const isAuthed = phase === 'authed'
 
@@ -84,24 +76,8 @@ export function Header() {
 
         {/* Правая часть */}
         <div className="flex items-center gap-3">
-          {isAuthed && profile ? (
-            <>
-              <div className="hidden text-right md:block">
-                <p className="text-[10px] font-900 uppercase tracking-widest text-white/60">
-                  Пользователь
-                </p>
-                <button
-                  onClick={logout}
-                  className="mt-0.5 text-[12px] font-900 uppercase leading-none text-white hover:text-brandYellow"
-                  title="Нажмите, чтобы выйти"
-                >
-                  {profile.first_name || profile.username || 'Клиент'}
-                </button>
-              </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white/20 bg-white/10 text-sm font-900 text-white backdrop-blur">
-                {getInitials(profile)}
-              </div>
-            </>
+          {isAuthed ? (
+            <UserMenu />
           ) : (
             <button
               onClick={openLogin}

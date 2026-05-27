@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { fetchPackage, fetchPackages } from './api'
+import { useAuthStore } from '@/features/auth/store'
 
 export const packagesKeys = {
   all: ['packages'] as const,
@@ -8,17 +9,24 @@ export const packagesKeys = {
 }
 
 export function usePackagesQuery() {
+  // Сейчас /client_endpoints/packages/ требует JWT — без него 401. Это
+  // обсуждаемо с бэком (см. BACKEND_NOTES), но фронт чтобы не шуметь
+  // 401-ками — не запрашивает у гостя.
+  const isAuthed = useAuthStore((s) => s.phase === 'authed')
   return useQuery({
     queryKey: packagesKeys.list(),
     queryFn: fetchPackages,
     staleTime: 5 * 60_000,
+    enabled: isAuthed,
   })
 }
 
 export function usePackageQuery(id: number | undefined) {
+  // Детальная страница пакета тоже требует JWT.
+  const isAuthed = useAuthStore((s) => s.phase === 'authed')
   return useQuery({
     queryKey: id !== undefined ? packagesKeys.detail(id) : ['packages', 'detail', 'none'],
     queryFn: () => fetchPackage(id!),
-    enabled: typeof id === 'number' && Number.isFinite(id),
+    enabled: isAuthed && typeof id === 'number' && Number.isFinite(id),
   })
 }

@@ -25,9 +25,9 @@ import type { Mark, Model, Modification } from './types'
 const STEPS: StepDef[] = [
   { id: 'mark', title: 'Марка' },
   { id: 'model', title: 'Модель' },
-  { id: 'specs', title: 'Параметры' },
-  { id: 'modification', title: 'Модификация' },
-  { id: 'final', title: 'Данные' },
+  { id: 'specs', title: 'Поколение' },
+  { id: 'modification', title: 'Характеристики' },
+  { id: 'final', title: 'Номер' },
 ]
 
 export function AddCarWizard() {

@@ -16,12 +16,13 @@
  * `?modal=login` через `onBackToLogin`.
  */
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Modal } from '@/shared/ui/Modal'
 import { Input } from '@/shared/ui/Input'
+import { PhoneInput } from '@/shared/ui/PhoneInput'
 import { Button } from '@/shared/ui/Button'
 import { useAuthStore } from './store'
 import { parseApiError } from './errors'
@@ -31,6 +32,7 @@ import {
   verifyPasswordReset,
 } from './password-reset-api'
 import { fetchClientProfile } from './api'
+import { unformatPhone } from '@/shared/lib/phone'
 
 type Step = 'phone' | 'code' | 'new-password'
 
@@ -149,9 +151,9 @@ function PhoneStep({
 }) {
   const [serverError, setServerError] = useState<string | null>(null)
   const {
-    register,
     handleSubmit,
     setError,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<PhoneValues>({
     resolver: zodResolver(phoneSchema),
@@ -161,7 +163,7 @@ function PhoneStep({
   const onSubmit = async (values: PhoneValues) => {
     setServerError(null)
     try {
-      const data = await requestPasswordReset(values)
+      const data = await requestPasswordReset({ phone: unformatPhone(values.phone) })
       onSuccess(values.phone, data.request_id)
     } catch (err) {
       const parsed = parseApiError(
@@ -180,13 +182,17 @@ function PhoneStep({
         SMS-код.
       </p>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <Input
-          label="Номер телефона"
-          placeholder="+7 (___) ___-__-__"
-          autoComplete="tel"
-          inputMode="tel"
-          {...register('phone')}
-          error={errors.phone?.message}
+        <Controller
+          name="phone"
+          control={control}
+          render={({ field }) => (
+            <PhoneInput
+              label="Номер телефона"
+              value={field.value}
+              onChange={field.onChange}
+              error={errors.phone?.message}
+            />
+          )}
         />
 
         {serverError && (

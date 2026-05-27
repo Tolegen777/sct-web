@@ -90,4 +90,13 @@ export interface CreateBookingPayload {
   service_package_id: number
   preferred_datetime: string // ISO 8601
   comment?: string
+  service_station_id?: number // филиал, опционально
+  current_mileage_km?: number // текущий пробег, опционально — добавится в историю
+}
+
+/** Payload для PATCH /bookings/{id}/. Все поля опциональные. */
+export interface UpdateBookingPayload {
+  preferred_datetime?: string
+  comment?: string
+  service_station_id?: number
 }

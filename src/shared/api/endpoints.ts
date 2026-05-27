@@ -28,10 +28,16 @@ export const endpoints = {
   serviceBookPageData: '/api/v1/client_endpoints/service-book/page-data/',
 
   // --- Клиент: записи на сервис (booking) ---
-  // Бэк сделал частично: list, detail, create. Cancel/edit ещё нет.
+  // list/detail/create/edit готовы; cancel ещё не подключён бэком.
   bookings: '/api/v1/client_endpoints/service-book/bookings/',
   booking: (id: number) => `/api/v1/client_endpoints/service-book/bookings/${id}/`,
   createBooking: '/api/v1/client_endpoints/service-book/create_booking/',
+
+  // --- Клиент: филиалы (service stations) ---
+  // Возвращают список с встроенным расписанием на N дней (по умолчанию 7).
+  serviceStations: '/api/v1/client_endpoints/service_stations/',
+  serviceStation: (id: number) =>
+    `/api/v1/client_endpoints/service_stations/${id}/`,
 
   // --- Публичный конфигуратор авто (используется в add_car / change) ---
   carsMarks: '/api/v1/cars/marks/',
