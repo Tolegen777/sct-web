@@ -37,7 +37,7 @@ export function RecommendationStrip({ nextServiceDate }: RecommendationStripProp
           </p>
         </div>
       </div>
-      <p className="text-right text-xl font-900 italic leading-none tracking-tighter text-brandBlue md:text-2xl">
+      <p className="text-right text-xl font-900 leading-none tracking-tighter text-brandBlue md:text-2xl">
         {formatDate(nextServiceDate)}
       </p>
     </Card>

@@ -14,38 +14,41 @@ import { getPackageShortTitle } from './lib'
 
 interface ServiceCardProps {
   pkg: ClientServicePackage
+  /** Клик по «Выбрать услугу» — открыть модалку выбора пакета категории. */
+  onChoose: () => void
 }
 
-export function ServiceCard({ pkg }: ServiceCardProps) {
+export function ServiceCard({ pkg, onChoose }: ServiceCardProps) {
   const title = getPackageShortTitle(pkg)
   return (
     <article className="group flex flex-col rounded-sct border border-borderLight bg-white p-5 transition-all hover:-translate-y-1 hover:border-brandBlue/50 hover:shadow-soft-card">
-      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-brandBlue">
-        <CategoryIcon code={pkg.category.code} />
-      </div>
+      {/* Тело карточки ведёт на лендинг категории услуги */}
+      <Link to={`/services/info/${pkg.category.code}`} className="flex flex-col">
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-brandBlue">
+          <CategoryIcon code={pkg.category.code} />
+        </div>
 
-      <p className="text-[9px] font-900 uppercase tracking-widest text-textSecondary">
-        {pkg.category.name}
-      </p>
-      <h3 className="mt-1 line-clamp-2 text-base font-900 uppercase italic leading-tight tracking-tight text-textPrimary">
-        {title}
-      </h3>
+        <h3 className="line-clamp-2 text-base font-900 uppercase leading-tight tracking-tight text-textPrimary">
+          {title}
+        </h3>
 
-      <div className="mt-4">
-        <p className="text-[9px] font-bold uppercase tracking-widest text-textSecondary">
-          от
-        </p>
-        <p className="text-xl font-900 italic leading-none tracking-tighter text-textPrimary">
-          {formatMoney(pkg.final_price, pkg.currency)}
-        </p>
-      </div>
+        <div className="mt-4">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-textSecondary">
+            Ориентировочно
+          </p>
+          <p className="mt-0.5 text-xl font-900 leading-none tracking-tighter text-brandBlue">
+            от {formatMoney(pkg.final_price, pkg.currency)}
+          </p>
+        </div>
+      </Link>
 
-      <Link
-        to={`/services/${pkg.id}`}
+      <button
+        type="button"
+        onClick={onChoose}
         className="mt-5 inline-flex items-center justify-center rounded-sct bg-textPrimary px-4 py-3 text-[11px] font-900 uppercase tracking-widest text-white transition-all group-hover:bg-brandBlue"
       >
         Выбрать услугу
-      </Link>
+      </button>
     </article>
   )
 }

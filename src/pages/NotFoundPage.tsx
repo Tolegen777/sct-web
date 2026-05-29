@@ -11,7 +11,7 @@ export default function NotFoundPage() {
   return (
     <section className="container-sct flex min-h-[70vh] flex-col items-center justify-center py-12 text-center">
       <div className="relative">
-        <h1 className="text-[120px] font-900 italic leading-none tracking-tighter text-brandBlue/10 md:text-[180px]">
+        <h1 className="text-[120px] font-900 leading-none tracking-tighter text-brandBlue/10 md:text-[180px]">
           404
         </h1>
         <div className="absolute inset-0 flex items-center justify-center">
@@ -31,7 +31,7 @@ export default function NotFoundPage() {
       <p className="mt-2 text-[10px] font-900 uppercase tracking-[0.3em] text-brandBlue">
         Страница не найдена
       </p>
-      <h2 className="mt-4 text-2xl font-900 uppercase italic tracking-tight text-textPrimary md:text-3xl">
+      <h2 className="mt-4 text-2xl font-900 uppercase tracking-tight text-textPrimary md:text-3xl">
         Что-то пошло не туда
       </h2>
       <p className="mx-auto mt-3 max-w-md text-sm font-medium text-textSecondary md:text-base">

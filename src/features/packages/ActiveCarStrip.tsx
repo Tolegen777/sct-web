@@ -21,7 +21,7 @@ export function ActiveCarStrip({ activeCar }: ActiveCarStripProps) {
           alt={activeCar.display_name}
           className="h-full w-full object-cover"
           fallback={
-            <div className="flex h-full w-full items-center justify-center text-[10px] font-900 uppercase italic text-borderLight">
+            <div className="flex h-full w-full items-center justify-center text-[10px] font-900 uppercase text-borderLight">
               авто
             </div>
           }
@@ -31,7 +31,7 @@ export function ActiveCarStrip({ activeCar }: ActiveCarStripProps) {
         <p className="text-[10px] font-900 uppercase tracking-widest text-brandBlue">
           ● Активное авто
         </p>
-        <h2 className="mt-1 text-base font-900 uppercase italic leading-tight tracking-tight text-textPrimary md:text-lg">
+        <h2 className="mt-1 text-base font-900 uppercase leading-tight tracking-tight text-textPrimary md:text-lg">
           Услуги для <span className="text-brandBlue">{activeCar.car_title}</span>
         </h2>
       </div>

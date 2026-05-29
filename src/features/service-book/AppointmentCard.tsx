@@ -42,7 +42,7 @@ export function AppointmentCard({ appointment, highlighted }: AppointmentCardPro
       <header className="relative z-10 mb-3 flex items-start justify-between gap-3">
         <span
           className={cn(
-            'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[10px] font-900 uppercase italic tracking-widest',
+            'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[10px] font-900 uppercase tracking-widest',
             tone === 'dark' && 'bg-brandBlue text-white',
             tone === 'light' && 'bg-surfaceLight text-textSecondary',
             tone === 'muted' && 'bg-surfaceMuted text-textSecondary/70',
@@ -58,7 +58,7 @@ export function AppointmentCard({ appointment, highlighted }: AppointmentCardPro
       <div className="relative z-10">
         <p
           className={cn(
-            'text-2xl font-900 italic leading-none tracking-tighter',
+            'text-2xl font-900 leading-none tracking-tighter',
             tone === 'dark' ? 'text-white' : 'text-textPrimary',
           )}
         >
@@ -66,7 +66,7 @@ export function AppointmentCard({ appointment, highlighted }: AppointmentCardPro
         </p>
         <p
           className={cn(
-            'mt-2 text-sm font-bold uppercase italic tracking-tight',
+            'mt-2 text-sm font-bold uppercase tracking-tight',
             tone === 'dark' ? 'text-white' : 'text-textSecondary',
           )}
         >

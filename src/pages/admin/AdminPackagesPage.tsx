@@ -93,10 +93,10 @@ export default function AdminPackagesPage() {
           <p className="text-[10px] font-900 uppercase tracking-[0.3em] text-brandBlue">
             {data.page.breadcrumbs.map((b) => b.label).join(' / ')}
           </p>
-          <h1 className="mt-2 text-3xl font-900 uppercase italic tracking-tight text-textPrimary md:text-4xl">
+          <h1 className="mt-2 text-3xl font-900 uppercase tracking-tight text-textPrimary md:text-4xl">
             {data.page.title}
           </h1>
-          <p className="mt-1 text-sm font-medium italic text-textSecondary">
+          <p className="mt-1 text-sm font-medium text-textSecondary">
             {data.page.subtitle}
           </p>
         </div>
@@ -234,7 +234,7 @@ function StatsRow({ stats }: { stats: import('@/features/admin-packages/types').
           <p className="text-[10px] font-900 uppercase tracking-widest text-textSecondary">
             {item.label}
           </p>
-          <p className="mt-1.5 text-3xl font-900 italic tracking-tighter text-textPrimary">
+          <p className="mt-1.5 text-3xl font-900 tracking-tighter text-textPrimary">
             {item.value.toLocaleString('ru-RU')}
           </p>
         </div>
@@ -329,7 +329,7 @@ function ResultsTable({
               <td className="px-6 py-4">
                 <StatusBadge value={pkg.status.value} label={pkg.status.label} />
               </td>
-              <td className="px-6 py-4 text-right font-900 italic text-brandBlue">
+              <td className="px-6 py-4 text-right font-900 text-brandBlue">
                 {formatMoney(pkg.price.final_price, pkg.price.currency)}
               </td>
               <td className="px-6 py-4 text-right">

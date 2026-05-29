@@ -11,7 +11,7 @@ export function Footer() {
         <div>
           <Link
             to="/"
-            className="inline-block rounded-full border-2 border-white px-3 py-0.5 text-base font-900 uppercase italic tracking-tight text-white"
+            className="inline-block rounded-full border-2 border-white px-3 py-0.5 text-base font-900 uppercase tracking-tight text-white"
           >
             SCT
           </Link>
@@ -33,7 +33,7 @@ export function Footer() {
           </p>
           <a
             href="tel:+77273334455"
-            className="mt-2 block text-xl font-900 italic tracking-tighter text-white hover:text-brandYellow"
+            className="mt-2 block text-xl font-900 tracking-tighter text-white hover:text-brandYellow"
           >
             +7 (727) 333-44-55
           </a>
@@ -44,7 +44,7 @@ export function Footer() {
       <div className="border-t border-white/10">
         <div className="container-sct flex flex-col items-center justify-between gap-2 py-5 text-[11px] font-bold uppercase tracking-widest text-white/50 md:flex-row">
           <p>SCT Service © {new Date().getFullYear()}</p>
-          <p className="italic opacity-80">Все права защищены</p>
+          <p className="opacity-80">Все права защищены</p>
         </div>
       </div>
     </footer>

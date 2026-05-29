@@ -52,10 +52,10 @@ export function ActiveCarBlock() {
         <p className="text-[10px] font-900 uppercase tracking-widest text-brandBlue">
           В гараже пусто
         </p>
-        <h3 className="mt-3 text-2xl font-900 uppercase italic tracking-tight text-textPrimary md:text-3xl">
+        <h3 className="mt-3 text-2xl font-900 uppercase tracking-tight text-textPrimary md:text-3xl">
           Добавьте автомобиль
         </h3>
-        <p className="mx-auto mt-2 max-w-sm text-sm font-medium italic text-textSecondary">
+        <p className="mx-auto mt-2 max-w-sm text-sm font-medium text-textSecondary">
           Сразу подберём пакеты и рекомендации под вашу модификацию.
         </p>
         <Link to="/garage/add" className="mt-6 inline-block">
@@ -85,7 +85,7 @@ export function ActiveCarBlock() {
           <p className="text-[10px] font-900 uppercase tracking-widest text-textSecondary">
             Активное авто
           </p>
-          <p className="mt-0.5 text-[11px] font-medium italic text-textSecondary/80">
+          <p className="mt-0.5 text-[11px] font-medium text-textSecondary/80">
             Основной автомобиль, для которого подбираются пакеты и акции.
           </p>
         </div>
@@ -117,7 +117,7 @@ export function ActiveCarBlock() {
               alt={carTitle}
               className="h-full w-full object-cover"
               fallback={
-                <div className="flex h-full w-full items-center justify-center text-4xl font-900 uppercase italic text-borderLight">
+                <div className="flex h-full w-full items-center justify-center text-4xl font-900 uppercase text-borderLight">
                   {car.mark.name.slice(0, 2)}
                 </div>
               }
@@ -131,7 +131,7 @@ export function ActiveCarBlock() {
 
         {/* Данные машины и плашки */}
         <div className="md:col-span-7">
-          <h2 className="text-2xl font-900 uppercase italic tracking-tight text-textPrimary md:text-3xl">
+          <h2 className="text-2xl font-900 uppercase tracking-tight text-textPrimary md:text-3xl">
             {carTitle}
           </h2>
           {carShortSpecs && (
@@ -192,7 +192,7 @@ function SpecChip({
       </p>
       <p
         className={
-          'mt-0.5 text-base font-900 italic leading-none tracking-tighter ' +
+          'mt-0.5 text-base font-900 leading-none tracking-tighter ' +
           (accent ? 'text-brandBlue' : 'text-textPrimary')
         }
       >

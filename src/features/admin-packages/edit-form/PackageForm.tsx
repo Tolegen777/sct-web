@@ -230,7 +230,7 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
             <div className="min-w-0 flex-1 rounded-sct border border-borderLight bg-surfaceLight px-4 py-3">
               {watchedModificationId ? (
                 <>
-                  <p className="truncate text-sm font-900 uppercase italic tracking-tight text-textPrimary">
+                  <p className="truncate text-sm font-900 uppercase tracking-tight text-textPrimary">
                     {modificationLabel || 'Модификация выбрана'}
                   </p>
                   <p className="mt-1 truncate font-mono text-[10px] text-textSecondary/70">
@@ -238,7 +238,7 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
                   </p>
                 </>
               ) : (
-                <p className="text-sm font-medium italic text-textSecondary">
+                <p className="text-sm font-medium text-textSecondary">
                   Модификация не выбрана
                 </p>
               )}
@@ -470,7 +470,7 @@ function Section({
 }) {
   return (
     <Card className="p-5 md:p-6">
-      <h3 className="mb-4 text-base font-900 uppercase italic tracking-tight text-textPrimary md:text-lg">
+      <h3 className="mb-4 text-base font-900 uppercase tracking-tight text-textPrimary md:text-lg">
         {title}
       </h3>
       {children}

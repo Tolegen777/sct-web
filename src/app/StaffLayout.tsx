@@ -27,7 +27,7 @@ export function StaffLayout() {
       <header className="sticky top-0 z-40 border-b border-borderLight bg-white/95 backdrop-blur">
         <div className="container-admin flex h-16 items-center justify-between md:h-20">
           <div className="flex items-center gap-8 md:gap-12">
-            <Link to="/admin/packages" className="text-xl font-900 uppercase italic tracking-tight text-brandBlue md:text-2xl">
+            <Link to="/admin/packages" className="text-xl font-900 uppercase tracking-tight text-brandBlue md:text-2xl">
               SCT <span className="text-textPrimary">Admin</span>
             </Link>
             <nav className="hidden items-center gap-2 md:flex">

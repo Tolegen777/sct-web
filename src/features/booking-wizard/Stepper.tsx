@@ -34,7 +34,7 @@ export function Stepper({ current, completed, onJump }: StepperProps) {
         <p className="text-[10px] font-900 uppercase tracking-[0.2em] text-brandBlue">
           Шаг {currentIdx + 1} из {STEPS.length}
         </p>
-        <p className="mt-1 text-base font-900 uppercase italic tracking-tight text-textPrimary">
+        <p className="mt-1 text-base font-900 uppercase tracking-tight text-textPrimary">
           {currentStep.label}
         </p>
         {/* Точки-индикаторы */}

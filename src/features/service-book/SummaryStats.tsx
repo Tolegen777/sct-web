@@ -41,7 +41,7 @@ export function SummaryStats({ summary }: SummaryStatsProps) {
           <p className="text-[10px] font-900 uppercase tracking-widest text-textSecondary">
             {item.label}
           </p>
-          <p className="mt-2 text-2xl font-900 italic tracking-tighter text-textPrimary">
+          <p className="mt-2 text-2xl font-900 tracking-tighter text-textPrimary">
             {item.value}
           </p>
         </div>

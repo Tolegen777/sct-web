@@ -1,6 +1,9 @@
 /**
- * Шаг 1: выбор марки. Грид с логотипами + поиск по названию.
- * Сверху — «Популярные» (is_popular=true), внизу — все остальные.
+ * Шаг 1: выбор марки (по дизайну new_screens).
+ *
+ * «Поиск марки» (input) + грид логотипов. По умолчанию показываем только
+ * популярные марки (is_popular) + кнопку «Показать все марки». При вводе
+ * в поиск показываем все совпадения и прячем кнопку.
  */
 import { useMemo, useState } from 'react'
 import { useMarksQuery } from './queries'
@@ -15,21 +18,32 @@ interface MarkStepProps {
   onSelect: (mark: Mark) => void
 }
 
+const FALLBACK_LIMIT = 8
+
 export function MarkStep({ selectedMarkId, onSelect }: MarkStepProps) {
   const { data, isLoading, isError } = useMarksQuery()
   const [search, setSearch] = useState('')
+  const [showAll, setShowAll] = useState(false)
+
+  const q = search.trim().toLowerCase()
 
   const filtered = useMemo(() => {
     if (!data?.results) return []
-    const q = search.trim().toLowerCase()
     if (!q) return data.results
     return data.results.filter((m) =>
       [m.name, m.name_ru, m.display_name].some((v) => v?.toLowerCase().includes(q)),
     )
-  }, [data, search])
+  }, [data, q])
 
-  const popular = filtered.filter((m) => m.is_popular)
-  const others = filtered.filter((m) => !m.is_popular)
+  const popular = useMemo(() => filtered.filter((m) => m.is_popular), [filtered])
+
+  // Что показываем: при поиске/раскрытии — всё, иначе только популярные
+  // (или первые N, если бэк не разметил популярные).
+  const visible = q || showAll ? filtered : popular.length > 0 ? popular : filtered.slice(0, FALLBACK_LIMIT)
+  const canExpand =
+    !q &&
+    !showAll &&
+    (popular.length > 0 ? filtered.length > popular.length : filtered.length > FALLBACK_LIMIT)
 
   if (isLoading) {
     return (
@@ -48,96 +62,78 @@ export function MarkStep({ selectedMarkId, onSelect }: MarkStepProps) {
 
   return (
     <div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-900 uppercase italic tracking-tight text-textPrimary md:text-3xl">
-          Выберите марку
-        </h2>
-        <p className="mt-2 text-sm text-textSecondary">
-          В каталоге {data.count.toLocaleString('ru-RU')} марок
-        </p>
+      <Input
+        label="Поиск марки"
+        placeholder="Например BMW…"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+
+      <div className="mt-5 grid grid-cols-3 gap-3 lg:grid-cols-4">
+        {visible.map((mark) => (
+          <MarkCard
+            key={mark.id}
+            mark={mark}
+            active={mark.id === selectedMarkId}
+            onSelect={onSelect}
+          />
+        ))}
       </div>
-
-      <div className="mb-6 max-w-md">
-        <Input
-          placeholder="Поиск по марке…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
-
-      {popular.length > 0 && (
-        <section className="mb-8">
-          <h3 className="mb-3 text-[11px] font-900 uppercase tracking-widest text-textSecondary">
-            Популярные
-          </h3>
-          <MarkGrid items={popular} selected={selectedMarkId} onSelect={onSelect} />
-        </section>
-      )}
-
-      {others.length > 0 && (
-        <section>
-          {popular.length > 0 && (
-            <h3 className="mb-3 text-[11px] font-900 uppercase tracking-widest text-textSecondary">
-              Все марки ({others.length})
-            </h3>
-          )}
-          <MarkGrid items={others} selected={selectedMarkId} onSelect={onSelect} />
-        </section>
-      )}
 
       {filtered.length === 0 && (
-        <div className="rounded-sct border border-borderLight bg-surfaceLight p-8 text-center">
+        <div className="mt-5 rounded-sct border border-borderLight bg-surfaceLight p-8 text-center">
           <p className="text-sm font-bold text-textSecondary">
             По запросу «{search}» марки не найдены.
           </p>
         </div>
       )}
+
+      {canExpand && (
+        <button
+          type="button"
+          onClick={() => setShowAll(true)}
+          className="mt-4 w-full rounded-sct border-2 border-dashed border-borderLight py-4 text-[12px] font-900 uppercase tracking-widest text-textSecondary transition-all hover:border-brandBlue hover:text-brandBlue"
+        >
+          Показать все марки
+        </button>
+      )}
     </div>
   )
 }
 
-function MarkGrid({
-  items,
-  selected,
+function MarkCard({
+  mark,
+  active,
   onSelect,
 }: {
-  items: Mark[]
-  selected: number | null
+  mark: Mark
+  active: boolean
   onSelect: (m: Mark) => void
 }) {
   return (
-    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6 md:gap-3">
-      {items.map((mark) => {
-        const isActive = mark.id === selected
-        return (
-          <button
-            key={mark.id}
-            type="button"
-            onClick={() => onSelect(mark)}
-            className={cn(
-              'flex flex-col items-center justify-center gap-2 rounded-sct border-2 bg-white p-3 transition-all',
-              isActive
-                ? 'border-brandBlue bg-blue-50/40 shadow-soft-blue'
-                : 'border-transparent hover:-translate-y-1 hover:border-borderLight hover:shadow-sct-soft',
-            )}
-          >
-            <SafeImage
-              src={mark.logo_url}
-              alt={mark.name}
-              className="h-10 w-10 object-contain"
-              fallback={
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surfaceLight text-[10px] font-900 uppercase text-textSecondary">
-                  {mark.name.slice(0, 2)}
-                </div>
-              }
-            />
-
-            <span className="text-[11px] font-900 uppercase tracking-tight text-textPrimary">
-              {mark.name}
-            </span>
-          </button>
-        )
-      })}
-    </div>
+    <button
+      type="button"
+      onClick={() => onSelect(mark)}
+      className={cn(
+        'flex flex-col items-center justify-center gap-3 rounded-sct border bg-white p-5 transition-all',
+        active
+          ? 'border-brandBlue shadow-soft-blue'
+          : 'border-borderLight hover:-translate-y-0.5 hover:border-brandBlue/40 hover:shadow-sct-soft',
+      )}
+    >
+      <SafeImage
+        src={mark.logo_url}
+        alt={mark.name}
+        className="h-12 w-12 object-contain"
+        fallback={
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surfaceLight text-[11px] font-900 uppercase text-textSecondary">
+            {mark.name.slice(0, 2)}
+          </div>
+        }
+      />
+      <span className="text-[12px] font-900 uppercase tracking-tight text-textPrimary">
+        {mark.name}
+      </span>
+    </button>
   )
 }

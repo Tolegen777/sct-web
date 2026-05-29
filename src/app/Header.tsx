@@ -43,7 +43,7 @@ export function Header() {
         {/* Логотип */}
         <Link
           to="/"
-          className="flex items-center gap-2 text-xl font-900 uppercase italic tracking-tight text-white md:text-2xl"
+          className="flex items-center gap-2 text-xl font-900 uppercase tracking-tight text-white md:text-2xl"
           aria-label="SCT Service — на главную"
         >
           <span className="rounded-full border-2 border-white px-2 py-0.5 text-sm md:text-base">

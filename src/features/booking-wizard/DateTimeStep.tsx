@@ -67,7 +67,7 @@ export function DateTimeStep({
   return (
     <div className="space-y-7">
       <div>
-        <h2 className="text-xl font-900 uppercase italic tracking-tight text-textPrimary md:text-2xl">
+        <h2 className="text-xl font-900 uppercase tracking-tight text-textPrimary md:text-2xl">
           Выберите дату и время
         </h2>
         <p className="mt-1 text-sm font-medium text-textSecondary">
@@ -131,7 +131,7 @@ export function DateTimeStep({
           )}
         </div>
       ) : (
-        <p className="text-sm font-medium italic text-textSecondary">
+        <p className="text-sm font-medium text-textSecondary">
           Выберите день — мы покажем доступные слоты.
         </p>
       )}
@@ -174,7 +174,7 @@ function DayChip({
       </span>
       <span
         className={cn(
-          'mt-1 text-lg font-900 italic leading-none tracking-tighter',
+          'mt-1 text-lg font-900 leading-none tracking-tighter',
           isSelected ? 'text-white' : 'text-textPrimary',
         )}
       >
@@ -218,7 +218,7 @@ function SlotGroup({
               disabled={slot.inPast}
               onClick={() => onSelect(slot.localIso)}
               className={cn(
-                'rounded-sct border px-3 py-3 text-sm font-900 italic tracking-tighter transition-all',
+                'rounded-sct border px-3 py-3 text-sm font-900 tracking-tighter transition-all',
                 slot.inPast
                   ? 'cursor-not-allowed border-borderLight bg-surfaceLight/40 text-textSecondary/30 line-through'
                   : isSelected

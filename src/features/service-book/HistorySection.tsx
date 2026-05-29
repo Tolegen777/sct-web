@@ -32,7 +32,7 @@ export function HistorySection({ history }: HistorySectionProps) {
             />
           </svg>
         </div>
-        <h3 className="text-xl font-900 uppercase italic tracking-tight text-textPrimary">
+        <h3 className="text-xl font-900 uppercase tracking-tight text-textPrimary">
           История пуста
         </h3>
         <p className="mt-2 text-sm font-medium text-textSecondary opacity-60">
@@ -45,39 +45,52 @@ export function HistorySection({ history }: HistorySectionProps) {
   return (
     <Card className="overflow-hidden p-0">
       <header className="border-b border-borderLight px-5 py-4 md:px-6 md:py-5">
-        <h3 className="text-base font-900 uppercase italic tracking-tight text-textPrimary md:text-lg">
+        <h3 className="text-base font-900 uppercase tracking-tight text-textPrimary md:text-lg">
           Журнал обслуживания
         </h3>
       </header>
       <ul className="divide-y divide-borderLight">
-        {history.map((visit) => (
-          <li key={visit.id}>
-            <Link
-              to={`/bookings/${visit.id}`}
-              className="flex items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-surfaceLight/60 md:px-6 md:py-5"
-            >
-              <div className="flex min-w-0 items-center gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-borderLight bg-surfaceLight text-brandBlue">
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
+        {history.map((visit) => {
+          const iso =
+            visit.final_datetime ?? visit.scheduled_datetime ?? visit.preferred_datetime ?? ''
+          const d = iso ? new Date(iso) : null
+          const day = d ? d.toLocaleDateString('ru-RU', { day: '2-digit' }) : '--'
+          const month = d ? d.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '') : ''
+          const station = visit.address?.trim()
+          return (
+            <li key={visit.id}>
+              <Link
+                to={`/bookings/${visit.id}`}
+                className="flex items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-surfaceLight/60 md:px-6 md:py-5"
+              >
+                <div className="flex min-w-0 items-center gap-4">
+                  <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-xl border border-borderLight bg-surfaceLight">
+                    <span className="text-sm font-900 leading-none text-textPrimary">{day}</span>
+                    <span className="mt-0.5 text-[9px] font-bold uppercase tracking-wide text-textSecondary">
+                      {month}
+                    </span>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-900 uppercase tracking-tight text-textPrimary md:text-base">
+                      {visit.service_package.title}
+                    </p>
+                    <p className="mt-0.5 truncate text-[11px] font-bold uppercase tracking-widest text-textSecondary">
+                      {station || formatDate(iso)}
+                    </p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-900 uppercase italic tracking-tight text-textPrimary md:text-base">
-                    {visit.service_package.title}
-                  </p>
-                  <p className="mt-0.5 truncate text-[11px] font-bold uppercase tracking-widest text-textSecondary">
-                    {formatDate(visit.final_datetime ?? visit.scheduled_datetime ?? visit.preferred_datetime ?? '')}
-                    {visit.car.title && <> · {visit.car.title}</>}
-                  </p>
-                </div>
-              </div>
-              <svg className="h-5 w-5 shrink-0 text-borderLight" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-          </li>
-        ))}
+                <svg
+                  className="h-5 w-5 shrink-0 text-borderLight"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </li>
+          )
+        })}
       </ul>
     </Card>
   )

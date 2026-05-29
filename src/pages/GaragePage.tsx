@@ -5,27 +5,23 @@
  *  - грузим GET /garage/cars/
  *  - пустой массив → EmptyGarage (с CTA «Добавить»)
  *  - иначе — грид карточек + плитка «+ Добавить» в конце
- *  - set-default / delete управляем здесь, потому что они общие на всю страницу
+ *  - set-default управляем здесь (общий на всю страницу). Удаление авто —
+ *    на странице редактирования (по дизайну на карточке его нет).
  *
  * Сортировка: активное (is_default=true) всегда первым, остальные — в порядке
  * прихода с бэка.
  */
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useCarsQuery, useDeleteCarMutation, useSetDefaultCarMutation } from '@/features/garage/queries'
+import { useCarsQuery, useSetDefaultCarMutation } from '@/features/garage/queries'
 import { CarCard } from '@/features/garage/CarCard'
-import { DeleteCarDialog } from '@/features/garage/DeleteCarDialog'
 import { EmptyGarage } from '@/features/garage/EmptyGarage'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { Button } from '@/shared/ui/Button'
-import type { ClientGarageCar } from '@/shared/api/types'
 import { parseApiError } from '@/features/auth/errors'
 
 export default function GaragePage() {
   const { data: cars, isLoading, isError, error, refetch } = useCarsQuery()
   const setDefault = useSetDefaultCarMutation()
-  const remove = useDeleteCarMutation()
-  const [confirmDelete, setConfirmDelete] = useState<ClientGarageCar | null>(null)
 
   if (isLoading) {
     return (
@@ -61,38 +57,31 @@ export default function GaragePage() {
 
   if (sortedCars.length === 0) {
     return (
-      <section className="container-sct py-10 md:py-16">
-        <header className="mb-8 md:mb-12">
-          <h1 className="text-3xl font-900 uppercase italic tracking-tight text-textPrimary md:text-5xl">
-            Мой гараж
-          </h1>
-          <p className="mt-2 text-sm font-medium italic text-textSecondary md:mt-4 md:text-base">
-            Управляйте автопарком и выбирайте активный автомобиль.
-          </p>
-        </header>
+      <section className="container-sct py-6 md:py-8">
         <EmptyGarage />
       </section>
     )
   }
 
   return (
-    <section className="container-sct py-10 md:py-16">
-      <header className="mb-8 flex flex-col gap-4 md:mb-10 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="text-3xl font-900 uppercase italic tracking-tight text-textPrimary md:text-5xl">
-            Мой гараж
-          </h1>
-          <p className="mt-2 text-sm font-medium italic text-textSecondary md:mt-3 md:text-base">
-            {sortedCars.length === 1
-              ? '1 автомобиль'
-              : `${sortedCars.length} автомобилей`}
-          </p>
-        </div>
-        <Link to="/garage/add">
-          <Button variant="dark" size="md">
-            + Добавить авто
-          </Button>
-        </Link>
+    <section className="container-sct py-6 md:py-10">
+      <Link
+        to="/"
+        className="mb-6 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-textSecondary transition-colors hover:text-brandBlue"
+      >
+        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+        </svg>
+        Назад
+      </Link>
+
+      <header className="mb-8 md:mb-10">
+        <h1 className="text-3xl font-900 uppercase tracking-tight text-textPrimary md:text-5xl">
+          Мой гараж
+        </h1>
+        <p className="mt-2 text-sm font-medium text-textSecondary md:mt-3 md:text-base">
+          Управляйте вашим автопарком и выбирайте активный автомобиль для работы.
+        </p>
       </header>
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -101,7 +90,6 @@ export default function GaragePage() {
             key={car.id}
             car={car}
             onSetDefault={(id) => setDefault.mutate(id)}
-            onDelete={(c) => setConfirmDelete(c)}
             isSettingDefault={setDefault.isPending && setDefault.variables === car.id}
           />
         ))}
@@ -120,18 +108,6 @@ export default function GaragePage() {
           </p>
         </Link>
       </div>
-
-      <DeleteCarDialog
-        car={confirmDelete}
-        onCancel={() => setConfirmDelete(null)}
-        loading={remove.isPending}
-        onConfirm={() => {
-          if (!confirmDelete) return
-          remove.mutate(confirmDelete.id, {
-            onSuccess: () => setConfirmDelete(null),
-          })
-        }}
-      />
     </section>
   )
 }

@@ -38,7 +38,7 @@ export function BranchStep({ selectedId, onSelect }: BranchStepProps) {
   return (
     <div className="space-y-3">
       <div className="mb-5">
-        <h2 className="text-xl font-900 uppercase italic tracking-tight text-textPrimary md:text-2xl">
+        <h2 className="text-xl font-900 uppercase tracking-tight text-textPrimary md:text-2xl">
           Выберите филиал
         </h2>
         <p className="mt-1 text-sm font-medium text-textSecondary">
@@ -95,7 +95,7 @@ function BranchCard({
           </svg>
         </div>
         <div className="min-w-0">
-          <h4 className="text-base font-900 uppercase italic tracking-tight text-textPrimary">
+          <h4 className="text-base font-900 uppercase tracking-tight text-textPrimary">
             {station.name}
           </h4>
           <p className="mt-0.5 text-sm font-medium text-textSecondary">{station.address}</p>

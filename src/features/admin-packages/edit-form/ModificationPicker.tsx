@@ -112,7 +112,7 @@ export function ModificationPicker({
                   className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors hover:bg-surfaceLight"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-900 uppercase italic tracking-tight text-textPrimary">
+                    <p className="truncate text-sm font-900 uppercase tracking-tight text-textPrimary">
                       {row.car.mark.name} {row.car.model.name}
                     </p>
                     <p className="mt-0.5 truncate text-[11px] font-bold uppercase tracking-tighter text-textSecondary">

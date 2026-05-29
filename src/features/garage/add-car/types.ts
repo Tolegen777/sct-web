@@ -137,8 +137,21 @@ export interface Modification {
   display_name?: string
   name?: string
   title?: string
+  full_title?: string
+  group_name?: string
+  configuration_name?: string
+  /** Фото конфигурации (S3, открыт). Поле называется именно photo_url. */
+  photo_url?: string | null
   year_from?: number
   year_to?: number
+  fuel_type?: string
+  fuel_type_label?: string
+  engine_volume?: number
+  horse_power?: number
+  power_display?: string
+  transmission_type_label?: string
+  drive_type_label?: string
+  body_type?: string
   // Бэк может вернуть много дополнительных полей — оставляем доступ через
   // any-индексацию в UI.
   [key: string]: unknown

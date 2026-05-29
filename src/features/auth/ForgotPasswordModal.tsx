@@ -104,7 +104,10 @@ export function ForgotPasswordModal({
   }
 
   return (
-    <Modal open={open} onClose={close} title="Восстановление пароля" size="sm">
+    <Modal open={open} onClose={close} size="sm">
+      <h2 className="mb-1.5 text-center text-2xl font-900 uppercase tracking-tight text-textPrimary">
+        Восстановление пароля
+      </h2>
       {step === 'phone' && (
         <PhoneStep
           defaultPhone={phone}
@@ -177,9 +180,8 @@ function PhoneStep({
 
   return (
     <>
-      <p className="-mt-2 mb-6 text-sm text-textSecondary">
-        Введите номер телефона, который вы указывали при регистрации — отправим
-        SMS-код.
+      <p className="mb-6 text-center text-sm text-textSecondary">
+        Введите ваш номер телефона для отправки проверочного СМС-кода.
       </p>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Controller
@@ -202,7 +204,7 @@ function PhoneStep({
         )}
 
         <Button type="submit" fullWidth size="lg" loading={isSubmitting}>
-          Получить SMS-код
+          Получить СМС-код
         </Button>
 
         <BackToLogin onBackToLogin={onBackToLogin} />
@@ -253,8 +255,8 @@ function CodeStep({
 
   return (
     <>
-      <p className="-mt-2 mb-6 text-sm text-textSecondary">
-        Мы отправили SMS-код на <span className="font-bold text-textPrimary">{phone}</span>.
+      <p className="mb-6 text-center text-sm text-textSecondary">
+        Мы отправили СМС-код на <span className="font-bold text-textPrimary">{phone}</span>.
         Введите его ниже.
       </p>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -341,12 +343,12 @@ function NewPasswordStep({
 
   return (
     <>
-      <p className="-mt-2 mb-6 text-sm text-textSecondary">
+      <p className="mb-6 text-center text-sm text-textSecondary">
         Придумайте новый пароль — он сразу будет действовать для входа.
       </p>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Input
-          label="Определите новый пароль"
+          label="Придумайте новый пароль"
           type="password"
           autoComplete="new-password"
           hint="Минимум 8 символов, буква и цифра"
@@ -354,7 +356,7 @@ function NewPasswordStep({
           error={errors.password?.message}
         />
         <Input
-          label="Подтверждение нового пароля"
+          label="Повторите новый пароль"
           type="password"
           autoComplete="new-password"
           {...register('password_confirm')}

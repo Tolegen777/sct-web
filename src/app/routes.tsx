@@ -21,12 +21,14 @@ import { RequireStaff } from '@/app/RequireStaff'
 
 const HomePage = lazy(() => import('@/pages/HomePage'))
 const ServicesPage = lazy(() => import('@/pages/ServicesPage'))
+const ServiceInfoPage = lazy(() => import('@/pages/ServiceInfoPage'))
 const PackageDetailPage = lazy(() => import('@/pages/PackageDetailPage'))
 const ServiceBookPage = lazy(() => import('@/pages/ServiceBookPage'))
 const GaragePage = lazy(() => import('@/pages/GaragePage'))
 const AddCarPage = lazy(() => import('@/pages/AddCarPage'))
 const EditCarPage = lazy(() => import('@/pages/EditCarPage'))
 const ContactsPage = lazy(() => import('@/pages/ContactsPage'))
+const ProfilePage = lazy(() => import('@/pages/ProfilePage'))
 const BookingDetailPage = lazy(() => import('@/pages/BookingDetailPage'))
 const BookServicePage = lazy(() => import('@/pages/BookServicePage'))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
@@ -45,6 +47,7 @@ export const router = createBrowserRouter([
       // Публичные
       { path: '/', element: <HomePage /> },
       { path: '/services', element: <ServicesPage /> },
+      { path: '/services/info/:code', element: <ServiceInfoPage /> },
       { path: '/services/:id', element: <PackageDetailPage /> },
       { path: '/contacts', element: <ContactsPage /> },
 
@@ -56,6 +59,7 @@ export const router = createBrowserRouter([
           </RequireAuth>
         ),
         children: [
+          { path: '/profile', element: <ProfilePage /> },
           { path: '/service-book', element: <ServiceBookPage /> },
           { path: '/garage', element: <GaragePage /> },
           { path: '/garage/add', element: <AddCarPage /> },

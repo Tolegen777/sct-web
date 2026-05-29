@@ -81,10 +81,15 @@ export function LoginModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Вход в SCT Service" size="sm">
-      <p className="-mt-2 mb-6 text-sm text-textSecondary">
-        Войдите в личный кабинет для записи на сервис.
-      </p>
+    <Modal open={open} onClose={onClose} size="sm">
+      <div className="mb-6 text-center">
+        <h2 className="text-2xl font-900 uppercase tracking-tight text-textPrimary">
+          Вход в SCT Service
+        </h2>
+        <p className="mt-1.5 text-sm text-textSecondary">
+          Введите свои данные для авторизации
+        </p>
+      </div>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Controller
           name="phone"
@@ -99,8 +104,19 @@ export function LoginModal({
           )}
         />
         <div>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="text-[11px] font-800 uppercase tracking-widest text-textSecondary">
+              Пароль
+            </span>
+            <button
+              type="button"
+              onClick={onForgotPassword}
+              className="text-[11px] font-bold uppercase tracking-widest text-brandBlue hover:underline"
+            >
+              Забыли пароль?
+            </button>
+          </div>
           <Input
-            label="Пароль"
             type={showPassword ? 'text' : 'password'}
             autoComplete="current-password"
             {...register('password')}
@@ -117,15 +133,6 @@ export function LoginModal({
               </button>
             }
           />
-          <div className="mt-2 text-right">
-            <button
-              type="button"
-              onClick={onForgotPassword}
-              className="text-[11px] font-bold uppercase tracking-widest text-brandBlue hover:underline"
-            >
-              Забыли пароль?
-            </button>
-          </div>
         </div>
 
         {serverError && (

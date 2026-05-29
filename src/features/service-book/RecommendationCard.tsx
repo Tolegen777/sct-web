@@ -47,7 +47,7 @@ export function RecommendationCard({ nextServiceDate, lastServiceDate }: Recomme
           <p className="text-[10px] font-900 uppercase tracking-widest text-textSecondary">
             Запланировано на
           </p>
-          <p className="text-2xl font-900 italic leading-none text-brandBlue">
+          <p className="text-2xl font-900 leading-none text-brandBlue">
             {formatDate(nextServiceDate)}
           </p>
         </div>

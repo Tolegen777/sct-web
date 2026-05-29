@@ -87,7 +87,7 @@ function FeaturedCard({ pkg }: { pkg: ClientServicePackage }) {
       <p className="text-[9px] font-900 uppercase tracking-widest text-brandBlue line-clamp-1">
         {pkg.category?.name}
       </p>
-      <h3 className="mt-1 line-clamp-2 text-sm font-900 uppercase italic leading-tight text-textPrimary md:text-base">
+      <h3 className="mt-1 line-clamp-2 text-sm font-900 uppercase leading-tight text-textPrimary md:text-base">
         {title}
       </h3>
 
@@ -97,7 +97,7 @@ function FeaturedCard({ pkg }: { pkg: ClientServicePackage }) {
             {formatMoney(pkg.base_total, pkg.currency)}
           </p>
         )}
-        <p className="text-lg font-900 italic leading-none tracking-tighter text-textPrimary md:text-xl">
+        <p className="text-lg font-900 leading-none tracking-tighter text-textPrimary md:text-xl">
           {formatMoney(pkg.final_price, pkg.currency)}
         </p>
       </div>
@@ -136,11 +136,11 @@ function Section({
     <section>
       <header className="mb-4 flex items-end justify-between gap-3 md:mb-5">
         <div>
-          <h2 className="text-xl font-900 uppercase italic tracking-tight text-textPrimary md:text-2xl">
+          <h2 className="text-xl font-900 uppercase tracking-tight text-textPrimary md:text-2xl">
             {title}
           </h2>
           {subtitle && (
-            <p className="mt-1 text-[12px] font-medium italic text-textSecondary">
+            <p className="mt-1 text-[12px] font-medium text-textSecondary">
               {subtitle}
             </p>
           )}

@@ -1,19 +1,22 @@
 /**
- * Шаг 5: финальная форма. Госномер, VIN, псевдоним, пробег, флаг «активный».
+ * Шаг 5 «Номер» (по дизайну new_screens): «Почти готово».
  *
- * Валидация привязана к patterns из OpenAPI schema:
+ * Центрированная форма: Госномер (обязательно), Псевдоним (необязательно),
+ * VIN (необязательно, подставляется из заранее введённого). Кнопка
+ * «Добавить в гараж». Итоговая конфигурация показана в сайдбаре визарда,
+ * поэтому правого summary-блока здесь нет.
+ *
+ * Поля «пробег» и «сделать активным» по дизайну убраны: пробег вводится
+ * позже через редактирование авто, новое авто становится активным по умолчанию.
+ *
+ * Валидация привязана к patterns из OpenAPI:
  *   - license_plate: ^[A-ZА-Я0-9\-\s]{2,32}$
- *   - vin_code:      ^[A-HJ-NPR-Z0-9]{0,17}$  (max 17, без I/O/Q)
- *   - mileage_km:    >= 1, целое
- *
- * Бэк может валидировать строже (например, VIN на checksum — пока не делает,
- * подтвердил ПМ). Мы делаем базовую проверку, остальное доверим серверу.
+ *   - vin_code:      ^[A-HJ-NPR-Z0-9]{0,17}$ (max 17, без I/O/Q)
  */
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Input } from '@/shared/ui/Input'
-import { Button } from '@/shared/ui/Button'
 import type { Mark, Model, Modification } from './types'
 import type { SpecsValues } from './SpecsStep'
 
@@ -33,11 +36,6 @@ const finalSchema = z.object({
     .max(17, 'VIN не больше 17 символов')
     .optional()
     .or(z.literal('')),
-  mileage_km: z
-    .string()
-    .refine((v) => v === '' || /^\d+$/.test(v), 'Пробег — только цифры')
-    .refine((v) => v === '' || Number(v) >= 1, 'Пробег должен быть не меньше 1'),
-  is_default: z.boolean(),
 })
 
 export type FinalFormValues = z.infer<typeof finalSchema>
@@ -47,6 +45,7 @@ interface FinalFormStepProps {
   model: Model
   specs: SpecsValues
   modification: Modification
+  defaultVin?: string
   defaultIsDefault: boolean
   onSubmit: (values: {
     license_plate: string
@@ -59,9 +58,7 @@ interface FinalFormStepProps {
 }
 
 export function FinalFormStep({
-  mark,
-  model,
-  modification,
+  defaultVin = '',
   defaultIsDefault,
   onSubmit,
   serverError,
@@ -75,9 +72,7 @@ export function FinalFormStep({
     defaultValues: {
       license_plate: '',
       nickname: '',
-      vin_code: '',
-      mileage_km: '',
-      is_default: defaultIsDefault,
+      vin_code: defaultVin,
     },
   })
 
@@ -86,99 +81,59 @@ export function FinalFormStep({
       license_plate: values.license_plate.trim().toUpperCase(),
       nickname: values.nickname?.trim() ?? '',
       vin_code: values.vin_code?.trim().toUpperCase() ?? '',
-      mileage_km: values.mileage_km ? Number(values.mileage_km) : null,
-      is_default: values.is_default,
+      mileage_km: null,
+      is_default: defaultIsDefault,
     })
   })
 
-  const fullTitle =
-    (typeof modification.display_name === 'string' && modification.display_name) ||
-    `${mark.display_name} ${model.name}`
-
   return (
-    <div className="grid grid-cols-1 gap-8 md:grid-cols-12">
-      <form className="space-y-5 md:col-span-7" onSubmit={submit}>
-        <header>
-          <h2 className="text-2xl font-900 uppercase italic tracking-tight text-textPrimary md:text-3xl">
-            Данные автомобиля
-          </h2>
-          <p className="mt-2 text-sm text-textSecondary">
-            Заполните основное. Псевдоним, VIN и пробег — по желанию, но это
-            помогает вести сервисную книжку.
-          </p>
-        </header>
+    <form className="mx-auto max-w-md py-2" onSubmit={submit}>
+      <h2 className="text-center text-2xl font-900 uppercase tracking-tight text-textPrimary md:text-3xl">
+        Почти готово
+      </h2>
+      <p className="mt-2 text-center text-sm text-textSecondary">
+        Введите данные для регистрации в системе
+      </p>
 
+      <div className="mt-8 space-y-5">
         <Input
-          label="Госномер *"
-          placeholder="777 ABC 01"
+          label="Госномер (обязательно)"
+          placeholder="000 AAA 01"
           autoComplete="off"
+          className="text-center text-lg font-900 uppercase tracking-[0.25em] placeholder:tracking-[0.25em]"
           {...register('license_plate')}
           error={errors.license_plate?.message}
         />
         <Input
-          label="Псевдоним"
-          placeholder="Моя машина"
+          label="Псевдоним авто (необязательно)"
+          placeholder="Напр: Моя машина"
           autoComplete="off"
-          hint="Будет отображаться в списке гаража"
           {...register('nickname')}
           error={errors.nickname?.message}
         />
         <Input
-          label="VIN-код"
-          placeholder="JTDBR32E720000001"
+          label="Введите VIN код (необязательно)"
+          placeholder="VIN код"
           autoComplete="off"
           maxLength={17}
           {...register('vin_code')}
           error={errors.vin_code?.message}
         />
-        <Input
-          label="Пробег, км"
-          placeholder="85000"
-          inputMode="numeric"
-          {...register('mileage_km')}
-          error={errors.mileage_km?.message}
-        />
+      </div>
 
-        <label className="flex items-center gap-3 rounded-sct border border-borderLight bg-surfaceLight p-4 cursor-pointer">
-          <input
-            type="checkbox"
-            className="h-4 w-4 rounded border-borderLight text-brandBlue focus:ring-brandBlue/30"
-            {...register('is_default')}
-          />
-          <span className="text-sm font-bold text-textPrimary">
-            Сделать этот автомобиль активным
-          </span>
-        </label>
-
-        {serverError && (
-          <div className="rounded-sct border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
-            {serverError}
-          </div>
-        )}
-
-        <Button type="submit" size="lg" fullWidth loading={isSubmitting}>
-          Сохранить автомобиль
-        </Button>
-      </form>
-
-      <aside className="md:col-span-5">
-        <div className="sticky top-24 rounded-sct-lg border border-borderLight bg-surfaceLight p-6">
-          <p className="text-[10px] font-900 uppercase tracking-[0.2em] text-brandBlue">
-            Выбранная конфигурация
-          </p>
-          <p className="mt-3 text-xl font-900 uppercase italic tracking-tight text-textPrimary">
-            {fullTitle}
-          </p>
-          {(modification.year_from || modification.year_to) && (
-            <p className="mt-1 text-[11px] font-bold uppercase tracking-widest text-textSecondary">
-              {modification.year_from ?? ''}{modification.year_to ? ` – ${modification.year_to}` : ''}
-            </p>
-          )}
-          <div className="mt-4 rounded-sct border border-borderLight bg-white p-3 font-mono text-[10px] text-textSecondary break-all">
-            source_id: {modification.source_id}
-          </div>
+      {serverError && (
+        <div className="mt-5 rounded-sct border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
+          {serverError}
         </div>
-      </aside>
-    </div>
+      )}
+
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        className="mt-8 w-full rounded-sct bg-brandBlue py-4 text-sm font-900 uppercase tracking-[0.15em] text-white shadow-soft-blue transition-all hover:bg-brandBlueDark disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {isSubmitting ? 'Сохраняем…' : 'Добавить в гараж'}
+      </button>
+    </form>
   )
 }

@@ -92,7 +92,7 @@ export default function AdminCarDetailPage() {
                 alt={hero.image?.alt ?? hero.full_title}
                 className="h-full w-full object-cover"
                 fallback={
-                  <div className="flex h-full w-full items-center justify-center text-4xl font-900 uppercase italic text-borderLight">
+                  <div className="flex h-full w-full items-center justify-center text-4xl font-900 uppercase text-borderLight">
                     {String(hero.title ?? '').slice(0, 2)}
                   </div>
                 }
@@ -123,10 +123,10 @@ export default function AdminCarDetailPage() {
                 </span>
               )}
             </div>
-            <h1 className="mt-4 text-3xl font-900 uppercase italic leading-tight tracking-tight text-textPrimary md:text-4xl">
+            <h1 className="mt-4 text-3xl font-900 uppercase leading-tight tracking-tight text-textPrimary md:text-4xl">
               {hero.title}
             </h1>
-            <p className="mt-2 text-sm font-bold uppercase italic tracking-tight text-textSecondary md:text-base">
+            <p className="mt-2 text-sm font-bold uppercase tracking-tight text-textSecondary md:text-base">
               {hero.full_title}
             </p>
             {hero.badges && hero.badges.length > 0 && (
@@ -163,10 +163,10 @@ export default function AdminCarDetailPage() {
       {technical.has_specification && technical.sections?.length > 0 && (
         <Card className="overflow-hidden">
           <header className="border-b border-borderLight bg-surfaceLight px-6 py-4">
-            <h3 className="text-xl font-900 uppercase italic tracking-tight">
+            <h3 className="text-xl font-900 uppercase tracking-tight">
               Технический паспорт
             </h3>
-            <p className="mt-1 text-[11px] font-medium italic text-textSecondary">
+            <p className="mt-1 text-[11px] font-medium text-textSecondary">
               Полные данные модификации из справочника
             </p>
           </header>
@@ -181,7 +181,7 @@ export default function AdminCarDetailPage() {
                   {section.title}
                 </h4>
                 {section.description && (
-                  <p className="mt-1 text-[11px] italic text-textSecondary/70">
+                  <p className="mt-1 text-[11px] text-textSecondary/70">
                     {section.description}
                   </p>
                 )}
@@ -223,10 +223,10 @@ export default function AdminCarDetailPage() {
       <Card className="overflow-hidden">
         <header className="flex items-center justify-between border-b border-borderLight bg-surfaceLight px-6 py-4">
           <div>
-            <h3 className="text-xl font-900 uppercase italic tracking-tight">
+            <h3 className="text-xl font-900 uppercase tracking-tight">
               Привязанные пакеты услуг
             </h3>
-            <p className="mt-1 text-[11px] font-medium italic text-textSecondary">
+            <p className="mt-1 text-[11px] font-medium text-textSecondary">
               Всего: {servicePackages.total ?? 0}
             </p>
           </div>
@@ -248,7 +248,7 @@ export default function AdminCarDetailPage() {
                     <p className="text-[10px] font-900 uppercase tracking-widest text-brandBlue">
                       {p.category?.name}
                     </p>
-                    <p className="mt-1 truncate text-sm font-900 uppercase italic tracking-tight text-textPrimary">
+                    <p className="mt-1 truncate text-sm font-900 uppercase tracking-tight text-textPrimary">
                       {p.title}
                     </p>
                     <div className="mt-1.5 flex flex-wrap items-center gap-2">
@@ -266,7 +266,7 @@ export default function AdminCarDetailPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-900 italic tracking-tighter text-brandBlue">
+                    <p className="text-lg font-900 tracking-tighter text-brandBlue">
                       {formatMoney(p.final_price, p.currency)}
                     </p>
                   </div>
@@ -285,10 +285,10 @@ export default function AdminCarDetailPage() {
       {related.results?.length > 0 && (
         <Card className="overflow-hidden">
           <header className="border-b border-borderLight bg-surfaceLight px-6 py-4">
-            <h3 className="text-xl font-900 uppercase italic tracking-tight">
+            <h3 className="text-xl font-900 uppercase tracking-tight">
               Соседние модификации
             </h3>
-            <p className="mt-1 text-[11px] font-medium italic text-textSecondary">
+            <p className="mt-1 text-[11px] font-medium text-textSecondary">
               Другие варианты конфигурации той же модели
             </p>
           </header>
@@ -307,7 +307,7 @@ export default function AdminCarDetailPage() {
                 )}
               >
                 <div>
-                  <p className="text-sm font-900 uppercase italic tracking-tight text-textPrimary">
+                  <p className="text-sm font-900 uppercase tracking-tight text-textPrimary">
                     {r.name}
                   </p>
                   <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-textSecondary">
@@ -369,7 +369,7 @@ function StatCard({
       <p className="text-[10px] font-900 uppercase tracking-widest text-textSecondary">
         {label}
       </p>
-      <p className="mt-1.5 text-3xl font-900 italic tracking-tighter text-textPrimary">
+      <p className="mt-1.5 text-3xl font-900 tracking-tighter text-textPrimary">
         {value.toLocaleString('ru-RU')}
       </p>
     </div>

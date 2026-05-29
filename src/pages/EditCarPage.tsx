@@ -162,7 +162,7 @@ export default function EditCarPage() {
             </svg>
             К гаражу
           </Link>
-          <h1 className="mt-3 text-3xl font-900 uppercase italic tracking-tight text-textPrimary md:text-4xl">
+          <h1 className="mt-3 text-3xl font-900 uppercase tracking-tight text-textPrimary md:text-4xl">
             Редактирование авто
           </h1>
         </div>
@@ -183,17 +183,17 @@ export default function EditCarPage() {
               alt={title}
               className="h-full w-full object-cover"
               fallback={
-                <div className="flex h-full w-full items-center justify-center text-2xl font-900 uppercase italic text-borderLight">
+                <div className="flex h-full w-full items-center justify-center text-2xl font-900 uppercase text-borderLight">
                   {title.slice(0, 2)}
                 </div>
               }
             />
           </div>
           <div className="min-w-0">
-            <h2 className="text-2xl font-900 uppercase italic tracking-tight text-textPrimary md:text-3xl">
+            <h2 className="text-2xl font-900 uppercase tracking-tight text-textPrimary md:text-3xl">
               {title}
             </h2>
-            <p className="mt-1 text-sm font-bold uppercase italic tracking-tight text-textSecondary">
+            <p className="mt-1 text-sm font-bold uppercase tracking-tight text-textSecondary">
               {subtitle}
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -218,7 +218,7 @@ export default function EditCarPage() {
       {/* Форма редактирования */}
       <form onSubmit={handleSubmit(onSubmit)}>
         <Card className="space-y-5 p-5 md:p-6">
-          <h3 className="text-base font-900 uppercase italic tracking-tight text-textPrimary">
+          <h3 className="text-base font-900 uppercase tracking-tight text-textPrimary">
             Редактируемые поля
           </h3>
 
@@ -267,7 +267,7 @@ export default function EditCarPage() {
 
       {/* Дополнительные действия */}
       <Card className="space-y-4 p-5 md:p-6">
-        <h3 className="text-base font-900 uppercase italic tracking-tight text-textPrimary">
+        <h3 className="text-base font-900 uppercase tracking-tight text-textPrimary">
           Действия
         </h3>
 

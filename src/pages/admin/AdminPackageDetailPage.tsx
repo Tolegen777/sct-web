@@ -136,7 +136,7 @@ export default function AdminPackageDetailPage() {
             </span>
             <span className="font-mono text-xs text-textSecondary">ID: #{pkg.id}</span>
           </div>
-          <h1 className="mt-3 text-2xl font-900 uppercase italic leading-tight tracking-tight text-textPrimary md:text-3xl">
+          <h1 className="mt-3 text-2xl font-900 uppercase leading-tight tracking-tight text-textPrimary md:text-3xl">
             {pkg.title}
           </h1>
         </div>
@@ -183,7 +183,7 @@ export default function AdminPackageDetailPage() {
                 {pkg.short_description && (
                   <div>
                     <Label>Краткое описание</Label>
-                    <div className="mt-2 rounded-sct border border-borderLight bg-surfaceLight p-4 text-sm font-medium italic text-textSecondary">
+                    <div className="mt-2 rounded-sct border border-borderLight bg-surfaceLight p-4 text-sm font-medium text-textSecondary">
                       {pkg.short_description}
                     </div>
                   </div>
@@ -204,12 +204,12 @@ export default function AdminPackageDetailPage() {
                     Акция активна
                   </p>
                   {pkg.promotion.title && (
-                    <p className="mt-2 text-base font-900 italic text-textPrimary">
+                    <p className="mt-2 text-base font-900 text-textPrimary">
                       {pkg.promotion.title}
                     </p>
                   )}
                   {pkg.promotion.terms && (
-                    <p className="mt-3 text-sm font-medium italic leading-relaxed text-textSecondary">
+                    <p className="mt-3 text-sm font-medium leading-relaxed text-textSecondary">
                       {pkg.promotion.terms}
                     </p>
                   )}
@@ -221,7 +221,7 @@ export default function AdminPackageDetailPage() {
           {/* Состав пакета */}
           <Card className="overflow-hidden">
             <div className="border-b border-borderLight bg-surfaceLight px-6 py-4">
-              <h3 className="text-xl font-900 uppercase italic tracking-tight">
+              <h3 className="text-xl font-900 uppercase tracking-tight">
                 Состав пакета ({data.composition.items_count})
               </h3>
             </div>
@@ -253,7 +253,7 @@ export default function AdminPackageDetailPage() {
               <span className="text-[11px] font-900 uppercase tracking-widest text-textSecondary">
                 К оплате клиентом
               </span>
-              <span className="text-3xl font-900 italic tracking-tighter text-brandBlue md:text-4xl">
+              <span className="text-3xl font-900 tracking-tighter text-brandBlue md:text-4xl">
                 {formatMoney(totals.final_price, totals.currency)}
               </span>
             </div>
@@ -279,7 +279,7 @@ export default function AdminPackageDetailPage() {
             </div>
             <div className="border-t border-borderLight p-4">
               <Label>Презентация на сайте</Label>
-              <p className="mt-1 text-[12px] italic text-textSecondary">
+              <p className="mt-1 text-[12px] text-textSecondary">
                 Вертикальная обложка услуги
               </p>
             </div>
@@ -288,7 +288,7 @@ export default function AdminPackageDetailPage() {
           {/* Авто */}
           <Card className="bg-surfaceLight/40 p-5">
             <Label small>Привязанный автомобиль</Label>
-            <p className="mt-2 text-xl font-900 uppercase italic tracking-tighter text-textPrimary">
+            <p className="mt-2 text-xl font-900 uppercase tracking-tighter text-textPrimary">
               {car.mark.display_name} {car.model.name}
             </p>
             <p className="mt-1 text-sm font-bold text-brandBlue">
@@ -445,7 +445,7 @@ function CompositionTable({ items }: { items: CompositionItem[] }) {
           {items.map((item) => (
             <tr key={item.id} className="transition-colors hover:bg-surfaceLight/60">
               <td className="px-6 py-4">
-                <p className="font-bold uppercase italic text-textPrimary">{item.name}</p>
+                <p className="font-bold uppercase text-textPrimary">{item.name}</p>
                 {item.article && (
                   <p className="mt-1 font-mono text-[10px] text-textSecondary/70">
                     арт. {item.article}
@@ -486,7 +486,7 @@ function CompositionTable({ items }: { items: CompositionItem[] }) {
                   <span className="text-textSecondary/40">—</span>
                 )}
               </td>
-              <td className="px-6 py-4 text-right font-900 italic text-brandBlue">
+              <td className="px-6 py-4 text-right font-900 text-brandBlue">
                 {formatMoney(item.final_total)}
               </td>
             </tr>

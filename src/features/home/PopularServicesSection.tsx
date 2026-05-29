@@ -73,7 +73,7 @@ function ServiceRow({ pkg }: { pkg: ClientServicePackage }) {
           <CategoryIcon code={pkg.category?.code} />
         </div>
         <div className="min-w-0">
-          <h3 className="line-clamp-1 text-sm font-900 uppercase italic tracking-tight text-textPrimary md:text-base">
+          <h3 className="line-clamp-1 text-sm font-900 uppercase tracking-tight text-textPrimary md:text-base">
             {shortTitle}
           </h3>
           <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-textSecondary">
@@ -124,11 +124,11 @@ function Section({
     <section>
       <header className="mb-4 flex items-end justify-between gap-3 md:mb-5">
         <div>
-          <h2 className="text-xl font-900 uppercase italic tracking-tight text-textPrimary md:text-2xl">
+          <h2 className="text-xl font-900 uppercase tracking-tight text-textPrimary md:text-2xl">
             {title}
           </h2>
           {subtitle && (
-            <p className="mt-1 text-[12px] font-medium italic text-textSecondary">
+            <p className="mt-1 text-[12px] font-medium text-textSecondary">
               {subtitle}
             </p>
           )}

@@ -1,12 +1,15 @@
 /**
- * Строка-карточка одного визита.
+ * Карточка одного визита (по дизайну new_screens).
  *
- * Светлая карточка с тонкой границей, слева — крупное время (14:30) и
- * мелким текстом дата. Под временем — название услуги.
- * Справа — кнопка «Детали» (или «Изменить» для активного).
+ * highlighted (ближайший визит): тёмная navy-карточка — бейдж «Ближайший
+ *   визит», жёлтая точка в углу, крупное время + жёлтая дата, услуга, филиал,
+ *   кнопка «Изменить».
+ * обычный (запланированный): светлая карточка — статус-бейдж, время + синяя
+ *   дата, услуга, филиал, кнопка «Детали».
  *
- * Для самого ближайшего/активного визита используется вариант с тёмным
- * navy-фоном (`highlighted`) — выделяется на фоне остальных.
+ * Филиал берём из appointment.address (отдельного поля станции у бэка нет).
+ * Кнопка отмены (×) в дизайне есть, но cancel-эндпоинт отсутствует
+ * (BACKEND_NOTES §4.2) — поэтому не выводим, пока бэк не подключит.
  */
 import { Link } from 'react-router-dom'
 import type { Appointment } from './types'
@@ -17,95 +20,123 @@ interface AppointmentRowProps {
   highlighted?: boolean
 }
 
+function splitDateTime(iso: string | null) {
+  if (!iso) return { time: '—', date: '—' }
+  const d = new Date(iso)
+  const time = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+  const day = d.toLocaleDateString('ru-RU', { day: 'numeric' })
+  const month = d.toLocaleDateString('ru-RU', { month: 'long' })
+  const weekday = d.toLocaleDateString('ru-RU', { weekday: 'short' })
+  return { time, date: `${day} ${month}, ${weekday}`.toUpperCase() }
+}
+
 export function AppointmentRow({ appointment, highlighted }: AppointmentRowProps) {
   const datetime =
     appointment.final_datetime ??
     appointment.scheduled_datetime ??
     appointment.preferred_datetime
-
+  const { time, date } = splitDateTime(datetime)
+  const title = appointment.service_package.title
+  const station = appointment.address?.trim()
   const isHighlighted = highlighted || appointment.is_active
+
+  if (isHighlighted) {
+    return (
+      <article className="relative overflow-hidden rounded-sct-lg bg-navy p-5 text-white md:p-6">
+        <span className="absolute right-5 top-5 h-2.5 w-2.5 rounded-full bg-brandYellow" />
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="min-w-0">
+            <span className="inline-block rounded-md bg-brandBlue px-2.5 py-1 text-[10px] font-900 uppercase tracking-widest text-white">
+              Ближайший визит
+            </span>
+            <div className="mt-3 flex items-baseline gap-3">
+              <span className="text-3xl font-900 leading-none tracking-tighter md:text-4xl">
+                {time}
+              </span>
+              <span className="text-sm font-900 uppercase tracking-tight text-brandYellow">
+                {date}
+              </span>
+            </div>
+            <p className="mt-2 truncate text-base font-900 uppercase tracking-tight">{title}</p>
+            {station && (
+              <p className="mt-0.5 truncate text-[11px] font-bold uppercase tracking-widest text-white/50">
+                {station}
+              </p>
+            )}
+          </div>
+          <Link
+            to={`/bookings/${appointment.id}`}
+            className="shrink-0 self-start rounded-sct bg-white px-5 py-2.5 text-[11px] font-900 uppercase tracking-widest text-textPrimary transition-all hover:bg-brandYellow md:self-auto"
+          >
+            Изменить
+          </Link>
+        </div>
+      </article>
+    )
+  }
+
   const isCancelled = appointment.is_cancelled
 
-  // Парсим время и дату для двух-строчного отображения
-  const dt = datetime ? new Date(datetime) : null
-  const time = dt
-    ? dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
-    : '—'
-  const dateLabel = dt
-    ? dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', weekday: 'short' })
-    : '—'
-
   return (
-    <Link
-      to={`/bookings/${appointment.id}`}
+    <article
       className={cn(
-        'flex items-center justify-between gap-4 rounded-sct border p-4 transition-all md:p-5',
-        isHighlighted
-          ? 'border-textPrimary bg-textPrimary text-white shadow-2xl hover:bg-navy'
-          : isCancelled
-          ? 'border-borderLight bg-surfaceLight/40 text-textSecondary'
-          : 'border-borderLight bg-white hover:-translate-y-0.5 hover:border-brandBlue/40 hover:shadow-soft-card',
+        'rounded-sct border p-4 transition-all md:p-5',
+        isCancelled
+          ? 'border-borderLight bg-surfaceLight/40'
+          : 'border-borderLight bg-white hover:border-brandBlue/40 hover:shadow-soft-card',
       )}
     >
-      {isHighlighted && (
-        <span className="absolute top-3 right-3 rounded-md bg-brandBlue px-2 py-0.5 text-[9px] font-900 uppercase tracking-widest text-white">
-          Ближайший визит
-        </span>
-      )}
-
-      <div className="flex min-w-0 items-baseline gap-4">
-        <div className="text-right">
-          <p
-            className={cn(
-              'text-3xl font-900 italic leading-none tracking-tighter md:text-4xl',
-              isHighlighted ? 'text-white' : 'text-textPrimary',
-            )}
-          >
-            {time}
-          </p>
-          <p
-            className={cn(
-              'mt-1 text-[10px] font-bold uppercase tracking-widest',
-              isHighlighted ? 'text-white/60' : 'text-textSecondary/70',
-            )}
-          >
-            {dateLabel}
-          </p>
-        </div>
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0">
-          <p
+          <span
             className={cn(
-              'truncate text-sm font-900 uppercase italic tracking-tight md:text-base',
-              isHighlighted ? 'text-white' : 'text-textPrimary',
+              'inline-block rounded-md px-2.5 py-1 text-[10px] font-900 uppercase tracking-widest',
+              isCancelled
+                ? 'bg-red-50 text-red-500'
+                : 'bg-surfaceMuted text-textSecondary',
             )}
           >
-            {appointment.service_package.title}
-          </p>
-          {appointment.car.title && (
-            <p
+            {appointment.status_label || (isCancelled ? 'Отменено' : 'Запланировано')}
+          </span>
+          <div className="mt-2 flex items-baseline gap-3">
+            <span
               className={cn(
-                'mt-1 truncate text-[10px] font-bold uppercase tracking-widest',
-                isHighlighted ? 'text-white/60' : 'text-textSecondary/70',
+                'text-2xl font-900 leading-none tracking-tighter md:text-3xl',
+                isCancelled ? 'text-textSecondary' : 'text-textPrimary',
               )}
             >
-              {appointment.car.title}
+              {time}
+            </span>
+            <span
+              className={cn(
+                'text-sm font-900 uppercase tracking-tight',
+                isCancelled ? 'text-textSecondary/70' : 'text-brandBlue',
+              )}
+            >
+              {date}
+            </span>
+          </div>
+          <p
+            className={cn(
+              'mt-2 truncate text-sm font-900 uppercase tracking-tight md:text-base',
+              isCancelled ? 'text-textSecondary' : 'text-textPrimary',
+            )}
+          >
+            {title}
+          </p>
+          {station && (
+            <p className="mt-0.5 truncate text-[11px] font-bold uppercase tracking-widest text-textSecondary">
+              {station}
             </p>
           )}
         </div>
-      </div>
-
-      <div className="shrink-0">
-        <span
-          className={cn(
-            'inline-flex items-center gap-2 rounded-md border px-3 py-2 text-[10px] font-900 uppercase tracking-widest transition-all',
-            isHighlighted
-              ? 'border-white/30 bg-white/10 text-white'
-              : 'border-borderLight bg-white text-textSecondary',
-          )}
+        <Link
+          to={`/bookings/${appointment.id}`}
+          className="shrink-0 self-start rounded-sct border border-borderLight bg-white px-4 py-2.5 text-[10px] font-900 uppercase tracking-widest text-textSecondary transition-all hover:border-brandBlue hover:text-brandBlue"
         >
-          {isHighlighted ? 'Изменить' : 'Детали'}
-        </span>
+          Детали
+        </Link>
       </div>
-    </Link>
+    </article>
   )
 }

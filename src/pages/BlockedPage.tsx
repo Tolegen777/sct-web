@@ -31,7 +31,7 @@ export default function BlockedPage() {
           </svg>
         </div>
 
-        <h1 className="text-2xl font-900 uppercase italic tracking-tight text-textPrimary md:text-3xl">
+        <h1 className="text-2xl font-900 uppercase tracking-tight text-textPrimary md:text-3xl">
           Аккаунт заблокирован
         </h1>
         <p className="mt-3 text-sm font-medium text-textSecondary md:text-base">
@@ -45,7 +45,7 @@ export default function BlockedPage() {
           </p>
           <a
             href="tel:+77273334455"
-            className="mt-1 block text-xl font-900 italic tracking-tighter text-brandBlue hover:underline"
+            className="mt-1 block text-xl font-900 tracking-tighter text-brandBlue hover:underline"
           >
             +7 (727) 333-44-55
           </a>

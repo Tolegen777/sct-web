@@ -28,10 +28,10 @@ export function HistoryTable() {
     <section>
       <header className="mb-4 flex items-end justify-between gap-3 md:mb-5">
         <div>
-          <h2 className="text-xl font-900 uppercase italic tracking-tight text-textPrimary md:text-2xl">
+          <h2 className="text-xl font-900 uppercase tracking-tight text-textPrimary md:text-2xl">
             История обслуживания
           </h2>
-          <p className="mt-1 text-[12px] font-medium italic text-textSecondary">
+          <p className="mt-1 text-[12px] font-medium text-textSecondary">
             Последние визиты, выполненные работы и суммы заказов
           </p>
         </div>
@@ -73,7 +73,7 @@ export function HistoryTable() {
                     <td className="px-4 py-3 md:px-6">
                       <Link
                         to={`/bookings/${visit.id}`}
-                        className="font-900 uppercase italic tracking-tight text-textPrimary hover:text-brandBlue"
+                        className="font-900 uppercase tracking-tight text-textPrimary hover:text-brandBlue"
                       >
                         {visit.service_package.title}
                       </Link>
@@ -81,7 +81,7 @@ export function HistoryTable() {
                     <td className="px-4 py-3 text-textSecondary md:px-6">
                       {visit.car.title || '—'}
                     </td>
-                    <td className="px-4 py-3 text-right font-900 italic text-brandBlue md:px-6">
+                    <td className="px-4 py-3 text-right font-900 text-brandBlue md:px-6">
                       {visit.service_package.display_price || '—'}
                     </td>
                     <td className="px-4 py-3 text-center md:px-6">

@@ -9,7 +9,7 @@ export function BookServiceCTA() {
   return (
     <Link
       to="/services"
-      className="flex w-full items-center justify-center gap-3 rounded-sct bg-brandBlue px-6 py-4 text-sm font-900 uppercase italic tracking-[0.2em] text-white shadow-soft-blue transition-all hover:bg-brandBlueDark active:scale-[0.98] md:py-5"
+      className="flex w-full items-center justify-center gap-3 rounded-sct bg-brandBlue px-6 py-4 text-sm font-900 uppercase tracking-[0.2em] text-white shadow-soft-blue transition-all hover:bg-brandBlueDark active:scale-[0.98] md:py-5"
     >
       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path

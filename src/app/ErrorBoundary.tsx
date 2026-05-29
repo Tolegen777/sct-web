@@ -97,7 +97,7 @@ function DefaultErrorScreen({ error, onReset }: { error: Error; onReset: () => v
         </svg>
       </div>
 
-      <h1 className="text-3xl font-900 uppercase italic tracking-tight text-textPrimary md:text-4xl">
+      <h1 className="text-3xl font-900 uppercase tracking-tight text-textPrimary md:text-4xl">
         Что-то пошло не так
       </h1>
       <p className="mt-3 max-w-md text-sm font-medium text-textSecondary md:text-base">

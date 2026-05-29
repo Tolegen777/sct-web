@@ -100,10 +100,15 @@ export default function ServiceBookPage() {
 
           <BookServiceCTA />
 
+          {/* Мобильный «Мой гараж» — между CTA и визитами (по дизайну) */}
+          <div className="lg:hidden">
+            <MyGarageColumn />
+          </div>
+
           {/* Ближайший визит — выделенный */}
           {data.next_appointment && (
             <section>
-              <h3 className="mb-3 text-[11px] font-900 uppercase italic tracking-[0.2em] text-textSecondary">
+              <h3 className="mb-3 text-[11px] font-900 uppercase tracking-[0.2em] text-textSecondary">
                 Ближайшие визиты
               </h3>
               <AppointmentRow appointment={data.next_appointment} highlighted />
@@ -113,7 +118,7 @@ export default function ServiceBookPage() {
           {/* Запланированные */}
           {upcoming.length > 0 && (
             <section>
-              <h3 className="mb-3 text-[11px] font-900 uppercase italic tracking-[0.2em] text-textSecondary">
+              <h3 className="mb-3 text-[11px] font-900 uppercase tracking-[0.2em] text-textSecondary">
                 Запланированные визиты
               </h3>
               <div className="space-y-3">
@@ -128,8 +133,8 @@ export default function ServiceBookPage() {
           <HistorySection history={history} />
         </div>
 
-        {/* Правая колонка */}
-        <aside className="lg:col-span-4">
+        {/* Правая колонка (только desktop; на мобиле гараж выше) */}
+        <aside className="hidden lg:col-span-4 lg:block">
           <MyGarageColumn />
         </aside>
       </div>
@@ -150,10 +155,10 @@ function NoCarsState() {
           />
         </svg>
       </div>
-      <h2 className="mt-6 text-2xl font-900 uppercase italic tracking-tight text-textPrimary md:text-3xl">
+      <h2 className="mt-6 text-2xl font-900 uppercase tracking-tight text-textPrimary md:text-3xl">
         Гараж пуст
       </h2>
-      <p className="mx-auto mt-3 max-w-sm text-sm font-medium italic text-textSecondary">
+      <p className="mx-auto mt-3 max-w-sm text-sm font-medium text-textSecondary">
         Добавьте автомобиль, чтобы SCT Service сохранял историю обслуживания
         и рекомендовал следующие работы.
       </p>

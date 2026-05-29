@@ -4,20 +4,27 @@
  * Хранит выбор пользователя в локальном state, координирует переходы между
  * шагами, на финальном — отправляет POST /garage/cars/.
  *
+ * Layout по дизайну new_screens: верхняя панель (табы шагов + кнопка
+ * «Ввести VIN код» + прогресс), ниже — две колонки: слева карточка текущего
+ * шага, справа сайдбар «Конфигурация». VIN вводится опционально заранее
+ * (модалка на desktop, инлайн-поле на mobile) и подставляется в финальную форму.
+ *
  * Шаги нумеруются 0..4. maxUnlockedIndex = индекс самого правого открытого
- * шага. Назад можно ходить всегда, вперёд — только через кнопку «Далее» или
- * сразу при выборе значения (для grid-шагов).
+ * шага. Назад можно ходить всегда, вперёд — только через «Далее» или сразу
+ * при выборе значения (для grid-шагов).
  */
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Stepper, type StepDef } from './Stepper'
+import { ConfigSidebar } from './ConfigSidebar'
 import { MarkStep } from './MarkStep'
 import { ModelStep } from './ModelStep'
 import { SpecsStep, type SpecsValues } from './SpecsStep'
 import { ModificationStep } from './ModificationStep'
 import { FinalFormStep } from './FinalFormStep'
-import { Button } from '@/shared/ui/Button'
 import { Card } from '@/shared/ui/Card'
+import { Modal } from '@/shared/ui/Modal'
+import { Input } from '@/shared/ui/Input'
 import { useCreateCarMutation } from '@/features/garage/queries'
 import { parseApiError } from '@/features/auth/errors'
 import type { Mark, Model, Modification } from './types'
@@ -39,15 +46,25 @@ export function AddCarWizard() {
   const [model, setModel] = useState<Model | null>(null)
   const [specs, setSpecs] = useState<SpecsValues>({})
   const [modification, setModification] = useState<Modification | null>(null)
+  const [bodyLabel, setBodyLabel] = useState<string | null>(null)
   const [modPage, setModPage] = useState(1)
   const [serverError, setServerError] = useState<string | null>(null)
 
+  // VIN — опциональный, вводится заранее, подставляется в финальную форму.
+  const [vin, setVin] = useState('')
+  const [vinDraft, setVinDraft] = useState('')
+  const [vinOpen, setVinOpen] = useState(false)
+
   // Самый правый открытый шаг — определяется наличием данных.
-  const maxUnlocked =
-    !mark ? 0 : !model ? 1 : !modification ? 3 : 4
+  const maxUnlocked = !mark ? 0 : !model ? 1 : !modification ? 3 : 4
 
   const goTo = (index: number) => {
     if (index <= maxUnlocked) setActiveIndex(index)
+  }
+
+  const onBack = () => {
+    if (activeIndex > 0) setActiveIndex((i) => Math.max(0, i - 1))
+    else navigate('/garage')
   }
 
   const onMarkSelected = (m: Mark) => {
@@ -56,6 +73,7 @@ export function AddCarWizard() {
       setModel(null)
       setSpecs({})
       setModification(null)
+      setBodyLabel(null)
       setModPage(1)
     }
     setMark(m)
@@ -66,6 +84,7 @@ export function AddCarWizard() {
     if (model?.id !== m.id) {
       setSpecs({})
       setModification(null)
+      setBodyLabel(null)
       setModPage(1)
     }
     setModel(m)
@@ -80,9 +99,14 @@ export function AddCarWizard() {
     setModPage(1)
   }
 
+  // Выбор модификации только подсвечивает её; переход на шаг 5 — по кнопке
+  // «Выбрать авто» (confirmModification).
   const onModificationSelected = (mod: Modification) => {
     setModification(mod)
-    setActiveIndex(4)
+  }
+
+  const confirmModification = () => {
+    if (modification) setActiveIndex(4)
   }
 
   const submit = async (values: {
@@ -106,87 +130,130 @@ export function AddCarWizard() {
       navigate('/garage', { replace: true })
     } catch (err) {
       const parsed = parseApiError(err, 'Не удалось сохранить автомобиль.')
-      const allMessages = [
-        parsed.general,
-        ...Object.values(parsed.fields),
-      ].filter(Boolean) as string[]
+      const allMessages = [parsed.general, ...Object.values(parsed.fields)].filter(
+        Boolean,
+      ) as string[]
       setServerError(allMessages.join(' ') || 'Не удалось сохранить автомобиль.')
     }
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <Stepper
         steps={STEPS}
         activeIndex={activeIndex}
         maxUnlockedIndex={maxUnlocked}
         onSelect={goTo}
+        onBack={onBack}
+        onVinClick={() => {
+          setVinDraft(vin)
+          setVinOpen(true)
+        }}
       />
 
-      <Card className="p-6 md:p-10">
-        {activeIndex === 0 && (
-          <MarkStep
-            selectedMarkId={mark?.id ?? null}
-            onSelect={onMarkSelected}
-          />
-        )}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="lg:col-span-8">
+          <Card className="p-6 md:p-8">
+            {/* На мобиле VIN-поле инлайном на первом шаге (на desktop — модалка) */}
+            {activeIndex === 0 && (
+              <div className="mb-6 lg:hidden">
+                <Input
+                  label="Введите VIN код (необязательно)"
+                  placeholder="VIN код"
+                  maxLength={17}
+                  value={vin}
+                  onChange={(e) => setVin(e.target.value.toUpperCase())}
+                />
+              </div>
+            )}
 
-        {activeIndex === 1 && mark && (
-          <ModelStep
-            mark={mark}
-            selectedModelId={model?.id ?? null}
-            onSelect={onModelSelected}
-          />
-        )}
+            {activeIndex === 0 && (
+              <MarkStep selectedMarkId={mark?.id ?? null} onSelect={onMarkSelected} />
+            )}
 
-        {activeIndex === 2 && mark && model && (
-          <>
-            <SpecsStep
-              markId={mark.id}
-              markLabel={mark.display_name}
-              modelId={model.id}
-              modelLabel={model.name}
-              values={specs}
-              onChange={onSpecsChange}
-            />
-            <div className="mt-8 flex justify-end">
-              <Button onClick={() => setActiveIndex(3)}>Далее</Button>
-            </div>
-          </>
-        )}
+            {activeIndex === 1 && mark && (
+              <ModelStep
+                mark={mark}
+                selectedModelId={model?.id ?? null}
+                onSelect={onModelSelected}
+              />
+            )}
 
-        {activeIndex === 3 && mark && model && (
-          <ModificationStep
-            markId={mark.id}
-            modelId={model.id}
-            specs={specs}
-            selectedSourceId={modification?.source_id ?? null}
-            onSelect={onModificationSelected}
-            page={modPage}
-            onPageChange={setModPage}
-          />
-        )}
+            {activeIndex === 2 && mark && model && (
+              <SpecsStep
+                markId={mark.id}
+                markLabel={mark.display_name}
+                modelId={model.id}
+                modelLabel={model.name}
+                values={specs}
+                onChange={onSpecsChange}
+                onBodyLabel={setBodyLabel}
+                onNext={() => setActiveIndex(3)}
+              />
+            )}
 
-        {activeIndex === 4 && mark && model && modification && (
-          <FinalFormStep
+            {activeIndex === 3 && mark && model && (
+              <ModificationStep
+                markId={mark.id}
+                modelId={model.id}
+                specs={specs}
+                onSpecsChange={onSpecsChange}
+                selectedSourceId={modification?.source_id ?? null}
+                onSelect={onModificationSelected}
+                onConfirm={confirmModification}
+                page={modPage}
+                onPageChange={setModPage}
+              />
+            )}
+
+            {activeIndex === 4 && mark && model && modification && (
+              <FinalFormStep
+                mark={mark}
+                model={model}
+                specs={specs}
+                modification={modification}
+                defaultVin={vin}
+                defaultIsDefault={true}
+                onSubmit={submit}
+                serverError={serverError}
+              />
+            )}
+          </Card>
+        </div>
+
+        <aside className="lg:col-span-4">
+          <ConfigSidebar
             mark={mark}
             model={model}
             specs={specs}
             modification={modification}
-            defaultIsDefault={true}
-            onSubmit={submit}
-            serverError={serverError}
+            bodyLabel={bodyLabel}
           />
-        )}
-      </Card>
+        </aside>
+      </div>
 
-      {activeIndex > 0 && (
-        <div className="flex justify-start">
-          <Button variant="ghost" onClick={() => setActiveIndex((i) => Math.max(0, i - 1))}>
-            ← Назад
-          </Button>
-        </div>
-      )}
+      <Modal open={vinOpen} onClose={() => setVinOpen(false)} size="sm">
+        <h2 className="mb-6 text-center text-2xl font-900 uppercase tracking-tight text-textPrimary">
+          VIN код
+        </h2>
+        <Input
+          label="Введите VIN код (необязательно)"
+          placeholder="VIN код"
+          maxLength={17}
+          value={vinDraft}
+          onChange={(e) => setVinDraft(e.target.value.toUpperCase())}
+        />
+        <button
+          type="button"
+          onClick={() => {
+            setVin(vinDraft)
+            setVinOpen(false)
+          }}
+          className="mt-5 w-full rounded-sct bg-brandBlue py-3.5 text-[12px] font-900 uppercase tracking-widest text-white shadow-soft-blue transition-all hover:bg-brandBlueDark"
+        >
+          Подтвердить
+        </button>
+      </Modal>
     </div>
   )
 }

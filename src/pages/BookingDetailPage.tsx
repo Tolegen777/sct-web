@@ -83,7 +83,7 @@ export default function BookingDetailPage() {
             <StatusBadge status={data.status} label={data.status_label} />
             <span className="font-mono text-xs text-textSecondary">Запись #{data.id}</span>
           </div>
-          <h1 className="mt-3 text-3xl font-900 uppercase italic leading-tight tracking-tight text-textPrimary md:text-4xl">
+          <h1 className="mt-3 text-3xl font-900 uppercase leading-tight tracking-tight text-textPrimary md:text-4xl">
             {data.service_package_data.title}
           </h1>
         </div>
@@ -116,10 +116,10 @@ export default function BookingDetailPage() {
         <p className="text-[10px] font-900 uppercase tracking-widest text-brandBlue">
           Автомобиль
         </p>
-        <h3 className="mt-2 text-xl font-900 uppercase italic tracking-tighter text-textPrimary md:text-2xl">
+        <h3 className="mt-2 text-xl font-900 uppercase tracking-tighter text-textPrimary md:text-2xl">
           {data.car.nickname || data.car.title}
         </h3>
-        <p className="mt-1 text-sm font-bold uppercase italic tracking-tight text-textSecondary">
+        <p className="mt-1 text-sm font-bold uppercase tracking-tight text-textSecondary">
           {data.car.full_title}
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -142,7 +142,7 @@ export default function BookingDetailPage() {
           О пакете
         </p>
         {data.service_package_data.short_description && (
-          <p className="mt-2 text-sm font-medium italic leading-relaxed text-textSecondary">
+          <p className="mt-2 text-sm font-medium leading-relaxed text-textSecondary">
             {data.service_package_data.short_description}
           </p>
         )}
@@ -167,7 +167,7 @@ export default function BookingDetailPage() {
               <p className="text-[10px] font-900 uppercase tracking-widest text-textSecondary">
                 Ваш комментарий
               </p>
-              <p className="mt-2 whitespace-pre-line rounded-sct border border-borderLight bg-surfaceLight p-4 text-sm italic text-textPrimary">
+              <p className="mt-2 whitespace-pre-line rounded-sct border border-borderLight bg-surfaceLight p-4 text-sm text-textPrimary">
                 {data.comment}
               </p>
             </div>
@@ -177,7 +177,7 @@ export default function BookingDetailPage() {
               <p className="text-[10px] font-900 uppercase tracking-widest text-textSecondary">
                 Комментарий мастера
               </p>
-              <p className="mt-2 whitespace-pre-line rounded-sct border border-blue-100 bg-blue-50/40 p-4 text-sm italic text-textPrimary">
+              <p className="mt-2 whitespace-pre-line rounded-sct border border-blue-100 bg-blue-50/40 p-4 text-sm text-textPrimary">
                 {data.staff_comment}
               </p>
             </div>
@@ -220,7 +220,7 @@ export default function BookingDetailPage() {
             Отменить
           </Button>
         </div>
-        <p className="mt-3 text-[10px] font-medium italic text-textSecondary/70">
+        <p className="mt-3 text-[10px] font-medium text-textSecondary/70">
           Отмена пока недоступна — бэкенд ещё не подключил соответствующий
           эндпоинт. Редактирование уже работает.
         </p>
@@ -266,7 +266,7 @@ function Field({
       </p>
       <p
         className={cn(
-          'mt-2 text-xl font-900 italic leading-none tracking-tighter md:text-2xl',
+          'mt-2 text-xl font-900 leading-none tracking-tighter md:text-2xl',
           accent === 'primary' ? 'text-brandBlue' : 'text-textPrimary',
         )}
       >

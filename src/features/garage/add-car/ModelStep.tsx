@@ -44,26 +44,14 @@ export function ModelStep({ mark, selectedModelId, onSelect }: ModelStepProps) {
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap items-end gap-3">
-        <div>
-          <h2 className="text-2xl font-900 uppercase italic tracking-tight text-textPrimary md:text-3xl">
-            Выберите модель
-          </h2>
-          <p className="mt-2 text-sm text-textSecondary">
-            {mark.display_name} — найдено {data.count} моделей
-          </p>
-        </div>
-      </div>
+      <Input
+        label="Поиск модели"
+        placeholder="Например X5…"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
 
-      <div className="mb-6 max-w-md">
-        <Input
-          placeholder="Поиск по модели…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 md:gap-3">
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {filtered.map((model) => {
           const isActive = model.id === selectedModelId
           return (
@@ -72,13 +60,13 @@ export function ModelStep({ mark, selectedModelId, onSelect }: ModelStepProps) {
               type="button"
               onClick={() => onSelect(model)}
               className={cn(
-                'rounded-sct border-2 bg-white p-4 text-left transition-all',
+                'rounded-sct border bg-white p-4 text-left transition-all',
                 isActive
                   ? 'border-brandBlue bg-blue-50/40 shadow-soft-blue'
-                  : 'border-transparent hover:-translate-y-1 hover:border-borderLight hover:shadow-sct-soft',
+                  : 'border-borderLight hover:-translate-y-0.5 hover:border-brandBlue/40 hover:shadow-sct-soft',
               )}
             >
-              <p className="text-sm font-900 uppercase italic tracking-tight text-textPrimary">
+              <p className="text-sm font-900 uppercase tracking-tight text-textPrimary">
                 {model.name}
               </p>
               <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-textSecondary">
@@ -90,10 +78,8 @@ export function ModelStep({ mark, selectedModelId, onSelect }: ModelStepProps) {
       </div>
 
       {filtered.length === 0 && (
-        <div className="rounded-sct border border-borderLight bg-surfaceLight p-8 text-center">
-          <p className="text-sm font-bold text-textSecondary">
-            Модели не найдены.
-          </p>
+        <div className="mt-5 rounded-sct border border-borderLight bg-surfaceLight p-8 text-center">
+          <p className="text-sm font-bold text-textSecondary">Модели не найдены.</p>
         </div>
       )}
     </div>

@@ -2,11 +2,8 @@
  * Выпадающее меню профиля в шапке (для авторизованного клиента).
  *
  * Триггер: клик по блоку «Пользователь / Имя» + аватарка.
- * Содержимое: 3 пункта — «Сервисная книжка», «Гараж», «Выйти».
+ * Содержимое: «Личный кабинет», «Сервисная книжка», «Гараж», «Выйти».
  * Закрывается по: клик снаружи, Escape, переход по пункту.
- *
- * Профиль (`/profile`) пока нет (нет макета и API). Когда появится —
- * первым пунктом добавим.
  */
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -88,7 +85,7 @@ export function UserMenu() {
             <p className="text-[10px] font-900 uppercase tracking-widest text-textSecondary">
               Аккаунт
             </p>
-            <p className="mt-0.5 truncate text-sm font-900 uppercase italic tracking-tight">
+            <p className="mt-0.5 truncate text-sm font-900 uppercase tracking-tight">
               {profile.first_name} {profile.last_name}
             </p>
             {profile.phone && (
@@ -99,24 +96,15 @@ export function UserMenu() {
           </div>
 
           <ul className="py-1.5">
+            <MenuItem to="/profile" icon="user" onClose={() => setOpen(false)}>
+              Личный кабинет
+            </MenuItem>
             <MenuItem to="/service-book" icon="book" onClose={() => setOpen(false)}>
               Сервисная книжка
             </MenuItem>
             <MenuItem to="/garage" icon="garage" onClose={() => setOpen(false)}>
               Гараж
             </MenuItem>
-            <li
-              className="cursor-not-allowed px-4 py-2.5 text-sm font-medium text-textSecondary/40"
-              title="Профиль появится в следующем релизе"
-            >
-              <div className="flex items-center gap-3">
-                <Icon name="user" />
-                <span>Профиль</span>
-                <span className="ml-auto text-[9px] font-bold uppercase tracking-widest">
-                  скоро
-                </span>
-              </div>
-            </li>
           </ul>
 
           <div className="border-t border-borderLight">

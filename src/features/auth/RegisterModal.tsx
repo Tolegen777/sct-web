@@ -103,18 +103,22 @@ export function RegisterModal({ open, onClose, onSwitchToLogin }: RegisterModalP
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Регистрация" size="sm">
-      <p className="-mt-2 mb-6 text-sm text-textSecondary">
-        Регистрация займёт минуту. Понадобится номер телефона.
-      </p>
+    <Modal open={open} onClose={onClose} size="sm">
+      <div className="mb-6 text-center">
+        <h2 className="text-2xl font-900 uppercase tracking-tight text-textPrimary">
+          Регистрация
+        </h2>
+        <p className="mt-1.5 text-sm text-textSecondary">
+          Регистрация строго по номеру телефона
+        </p>
+      </div>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Input
           label="Имя"
-          placeholder="Например, Нурсултан"
+          placeholder="Иван"
           autoComplete="name"
           {...register('full_name')}
           error={errors.full_name?.message}
-          hint="Можно с фамилией через пробел"
         />
 
         <Controller
@@ -133,8 +137,8 @@ export function RegisterModal({ open, onClose, onSwitchToLogin }: RegisterModalP
         <Input
           label="Пароль"
           type="password"
+          placeholder="Минимум 8 символов"
           autoComplete="new-password"
-          hint="Минимум 8 символов"
           {...register('password')}
           error={errors.password?.message}
         />
@@ -142,6 +146,7 @@ export function RegisterModal({ open, onClose, onSwitchToLogin }: RegisterModalP
         <Input
           label="Подтвердите пароль"
           type="password"
+          placeholder="Повторите пароль"
           autoComplete="new-password"
           {...register('password_confirm')}
           error={errors.password_confirm?.message}

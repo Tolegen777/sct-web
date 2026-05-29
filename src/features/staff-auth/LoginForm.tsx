@@ -63,7 +63,7 @@ export function StaffLoginForm() {
       <p className="text-[10px] font-900 uppercase tracking-[0.3em] text-brandBlue">
         SCT Admin
       </p>
-      <h1 className="mt-3 text-3xl font-900 uppercase italic tracking-tight text-textPrimary">
+      <h1 className="mt-3 text-3xl font-900 uppercase tracking-tight text-textPrimary">
         Вход в админку
       </h1>
       <p className="mt-2 text-sm text-textSecondary">

@@ -33,3 +33,22 @@ export async function fetchClientProfile() {
   const response = await http.get<ClientProfile>(endpoints.clientProfile)
   return response.data
 }
+
+/**
+ * Обновление профиля клиента. ВНИМАНИЕ: бэк сейчас отвечает 405 на PATCH
+ * (BACKEND_NOTES §4.3) — форма готова, заработает после подключения ручки.
+ * `phone` намеренно не отправляем: смена телефона требует SMS-подтверждения.
+ */
+export async function updateClientProfile(
+  payload: Partial<{
+    first_name: string
+    last_name: string
+    middle_name: string
+    email: string | null
+    date_of_birth: string | null
+    password: string
+  }>,
+) {
+  const response = await http.patch<ClientProfile>(endpoints.clientProfile, payload)
+  return response.data
+}

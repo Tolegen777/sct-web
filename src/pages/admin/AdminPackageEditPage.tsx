@@ -54,7 +54,7 @@ export default function AdminPackageEditPage() {
           </svg>
           Назад
         </Link>
-        <h1 className="mt-3 text-3xl font-900 uppercase italic tracking-tight text-textPrimary md:text-4xl">
+        <h1 className="mt-3 text-3xl font-900 uppercase tracking-tight text-textPrimary md:text-4xl">
           {mode === 'create' ? 'Новый пакет' : `Редактирование пакета #${id}`}
         </h1>
       </header>

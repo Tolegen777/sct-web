@@ -37,7 +37,7 @@ export function GuestPrompt({ title, description }: GuestPromptProps) {
           </svg>
         </div>
 
-        <h1 className="text-2xl font-900 uppercase italic tracking-tight text-textPrimary md:text-3xl">
+        <h1 className="text-2xl font-900 uppercase tracking-tight text-textPrimary md:text-3xl">
           {title}
         </h1>
         <p className="mx-auto mt-3 max-w-md text-sm font-medium text-textSecondary md:text-base">

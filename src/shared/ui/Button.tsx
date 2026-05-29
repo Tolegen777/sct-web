@@ -1,6 +1,6 @@
 /**
  * Базовая кнопка с вариантами.
- * Стили подобраны под мокапы SCT: uppercase italic-болды + скругления sct.
+ * Стили подобраны под дизайн SCT: uppercase-болды (прямой шрифт) + скругления sct.
  *
  * Использование:
  *   <Button variant="primary">Войти</Button>
@@ -59,7 +59,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled || loading}
         className={cn(
-          'inline-flex items-center justify-center gap-2 rounded-sct font-900 uppercase italic transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60',
+          'inline-flex items-center justify-center gap-2 rounded-sct font-900 uppercase transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60',
           variants[variant],
           sizes[size],
           fullWidth && 'w-full',

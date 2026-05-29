@@ -31,10 +31,10 @@ export function UpcomingVisitsSection() {
     <section>
       <header className="mb-4 flex items-end justify-between gap-3 md:mb-5">
         <div>
-          <h2 className="text-xl font-900 uppercase italic tracking-tight text-textPrimary md:text-2xl">
+          <h2 className="text-xl font-900 uppercase tracking-tight text-textPrimary md:text-2xl">
             Предстоящие визиты
           </h2>
-          <p className="mt-1 text-[12px] font-medium italic text-textSecondary">
+          <p className="mt-1 text-[12px] font-medium text-textSecondary">
             Ваши активные записи на обслуживание
           </p>
         </div>
@@ -90,7 +90,7 @@ function VisitRow({
             Ближайший визит
           </span>
         )}
-        <p className="truncate text-sm font-900 uppercase italic tracking-tight text-textPrimary md:text-base">
+        <p className="truncate text-sm font-900 uppercase tracking-tight text-textPrimary md:text-base">
           {appointment.service_package.title}
         </p>
         <p className="mt-1 text-[11px] font-bold uppercase tracking-widest text-textSecondary">

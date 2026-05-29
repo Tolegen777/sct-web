@@ -46,7 +46,7 @@ export function CarHeroCompact({ car }: CarHeroCompactProps) {
             alt={title}
             className="h-full w-full object-cover"
             fallback={
-              <div className="flex h-full w-full items-center justify-center text-2xl font-900 uppercase italic text-borderLight">
+              <div className="flex h-full w-full items-center justify-center text-2xl font-900 uppercase text-borderLight">
                 {car.mark.name.slice(0, 2)}
               </div>
             }
@@ -58,7 +58,7 @@ export function CarHeroCompact({ car }: CarHeroCompactProps) {
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brandYellow" />
             Активное авто
           </span>
-          <h2 className="mt-3 text-2xl font-900 uppercase italic leading-none tracking-tight text-textPrimary md:text-3xl">
+          <h2 className="mt-3 text-2xl font-900 uppercase leading-none tracking-tight text-textPrimary md:text-3xl">
             {title.toUpperCase()}
           </h2>
           {car.license_plate && (

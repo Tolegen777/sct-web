@@ -29,7 +29,7 @@ export function CarHero({ car, totalCars }: CarHeroProps) {
                 alt={car.full_car_title}
                 className="h-full w-full object-cover"
                 fallback={
-                  <div className="flex h-full w-full items-center justify-center text-2xl font-900 uppercase italic text-borderLight">
+                  <div className="flex h-full w-full items-center justify-center text-2xl font-900 uppercase text-borderLight">
                     {car.mark.name.slice(0, 2)}
                   </div>
                 }
@@ -43,10 +43,10 @@ export function CarHero({ car, totalCars }: CarHeroProps) {
           </div>
 
           <div className="min-w-0">
-            <p className="text-[10px] font-900 uppercase tracking-[0.2em] italic text-brandBlue">
+            <p className="text-[10px] font-900 uppercase tracking-[0.2em] text-brandBlue">
               Активное авто
             </p>
-            <h2 className="mt-2 truncate text-2xl font-900 uppercase italic tracking-tight text-textPrimary md:text-4xl">
+            <h2 className="mt-2 truncate text-2xl font-900 uppercase tracking-tight text-textPrimary md:text-4xl">
               {car.nickname || `${car.mark.display_name} ${car.model.name}`}
             </h2>
             <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -67,7 +67,7 @@ export function CarHero({ car, totalCars }: CarHeroProps) {
         {otherCount > 0 && (
           <Link
             to="/garage"
-            className="inline-flex items-center justify-center gap-2 rounded-sct border border-blue-100 bg-blue-50 px-5 py-3 text-[11px] font-900 uppercase italic tracking-widest text-brandBlue transition-all hover:bg-brandBlue hover:text-white"
+            className="inline-flex items-center justify-center gap-2 rounded-sct border border-blue-100 bg-blue-50 px-5 py-3 text-[11px] font-900 uppercase tracking-widest text-brandBlue transition-all hover:bg-brandBlue hover:text-white"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path

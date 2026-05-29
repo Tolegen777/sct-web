@@ -87,10 +87,10 @@ export default function AdminCarsPage() {
         <p className="text-[10px] font-900 uppercase tracking-[0.3em] text-brandBlue">
           Staff / Автомобили
         </p>
-        <h1 className="mt-2 text-3xl font-900 uppercase italic tracking-tight text-textPrimary md:text-4xl">
+        <h1 className="mt-2 text-3xl font-900 uppercase tracking-tight text-textPrimary md:text-4xl">
           {data.page.title}
         </h1>
-        <p className="mt-1 text-sm font-medium italic text-textSecondary">
+        <p className="mt-1 text-sm font-medium text-textSecondary">
           {data.page.subtitle}
         </p>
       </header>
@@ -184,11 +184,11 @@ function StatsRow({
           <p className="text-[10px] font-900 uppercase tracking-widest text-textSecondary">
             {item.label}
           </p>
-          <p className="mt-1.5 text-3xl font-900 italic tracking-tighter text-textPrimary">
+          <p className="mt-1.5 text-3xl font-900 tracking-tighter text-textPrimary">
             {item.value.toLocaleString('ru-RU')}
           </p>
           {item.description && (
-            <p className="mt-1 text-[11px] font-medium italic text-textSecondary/70">
+            <p className="mt-1 text-[11px] font-medium text-textSecondary/70">
               {item.description}
             </p>
           )}
@@ -231,7 +231,7 @@ function ResultsTable({ items, loading }: { items: CarRow[]; loading: boolean })
                 #{row.modification_id}
               </td>
               <td className="px-6 py-4">
-                <div className="font-900 uppercase italic tracking-tighter text-textPrimary">
+                <div className="font-900 uppercase tracking-tighter text-textPrimary">
                   {row.car.mark.name} {row.car.model.name}
                 </div>
                 <div className="mt-0.5 text-[11px] font-bold uppercase tracking-tighter text-textSecondary">
@@ -263,7 +263,7 @@ function ResultsTable({ items, loading }: { items: CarRow[]; loading: boolean })
                     {row.packages_count} пакет.
                   </span>
                 ) : (
-                  <span className="text-[10px] font-800 italic uppercase tracking-widest text-textSecondary/40">
+                  <span className="text-[10px] font-800 uppercase tracking-widest text-textSecondary/40">
                     Без услуг
                   </span>
                 )}

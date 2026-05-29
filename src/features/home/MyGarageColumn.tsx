@@ -1,16 +1,14 @@
 /**
- * Правая колонка «МОЙ ГАРАЖ» на главной (и других dashboard-страницах).
+ * Сайдбар «МОЙ ГАРАЖ» (по дизайну new_screens).
  *
- * Содержит:
- *   - Список авто клиента (компактные карточки с фото, названием и
- *     госномером).
- *   - Кнопка «Сделать активным» под каждой неактивной машиной.
- *   - Кнопка «Изменить активную машину» — переход к её редактированию.
- *   - Плашка-CTA «+ Добавить автомобиль» внизу.
+ * Используется на главной (authed) и в сервисной книжке. Сворачиваемый
+ * (chevron в заголовке). Показывает НЕактивные авто (активное представлено
+ * в hero/ActiveCarBlock) с кнопкой «Сделать активным», и плашку-CTA
+ * «Добавить автомобиль».
  *
- * Если у клиента нет авто — показываем только плашку-CTA.
- * Для гостя компонент не рендерим (управляет родитель).
+ * Если у клиента только активное авто — показываем только плашку-CTA.
  */
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useCarsQuery, useSetDefaultCarMutation } from '@/features/garage/queries'
 import { Card } from '@/shared/ui/Card'
@@ -18,56 +16,73 @@ import { SafeImage } from '@/shared/ui/SafeImage'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { cn } from '@/shared/lib/cn'
 import { getCarPhoto, getCarTitle } from '@/features/garage/lib'
+import type { ClientGarageCar } from '@/shared/api/types'
 
 export function MyGarageColumn() {
   const { data: cars, isLoading } = useCarsQuery()
   const setDefault = useSetDefaultCarMutation()
+  const [open, setOpen] = useState(true)
+
+  // В сайдбаре — только неактивные авто (активное показано в hero).
+  const others = (cars ?? []).filter((c) => !c.is_default)
 
   return (
     <Card className="p-5 md:p-6">
-      <header className="mb-5 flex items-center justify-between">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between"
+        aria-expanded={open}
+      >
         <h3 className="text-[12px] font-900 uppercase tracking-widest text-textSecondary">
           Мой гараж
         </h3>
-        {cars && cars.length > 0 && (
-          <Link
-            to="/garage"
-            className="text-[10px] font-bold uppercase tracking-widest text-brandBlue hover:underline"
-          >
-            Все →
-          </Link>
-        )}
-      </header>
+        <svg
+          className={cn(
+            'h-4 w-4 text-textSecondary transition-transform',
+            open ? '' : '-rotate-180',
+          )}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+        </svg>
+      </button>
 
-      {isLoading ? (
-        <div className="space-y-3">
-          <Skeleton.Row />
-          <Skeleton.Row />
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {(cars ?? []).map((car) => (
-            <CarRow
-              key={car.id}
-              car={car}
-              onSetDefault={() => setDefault.mutate(car.id)}
-              isPending={setDefault.isPending && setDefault.variables === car.id}
-            />
-          ))}
+      {open && (
+        <div className="mt-5 space-y-3">
+          {isLoading ? (
+            <>
+              <Skeleton.Row />
+              <Skeleton.Row />
+            </>
+          ) : (
+            <>
+              {others.map((car) => (
+                <CarRow
+                  key={car.id}
+                  car={car}
+                  onSetDefault={() => setDefault.mutate(car.id)}
+                  isPending={setDefault.isPending && setDefault.variables === car.id}
+                />
+              ))}
 
-          <Link
-            to="/garage/add"
-            className="flex h-[100px] items-center justify-center rounded-sct border-2 border-dashed border-borderLight bg-surfaceLight/40 text-center transition-all hover:border-brandBlue hover:bg-blue-50"
-          >
-            <div>
-              <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-white text-brandBlue shadow-sm">
-                +
-              </div>
-              <p className="text-[10px] font-900 uppercase tracking-widest text-textSecondary">
-                Добавить автомобиль
-              </p>
-            </div>
-          </Link>
+              <Link
+                to="/garage/add"
+                className="flex flex-col items-center justify-center gap-2 rounded-sct border-2 border-dashed border-borderLight bg-surfaceLight/40 py-6 text-center transition-all hover:border-brandBlue hover:bg-blue-50"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-brandBlue shadow-sm">
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 5v14m7-7H5" />
+                  </svg>
+                </div>
+                <p className="text-[10px] font-900 uppercase tracking-widest text-textSecondary">
+                  Добавить автомобиль
+                </p>
+              </Link>
+            </>
+          )}
         </div>
       )}
     </Card>
@@ -79,60 +94,50 @@ function CarRow({
   onSetDefault,
   isPending,
 }: {
-  car: import('@/shared/api/types').ClientGarageCar
+  car: ClientGarageCar
   onSetDefault: () => void
   isPending: boolean
 }) {
-  const isActive = Boolean(car.is_default)
   const title = getCarTitle(car)
   const photo = getCarPhoto(car)
   return (
-    <div
-      className={cn(
-        'rounded-sct border bg-white p-3 transition-all',
-        isActive
-          ? 'border-brandBlue shadow-soft-blue'
-          : 'border-borderLight hover:border-brandBlue/50',
-      )}
-    >
+    <div className="rounded-sct border border-borderLight bg-white p-3">
       <div className="flex items-center gap-3">
-        <div className="h-14 w-20 shrink-0 overflow-hidden rounded-lg border border-borderLight bg-surfaceLight">
+        <div className="h-12 w-16 shrink-0 overflow-hidden rounded-lg border border-borderLight bg-surfaceLight">
           <SafeImage
             src={photo ?? undefined}
             alt={title}
             className="h-full w-full object-cover"
             fallback={
-              <div className="flex h-full w-full items-center justify-center text-[10px] font-900 uppercase italic text-borderLight">
+              <div className="flex h-full w-full items-center justify-center text-[10px] font-900 uppercase text-borderLight">
                 {title.slice(0, 2)}
               </div>
             }
           />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-900 uppercase italic tracking-tight text-textPrimary">
+          <p className="truncate text-sm font-900 uppercase tracking-tight text-textPrimary">
             {title}
           </p>
           {car.license_plate && (
-            <p className="mt-1 font-mono text-[10px] font-bold uppercase tracking-widest text-textSecondary">
+            <span className="mt-1 inline-block rounded bg-surfaceMuted px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-textSecondary">
               {car.license_plate}
-            </p>
+            </span>
           )}
         </div>
       </div>
 
-      {!isActive && (
-        <button
-          type="button"
-          onClick={onSetDefault}
-          disabled={isPending}
-          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-md bg-brandBlue px-3 py-2 text-[10px] font-900 uppercase tracking-widest text-white shadow-soft-blue transition-all hover:bg-brandBlueDark disabled:opacity-60"
-        >
-          <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-          </svg>
-          {isPending ? 'Сохраняем…' : 'Сделать активным'}
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={onSetDefault}
+        disabled={isPending}
+        className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-md bg-brandBlue px-3 py-2 text-[10px] font-900 uppercase tracking-widest text-white shadow-soft-blue transition-all hover:bg-brandBlueDark disabled:opacity-60"
+      >
+        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+        </svg>
+        {isPending ? 'Сохраняем…' : 'Сделать активным'}
+      </button>
     </div>
   )
 }
