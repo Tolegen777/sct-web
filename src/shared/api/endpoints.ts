@@ -28,9 +28,11 @@ export const endpoints = {
   serviceBookPageData: '/api/v1/client_endpoints/service-book/page-data/',
 
   // --- Клиент: записи на сервис (booking) ---
-  // list/detail/create/edit готовы; cancel ещё не подключён бэком.
+  // list/detail/create/edit/cancel — все ручки в бэке есть и работают.
   bookings: '/api/v1/client_endpoints/service-book/bookings/',
   booking: (id: number) => `/api/v1/client_endpoints/service-book/bookings/${id}/`,
+  bookingCancel: (id: number) =>
+    `/api/v1/client_endpoints/service-book/bookings/${id}/cancel/`,
   createBooking: '/api/v1/client_endpoints/service-book/create_booking/',
 
   // --- Клиент: филиалы (service stations) ---
@@ -69,4 +71,21 @@ export const endpoints = {
   staffCarDetailPageData: (sourceId: string) =>
     `/api/v1/staff_endpoints/cars/${sourceId}/detail-page-data/`,
   staffPackageItems: '/api/v1/staff_endpoints/packages/package-items/',
+
+  // --- Staff: записи на сервис (admin bookings) ---
+  // 8 эндпоинтов: list/detail + 6 PATCH под отдельные действия.
+  staffBookings: '/api/v1/staff_endpoints/bookings/',
+  staffBooking: (id: number) => `/api/v1/staff_endpoints/bookings/${id}/`,
+  staffBookingCancel: (id: number) =>
+    `/api/v1/staff_endpoints/bookings/${id}/cancel/`,
+  staffBookingSchedule: (id: number) =>
+    `/api/v1/staff_endpoints/bookings/${id}/schedule/`,
+  staffBookingStaffNote: (id: number) =>
+    `/api/v1/staff_endpoints/bookings/${id}/staff-note/`,
+  staffBookingStation: (id: number) =>
+    `/api/v1/staff_endpoints/bookings/${id}/station/`,
+  staffBookingStatus: (id: number) =>
+    `/api/v1/staff_endpoints/bookings/${id}/status/`,
+  staffBookingVin: (id: number) =>
+    `/api/v1/staff_endpoints/bookings/${id}/vin/`,
 } as const

@@ -39,6 +39,8 @@ const AdminPackageDetailPage = lazy(() => import('@/pages/admin/AdminPackageDeta
 const AdminPackageEditPage = lazy(() => import('@/pages/admin/AdminPackageEditPage'))
 const AdminCarsPage = lazy(() => import('@/pages/admin/AdminCarsPage'))
 const AdminCarDetailPage = lazy(() => import('@/pages/admin/AdminCarDetailPage'))
+const AdminBookingsPage = lazy(() => import('@/pages/admin/AdminBookingsPage'))
+const AdminBookingDetailPage = lazy(() => import('@/pages/admin/AdminBookingDetailPage'))
 
 export const router = createBrowserRouter([
   {
@@ -93,6 +95,8 @@ export const router = createBrowserRouter([
       { path: 'packages/:id/edit', element: <AdminPackageEditPage /> },
       { path: 'cars', element: <AdminCarsPage /> },
       { path: 'cars/:sourceId', element: <AdminCarDetailPage /> },
+      { path: 'bookings', element: <AdminBookingsPage /> },
+      { path: 'bookings/:id', element: <AdminBookingDetailPage /> },
     ],
   },
 ])

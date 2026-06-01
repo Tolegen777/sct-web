@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createBooking, fetchBooking, fetchBookings, updateBooking } from './api'
+import { cancelBooking, createBooking, fetchBooking, fetchBookings, updateBooking } from './api'
 import type { UpdateBookingPayload } from './types'
 
 export const bookingsKeys = {
@@ -39,6 +39,18 @@ export function useUpdateBookingMutation(id: number) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (payload: UpdateBookingPayload) => updateBooking(id, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: bookingsKeys.all })
+      qc.invalidateQueries({ queryKey: bookingsKeys.detail(id) })
+      qc.invalidateQueries({ queryKey: ['service-book'] })
+    },
+  })
+}
+
+export function useCancelBookingMutation(id: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (reason?: string) => cancelBooking(id, reason),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: bookingsKeys.all })
       qc.invalidateQueries({ queryKey: bookingsKeys.detail(id) })

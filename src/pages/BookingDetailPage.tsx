@@ -12,18 +12,19 @@
  *
  * Действия:
  *   - «Изменить» → EditBookingModal (PATCH /bookings/{id}/) — РАБОТАЕТ
- *   - «Отменить» → пока заглушка (бэк не подключил cancel-эндпоинт)
- *
- * Когда бэк добавит cancel — заменим alert на нормальный confirm + mutate.
+ *   - «Отменить» → CancelBookingModal (POST /bookings/{id}/cancel/) — РАБОТАЕТ
  */
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { useBookingQuery } from '@/features/bookings/queries'
+import { useBookingQuery, useCancelBookingMutation } from '@/features/bookings/queries'
 import { EditBookingModal } from '@/features/bookings/EditBookingModal'
+import { Modal } from '@/shared/ui/Modal'
+import { Textarea } from '@/shared/ui/Textarea'
 import { Spinner } from '@/shared/ui/Spinner'
 import { Card } from '@/shared/ui/Card'
 import { Button } from '@/shared/ui/Button'
 import { toast } from '@/shared/ui/Toast'
+import { parseApiError } from '@/features/auth/errors'
 import { formatDateTime, formatMileage } from '@/shared/lib/format'
 import { cn } from '@/shared/lib/cn'
 import type { BookingStatus } from '@/features/bookings/types'
@@ -34,6 +35,9 @@ export default function BookingDetailPage() {
   const navigate = useNavigate()
   const { data, isLoading, isError, refetch } = useBookingQuery(id)
   const [editOpen, setEditOpen] = useState(false)
+  const [cancelOpen, setCancelOpen] = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
+  const cancelMutation = useCancelBookingMutation(id ?? 0)
 
   if (isLoading) {
     return (
@@ -209,22 +213,61 @@ export default function BookingDetailPage() {
             title={
               data.permissions.can_cancel
                 ? 'Отменить визит'
-                : 'Отмена пока недоступна'
+                : 'Отмена недоступна для текущего статуса'
             }
             onClick={() => {
-              toast.warning(
-                'Отмена записи пока недоступна — бэкенд ещё не подключил эндпоинт.',
-              )
+              setCancelReason('')
+              setCancelOpen(true)
             }}
           >
             Отменить
           </Button>
         </div>
-        <p className="mt-3 text-[10px] font-medium text-textSecondary/70">
-          Отмена пока недоступна — бэкенд ещё не подключил соответствующий
-          эндпоинт. Редактирование уже работает.
-        </p>
       </Card>
+
+      <Modal open={cancelOpen} onClose={() => setCancelOpen(false)} size="sm">
+        <h2 className="mb-3 text-center text-2xl font-900 uppercase tracking-tight text-textPrimary">
+          Отменить запись?
+        </h2>
+        <p className="mb-5 text-center text-sm text-textSecondary">
+          Действие нельзя отменить. Можно оставить комментарий — мастер увидит причину.
+        </p>
+        <Textarea
+          label="Причина отмены (необязательно)"
+          rows={3}
+          placeholder="Например: изменились планы, перенесу позже…"
+          value={cancelReason}
+          onChange={(e) => setCancelReason(e.target.value)}
+        />
+        <div className="mt-5 flex gap-3">
+          <Button
+            variant="ghost"
+            fullWidth
+            onClick={() => setCancelOpen(false)}
+            disabled={cancelMutation.isPending}
+          >
+            Закрыть
+          </Button>
+          <Button
+            variant="danger"
+            fullWidth
+            loading={cancelMutation.isPending}
+            onClick={() => {
+              cancelMutation.mutate(cancelReason.trim() || undefined, {
+                onSuccess: () => {
+                  toast.success('Запись отменена')
+                  setCancelOpen(false)
+                },
+                onError: (err) => {
+                  toast.error(parseApiError(err, 'Не удалось отменить запись.').general)
+                },
+              })
+            }}
+          >
+            Отменить запись
+          </Button>
+        </div>
+      </Modal>
 
       <EditBookingModal
         open={editOpen}

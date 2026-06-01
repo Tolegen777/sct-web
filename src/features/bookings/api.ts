@@ -42,6 +42,22 @@ export async function createBooking(payload: CreateBookingPayload): Promise<Book
   return data as Booking
 }
 
+/**
+ * Отмена записи клиентом. Доступна только для статусов DRAFT/CREATED/CONFIRMED
+ * (бэк сам проверит). Опционально можно передать `reason`.
+ */
+export async function cancelBooking(id: number, reason?: string): Promise<Booking> {
+  const response = await http.post<CreateBookingResponse | Booking>(
+    endpoints.bookingCancel(id),
+    reason ? { reason } : {},
+  )
+  const data = response.data as Partial<CreateBookingResponse> & Partial<Booking>
+  if (data && typeof data === 'object' && 'booking' in data && data.booking) {
+    return data.booking as Booking
+  }
+  return data as Booking
+}
+
 export async function updateBooking(id: number, payload: UpdateBookingPayload): Promise<Booking> {
   const response = await http.patch<CreateBookingResponse | Booking>(
     endpoints.booking(id),

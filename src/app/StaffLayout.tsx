@@ -13,6 +13,7 @@ import { ErrorBoundary } from './ErrorBoundary'
 import { cn } from '@/shared/lib/cn'
 
 const nav = [
+  { to: '/admin/bookings', label: 'Записи' },
   { to: '/admin/packages', label: 'Пакеты услуг' },
   { to: '/admin/cars', label: 'Автомобили' },
 ]
