@@ -9,7 +9,7 @@
  * Источник: GET /staff_endpoints/cars/cars-list-page-data/.
  * Фильтры в URL, чтобы можно было поделиться ссылкой на выборку.
  */
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAdminCarsList } from '@/features/admin-cars/queries'
 import { Spinner } from '@/shared/ui/Spinner'
@@ -41,12 +41,37 @@ export default function AdminCarsPage() {
       mark: numberOrUndefined(searchParams.get('mark')),
       model: numberOrUndefined(searchParams.get('model')),
       year: numberOrUndefined(searchParams.get('year')),
+      body_type: numberOrUndefined(searchParams.get('body_type')),
+      generation: numberOrUndefined(searchParams.get('generation')),
+      powertrain_type: searchParams.get('powertrain_type') ?? undefined,
+      drive_type: searchParams.get('drive_type') ?? undefined,
+      transmission_type: searchParams.get('transmission_type') ?? undefined,
+      package_category: numberOrUndefined(searchParams.get('package_category')),
+      package_status: searchParams.get('package_status') ?? undefined,
+      has_promotion: booleanOrUndefined(searchParams.get('has_promotion')),
       ordering: searchParams.get('ordering') ?? '-clients_count',
       page: Number(searchParams.get('page')) || 1,
       page_size: parsePageSize(searchParams.get('page_size')),
     }),
     [searchParams],
   )
+
+  const [extraOpen, setExtraOpen] = useState(false)
+  const extraKeys = [
+    'model',
+    'year',
+    'body_type',
+    'generation',
+    'powertrain_type',
+    'drive_type',
+    'transmission_type',
+    'package_category',
+    'package_status',
+    'has_promotion',
+  ] as const
+  const extraActive = extraKeys.filter((k) => searchParams.get(k)).length
+  const anyActive =
+    extraActive + ['search', 'mark'].filter((k) => searchParams.get(k)).length
 
   const { data, isLoading, isFetching, isError, refetch } = useAdminCarsList(query)
 
@@ -101,7 +126,7 @@ export default function AdminCarsPage() {
         { item: data.stats.covered_modifications_total, accent: 'border-l-brandYellow' },
       ]} />
 
-      <Card className="p-5">
+      <Card className="space-y-4 p-5">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
           <div className="md:col-span-4">
             <Input
@@ -115,7 +140,9 @@ export default function AdminCarsPage() {
             <Select
               label="Марка"
               value={searchParams.get('mark') ?? ''}
-              onChange={(e) => update({ mark: e.target.value || null, model: null })}
+              onChange={(e) =>
+                update({ mark: e.target.value || null, model: null, generation: null })
+              }
             >
               <option value="">Все марки</option>
               {data.filters.marks.map((m) => (
@@ -152,6 +179,118 @@ export default function AdminCarsPage() {
             </Select>
           </div>
         </div>
+
+        {/* Тогглер расширенной панели */}
+        <div className="flex items-center justify-between gap-3 border-t border-borderLight pt-4">
+          <button
+            type="button"
+            onClick={() => setExtraOpen((v) => !v)}
+            className="inline-flex items-center gap-2 text-[11px] font-900 uppercase tracking-widest text-textSecondary hover:text-brandBlue"
+          >
+            <svg
+              className={cn('h-3 w-3 transition-transform', extraOpen && 'rotate-180')}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+            </svg>
+            Расширенные фильтры
+            {extraActive > 0 && (
+              <span className="rounded-full bg-brandBlue/10 px-2 py-0.5 text-[10px] font-900 text-brandBlue">
+                {extraActive}
+              </span>
+            )}
+          </button>
+          {anyActive > 0 && (
+            <button
+              type="button"
+              onClick={() => setSearchParams({})}
+              className="text-[11px] font-900 uppercase tracking-widest text-red-600 hover:underline"
+            >
+              Сбросить все
+            </button>
+          )}
+        </div>
+
+        {extraOpen && (
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
+            <SelectCol
+              label="Модель"
+              value={searchParams.get('model')}
+              onChange={(v) => update({ model: v, generation: null })}
+              options={data.filters.models ?? []}
+              col="md:col-span-3"
+            />
+            <SelectCol
+              label="Поколение"
+              value={searchParams.get('generation')}
+              onChange={(v) => update({ generation: v })}
+              options={data.filters.generations ?? []}
+              col="md:col-span-3"
+            />
+            <SelectCol
+              label="Год выпуска"
+              value={searchParams.get('year')}
+              onChange={(v) => update({ year: v })}
+              options={data.filters.years ?? []}
+              col="md:col-span-3"
+            />
+            <SelectCol
+              label="Кузов"
+              value={searchParams.get('body_type')}
+              onChange={(v) => update({ body_type: v })}
+              options={data.filters.body_types ?? []}
+              col="md:col-span-3"
+            />
+            <SelectCol
+              label="Тип двигателя"
+              value={searchParams.get('powertrain_type')}
+              onChange={(v) => update({ powertrain_type: v })}
+              options={data.filters.powertrain_types ?? []}
+              col="md:col-span-3"
+            />
+            <SelectCol
+              label="КПП"
+              value={searchParams.get('transmission_type')}
+              onChange={(v) => update({ transmission_type: v })}
+              options={data.filters.transmission_types ?? []}
+              col="md:col-span-3"
+            />
+            <SelectCol
+              label="Привод"
+              value={searchParams.get('drive_type')}
+              onChange={(v) => update({ drive_type: v })}
+              options={data.filters.drive_types ?? []}
+              col="md:col-span-3"
+            />
+            <SelectCol
+              label="Категория пакета"
+              value={searchParams.get('package_category')}
+              onChange={(v) => update({ package_category: v })}
+              options={data.filters.package_categories ?? []}
+              col="md:col-span-3"
+            />
+            <SelectCol
+              label="Статус пакета"
+              value={searchParams.get('package_status')}
+              onChange={(v) => update({ package_status: v })}
+              options={data.filters.package_statuses ?? []}
+              col="md:col-span-3"
+            />
+            <div className="md:col-span-3">
+              <Select
+                label="Акции"
+                value={searchParams.get('has_promotion') ?? ''}
+                onChange={(e) => update({ has_promotion: e.target.value || null })}
+              >
+                <option value="">Все варианты</option>
+                <option value="true">Только акционные</option>
+                <option value="false">Без акции</option>
+              </Select>
+            </div>
+          </div>
+        )}
       </Card>
 
       <Card className="overflow-hidden p-0">
@@ -351,4 +490,43 @@ function numberOrUndefined(v: string | null): number | undefined {
   if (!v) return undefined
   const n = Number(v)
   return Number.isFinite(n) ? n : undefined
+}
+
+function booleanOrUndefined(v: string | null): boolean | undefined {
+  if (v === 'true') return true
+  if (v === 'false') return false
+  return undefined
+}
+
+/** Универсальный select-фильтр (то же что в AdminPackagesPage). */
+function SelectCol({
+  label,
+  value,
+  options,
+  onChange,
+  col,
+}: {
+  label: string
+  value: string | null
+  options: Array<{ value: string | number; label: string; count?: number }>
+  onChange: (next: string | null) => void
+  col: string
+}) {
+  return (
+    <div className={col}>
+      <Select
+        label={label}
+        value={value ?? ''}
+        onChange={(e) => onChange(e.target.value || null)}
+      >
+        <option value="">Все</option>
+        {options.map((o) => (
+          <option key={o.value} value={String(o.value)}>
+            {o.label}
+            {typeof o.count === 'number' ? ` (${o.count})` : ''}
+          </option>
+        ))}
+      </Select>
+    </div>
+  )
 }

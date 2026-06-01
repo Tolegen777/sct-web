@@ -63,7 +63,14 @@ export interface ListFilters {
   package_categories: FilterOption<number>[]
   package_statuses: FilterOption<string>[]
   promotion_options: FilterOption<boolean>[]
-  // ... + car-related фильтры (марка, модель, год и т.д.)
+  // Авто-фильтры (бэк отдаёт под list-page-data, см. probe от 2026-06-01).
+  marks?: FilterOption<number>[]
+  models?: FilterOption<number>[]
+  generations?: FilterOption<number>[]
+  body_types?: FilterOption<number>[]
+  powertrain_types?: FilterOption<string>[]
+  drive_types?: FilterOption<string>[]
+  transmission_types?: FilterOption<string>[]
   [key: string]: unknown
 }
 
