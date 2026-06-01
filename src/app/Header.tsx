@@ -25,7 +25,7 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { to: '/', label: 'Главная', end: true },
-  { to: '/garage', label: 'Гараж', authOnly: true },
+  { to: '/service-book', label: 'Сервисная книжка', authOnly: true },
   { to: '/services', label: 'Услуги' },
   { to: '/contacts', label: 'Контакты' },
 ]
@@ -43,12 +43,14 @@ export function Header() {
         {/* Логотип */}
         <Link
           to="/"
-          className="flex items-center gap-2 text-xl font-900 uppercase tracking-tight text-white md:text-2xl"
+          className="flex items-center text-white"
           aria-label="SCT Service — на главную"
         >
-          <span className="rounded-full border-2 border-white px-2 py-0.5 text-sm md:text-base">
-            SCT
-          </span>
+          <img
+            src="/logo.svg"
+            alt="SCT Service"
+            className="h-9 w-auto md:h-10"
+          />
         </Link>
 
         {/* Навигация (центр) */}

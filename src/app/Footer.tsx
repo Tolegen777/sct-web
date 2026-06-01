@@ -9,11 +9,8 @@ export function Footer() {
     <footer className="mt-12 bg-navy text-white">
       <div className="container-sct grid grid-cols-1 gap-8 py-10 md:grid-cols-3 md:gap-12">
         <div>
-          <Link
-            to="/"
-            className="inline-block rounded-full border-2 border-white px-3 py-0.5 text-base font-900 uppercase tracking-tight text-white"
-          >
-            SCT
+          <Link to="/" className="inline-block text-white" aria-label="SCT Service">
+            <img src="/logo.svg" alt="SCT Service" className="h-10 w-auto" />
           </Link>
           <p className="mt-3 text-sm font-medium text-white/70">
             SCT Service — обслуживание и ремонт автомобилей в Алматы.

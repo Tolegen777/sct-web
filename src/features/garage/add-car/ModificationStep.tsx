@@ -242,12 +242,16 @@ function ModCard({
   onSelect: () => void
 }) {
   const title = mod.name || mod.full_title || mod.display_name || `Модификация ${mod.id}`
-  const sub =
-    mod.configuration_name ||
-    mod.fuel_type_label ||
-    (mod.year_from || mod.year_to
+  // Дополнительные различающие поля — собираем в одну строку через «·».
+  // group_name — это трим/комплектация (часто единственное различие при
+  // одинаковом названии модификации, см. реальные ответы /modifications/).
+  const yearRange =
+    mod.year_from || mod.year_to
       ? `${mod.year_from ?? ''}${mod.year_to ? `–${mod.year_to}` : ''}`
-      : `MOD ${mod.id}`)
+      : null
+  const sub =
+    [mod.configuration_name, yearRange, mod.drive_type_label].filter(Boolean).join(' · ') ||
+    `MOD ${mod.id}`
   const image = mod.photo_url ?? undefined
 
   return (
@@ -274,10 +278,15 @@ function ModCard({
         />
       </div>
       <div className="p-3">
+        {mod.group_name && (
+          <p className="truncate text-[10px] font-900 uppercase tracking-widest text-brandBlue">
+            {mod.group_name}
+          </p>
+        )}
         <p className="truncate text-sm font-900 uppercase tracking-tight text-textPrimary">
           {title}
         </p>
-        <p className="mt-0.5 text-[10px] font-bold uppercase tracking-widest text-textSecondary">
+        <p className="mt-0.5 truncate text-[10px] font-bold uppercase tracking-widest text-textSecondary">
           {sub}
         </p>
       </div>
