@@ -73,19 +73,12 @@ export const endpoints = {
   staffPackageItems: '/api/v1/staff_endpoints/packages/package-items/',
 
   // --- Staff: записи на сервис (admin bookings) ---
-  // 8 эндпоинтов: list/detail + 6 PATCH под отдельные действия.
+  // Бэк объединил все действия в один PATCH /staff/bookings/{id}/.
+  // Cancel остался отдельным POST. Options отдаёт справочники (СТО,
+  // пакеты, default-услуги) для модалок действий.
   staffBookings: '/api/v1/staff_endpoints/bookings/',
   staffBooking: (id: number) => `/api/v1/staff_endpoints/bookings/${id}/`,
   staffBookingCancel: (id: number) =>
     `/api/v1/staff_endpoints/bookings/${id}/cancel/`,
-  staffBookingSchedule: (id: number) =>
-    `/api/v1/staff_endpoints/bookings/${id}/schedule/`,
-  staffBookingStaffNote: (id: number) =>
-    `/api/v1/staff_endpoints/bookings/${id}/staff-note/`,
-  staffBookingStation: (id: number) =>
-    `/api/v1/staff_endpoints/bookings/${id}/station/`,
-  staffBookingStatus: (id: number) =>
-    `/api/v1/staff_endpoints/bookings/${id}/status/`,
-  staffBookingVin: (id: number) =>
-    `/api/v1/staff_endpoints/bookings/${id}/vin/`,
+  staffBookingsOptions: '/api/v1/staff_endpoints/bookings/options/',
 } as const

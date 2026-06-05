@@ -1,25 +1,28 @@
 /**
- * Детальная запись на сервис для админа (по bookings_detail.html).
+ * Детальная запись на сервис для админа.
  *
- * Слева — карточки с информацией (клиент, авто, пакет, план визита,
- * комментарии, заметка сотрудника). Справа — «Панель действий» с 6
- * кнопками, каждая открывает свою модалку с PATCH на отдельный
- * под-эндпоинт: status / schedule / station / staff-note / vin / cancel.
+ * Бэк объединил все действия в один PATCH /staff/bookings/{id}/, поэтому
+ * используется одна универсальная мутация — каждая модалка патчит свой
+ * набор полей. Cancel остался отдельным POST.
  *
- * «Изменить услугу» и «Изменить стоимость» в дизайне есть, но у бэка
- * пока нет соответствующих ручек — этих действий не выводим.
+ * Опции (СТО, пакеты, default-услуги) — из GET /staff/bookings/options/.
+ *
+ * Действия из мокапа bookings_detail.html:
+ *   - Изменить статус         → { status, staff_comment? }
+ *   - Назначить дату и время  → { scheduled_datetime }
+ *   - Изменить СТО            → { service_station_id }
+ *   - Изменить услугу         → { service_type, service_package_id | default_service_page_id }
+ *   - Изменить стоимость      → { price_snapshot }
+ *   - Заметка сотрудника      → { staff_comment }
+ *   - Отменить запись         → cancel POST
  */
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   useCancelStaffBookingMutation,
-  useScheduleStaffBookingMutation,
   useStaffBookingQuery,
-  useStaffStationsQuery,
-  useUpdateStaffNoteMutation,
-  useUpdateStationMutation,
-  useUpdateStatusMutation,
-  useUpdateVinMutation,
+  useStaffBookingsOptionsQuery,
+  useUpdateStaffBookingMutation,
 } from '@/features/admin-bookings/queries'
 import { Card } from '@/shared/ui/Card'
 import { Button } from '@/shared/ui/Button'
@@ -32,7 +35,11 @@ import { toast } from '@/shared/ui/Toast'
 import { parseApiError } from '@/features/auth/errors'
 import { formatDateTime, formatMoney } from '@/shared/lib/format'
 import { cn } from '@/shared/lib/cn'
-import type { BookingStatus, StaffBooking } from '@/features/admin-bookings/types'
+import type {
+  BookingStatus,
+  ServiceType,
+  StaffBooking,
+} from '@/features/admin-bookings/types'
 
 const STATUS_LABELS: Record<string, string> = {
   DRAFT: 'Черновик',
@@ -56,7 +63,15 @@ const STATUS_TONE: Record<string, string> = {
   NO_SHOW: 'bg-red-50 text-red-700',
 }
 
-type ActionKind = 'status' | 'schedule' | 'station' | 'note' | 'vin' | 'cancel' | null
+type ActionKind =
+  | 'status'
+  | 'schedule'
+  | 'station'
+  | 'service'
+  | 'price'
+  | 'note'
+  | 'cancel'
+  | null
 
 export default function AdminBookingDetailPage() {
   const params = useParams<{ id: string }>()
@@ -91,6 +106,8 @@ export default function AdminBookingDetailPage() {
   const car = (data.car ?? {}) as Record<string, unknown>
   const pkg = (data.service_package_data ?? {}) as Record<string, unknown>
   const station = (data.service_station_data ?? null) as Record<string, unknown> | null
+  // Большинство кнопок гейтятся на can_edit (бэк отдаёт его в permissions).
+  const canEdit = perms.can_edit !== false
 
   return (
     <section className="space-y-6">
@@ -150,7 +167,7 @@ export default function AdminBookingDetailPage() {
           </Card>
 
           <Card className="p-5 md:p-6">
-            <SectionTitle>Пакет услуги</SectionTitle>
+            <SectionTitle>Услуга</SectionTitle>
             <Row
               label="Название"
               value={String(pkg.title ?? data.service_package_title_snapshot ?? '—')}
@@ -242,31 +259,12 @@ export default function AdminBookingDetailPage() {
                 Панель действий
               </p>
               <div className="mt-4 space-y-2">
-                <ActionBtn
-                  label="Изменить статус"
-                  onClick={() => setAction('status')}
-                  disabled={perms.can_change_status === false}
-                />
-                <ActionBtn
-                  label="Назначить дату и время"
-                  onClick={() => setAction('schedule')}
-                  disabled={perms.can_change_schedule === false}
-                />
-                <ActionBtn
-                  label="Изменить СТО"
-                  onClick={() => setAction('station')}
-                  disabled={perms.can_change_station === false}
-                />
-                <ActionBtn
-                  label="Заметка сотрудника"
-                  onClick={() => setAction('note')}
-                  disabled={perms.can_edit_staff_note === false}
-                />
-                <ActionBtn
-                  label="Редактировать VIN"
-                  onClick={() => setAction('vin')}
-                  disabled={perms.can_edit_vin === false}
-                />
+                <ActionBtn label="Изменить статус" onClick={() => setAction('status')} disabled={!canEdit} />
+                <ActionBtn label="Назначить дату и время" onClick={() => setAction('schedule')} disabled={!canEdit} />
+                <ActionBtn label="Изменить СТО" onClick={() => setAction('station')} disabled={!canEdit} />
+                <ActionBtn label="Изменить услугу" onClick={() => setAction('service')} disabled={!canEdit} />
+                <ActionBtn label="Изменить стоимость" onClick={() => setAction('price')} disabled={!canEdit} />
+                <ActionBtn label="Заметка сотрудника" onClick={() => setAction('note')} disabled={!canEdit} />
                 <ActionBtn
                   label="Отменить запись"
                   danger
@@ -274,31 +272,18 @@ export default function AdminBookingDetailPage() {
                   disabled={perms.can_cancel === false}
                 />
               </div>
-              <p className="mt-4 text-[10px] font-medium text-textSecondary/70">
-                «Изменить услугу» и «Изменить стоимость» из макета пока недоступны —
-                бэк не подключил соответствующие эндпоинты.
-              </p>
             </Card>
           </div>
         </aside>
       </div>
 
-      {action === 'status' && (
-        <StatusModal booking={data} onClose={() => setAction(null)} />
-      )}
-      {action === 'schedule' && (
-        <ScheduleModal booking={data} onClose={() => setAction(null)} />
-      )}
-      {action === 'station' && (
-        <StationModal booking={data} onClose={() => setAction(null)} />
-      )}
-      {action === 'note' && (
-        <StaffNoteModal booking={data} onClose={() => setAction(null)} />
-      )}
-      {action === 'vin' && <VinModal booking={data} onClose={() => setAction(null)} />}
-      {action === 'cancel' && (
-        <CancelModal booking={data} onClose={() => setAction(null)} />
-      )}
+      {action === 'status' && <StatusModal booking={data} onClose={() => setAction(null)} />}
+      {action === 'schedule' && <ScheduleModal booking={data} onClose={() => setAction(null)} />}
+      {action === 'station' && <StationModal booking={data} onClose={() => setAction(null)} />}
+      {action === 'service' && <ServiceModal booking={data} onClose={() => setAction(null)} />}
+      {action === 'price' && <PriceModal booking={data} onClose={() => setAction(null)} />}
+      {action === 'note' && <StaffNoteModal booking={data} onClose={() => setAction(null)} />}
+      {action === 'cancel' && <CancelModal booking={data} onClose={() => setAction(null)} />}
     </section>
   )
 }
@@ -371,10 +356,10 @@ function ActionBtn({
   )
 }
 
-// === Модалки действий ===
+// === Модалки действий — все через один PATCH ===
 
 function StatusModal({ booking, onClose }: { booking: StaffBooking; onClose: () => void }) {
-  const mutation = useUpdateStatusMutation(booking.id)
+  const mutation = useUpdateStaffBookingMutation(booking.id)
   const [status, setStatus] = useState<BookingStatus>(booking.status)
   const [comment, setComment] = useState('')
 
@@ -392,7 +377,7 @@ function StatusModal({ booking, onClose }: { booking: StaffBooking; onClose: () 
       </Select>
       <div className="mt-4">
         <Textarea
-          label="Комментарий к изменению"
+          label="Комментарий к изменению (необязательно)"
           rows={3}
           placeholder="Например: клиент подтвердил по телефону…"
           value={comment}
@@ -405,7 +390,10 @@ function StatusModal({ booking, onClose }: { booking: StaffBooking; onClose: () 
         label="Сохранить статус"
         onSubmit={() => {
           mutation.mutate(
-            { status, comment: comment.trim() || undefined },
+            {
+              status,
+              ...(comment.trim() ? { staff_comment: comment.trim() } : {}),
+            },
             {
               onSuccess: () => {
                 toast.success('Статус обновлён')
@@ -421,11 +409,9 @@ function StatusModal({ booking, onClose }: { booking: StaffBooking; onClose: () 
 }
 
 function ScheduleModal({ booking, onClose }: { booking: StaffBooking; onClose: () => void }) {
-  const mutation = useScheduleStaffBookingMutation(booking.id)
+  const mutation = useUpdateStaffBookingMutation(booking.id)
   const initial = booking.scheduled_datetime ?? booking.preferred_datetime ?? ''
-  const initialLocal = initial ? toLocalInputValue(initial) : ''
-  const [dt, setDt] = useState(initialLocal)
-  const [comment, setComment] = useState('')
+  const [dt, setDt] = useState(initial ? toLocalInputValue(initial) : '')
 
   return (
     <Modal open onClose={onClose} size="sm">
@@ -438,14 +424,6 @@ function ScheduleModal({ booking, onClose }: { booking: StaffBooking; onClose: (
         value={dt}
         onChange={(e) => setDt(e.target.value)}
       />
-      <div className="mt-4">
-        <Textarea
-          label="Комментарий (необязательно)"
-          rows={2}
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-        />
-      </div>
       <SubmitRow
         onClose={onClose}
         loading={mutation.isPending}
@@ -453,7 +431,7 @@ function ScheduleModal({ booking, onClose }: { booking: StaffBooking; onClose: (
         disabled={!dt}
         onSubmit={() => {
           mutation.mutate(
-            { scheduled_datetime: fromLocalInputValue(dt), comment: comment.trim() || undefined },
+            { scheduled_datetime: fromLocalInputValue(dt) },
             {
               onSuccess: () => {
                 toast.success('Дата и время назначены')
@@ -469,11 +447,10 @@ function ScheduleModal({ booking, onClose }: { booking: StaffBooking; onClose: (
 }
 
 function StationModal({ booking, onClose }: { booking: StaffBooking; onClose: () => void }) {
-  const mutation = useUpdateStationMutation(booking.id)
-  const { data: stations } = useStaffStationsQuery()
+  const mutation = useUpdateStaffBookingMutation(booking.id)
+  const { data: options, isLoading } = useStaffBookingsOptionsQuery()
   const currentId = (booking.service_station_data as { id?: number } | null)?.id ?? null
   const [stationId, setStationId] = useState<string>(currentId ? String(currentId) : '')
-  const [comment, setComment] = useState('')
 
   return (
     <Modal open onClose={onClose} size="sm">
@@ -484,22 +461,15 @@ function StationModal({ booking, onClose }: { booking: StaffBooking; onClose: ()
         label="Сервисный центр"
         value={stationId}
         onChange={(e) => setStationId(e.target.value)}
+        disabled={isLoading}
       >
         <option value="">— Выберите СТО —</option>
-        {(stations ?? []).map((s) => (
+        {(options?.stations ?? []).map((s) => (
           <option key={s.id} value={s.id}>
-            {s.name} · {s.city}, {s.address}
+            {s.label}
           </option>
         ))}
       </Select>
-      <div className="mt-4">
-        <Textarea
-          label="Комментарий (необязательно)"
-          rows={2}
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-        />
-      </div>
       <SubmitRow
         onClose={onClose}
         loading={mutation.isPending}
@@ -507,7 +477,7 @@ function StationModal({ booking, onClose }: { booking: StaffBooking; onClose: ()
         disabled={!stationId}
         onSubmit={() => {
           mutation.mutate(
-            { service_station_id: Number(stationId), comment: comment.trim() || undefined },
+            { service_station_id: Number(stationId) },
             {
               onSuccess: () => {
                 toast.success('СТО обновлён')
@@ -522,8 +492,163 @@ function StationModal({ booking, onClose }: { booking: StaffBooking; onClose: ()
   )
 }
 
+function ServiceModal({ booking, onClose }: { booking: StaffBooking; onClose: () => void }) {
+  const mutation = useUpdateStaffBookingMutation(booking.id)
+  const { data: options, isLoading } = useStaffBookingsOptionsQuery()
+  const [type, setType] = useState<ServiceType>('PACKAGE')
+  const [packageId, setPackageId] = useState('')
+  const [defaultId, setDefaultId] = useState('')
+  const [search, setSearch] = useState('')
+
+  const filteredPackages = (options?.service_packages ?? []).filter((p) =>
+    p.label.toLowerCase().includes(search.trim().toLowerCase()),
+  )
+
+  return (
+    <Modal open onClose={onClose} size="md">
+      <h2 className="mb-5 text-center text-2xl font-900 uppercase tracking-tight text-textPrimary">
+        Изменить услугу
+      </h2>
+      <Select
+        label="Тип услуги"
+        value={type}
+        onChange={(e) => setType(e.target.value as ServiceType)}
+      >
+        <option value="PACKAGE">Пакет услуги</option>
+        <option value="DEFAULT">Дефолтная услуга</option>
+      </Select>
+
+      {type === 'PACKAGE' && (
+        <>
+          <div className="mt-4">
+            <Input
+              label="Поиск пакета"
+              placeholder="Название, авто..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="mt-3 max-h-[260px] overflow-y-auto rounded-sct border border-borderLight">
+            {isLoading ? (
+              <div className="p-6 text-center"><Spinner /></div>
+            ) : filteredPackages.length === 0 ? (
+              <div className="p-6 text-center text-sm text-textSecondary">Ничего не нашлось.</div>
+            ) : (
+              <ul className="divide-y divide-borderLight">
+                {filteredPackages.slice(0, 50).map((p) => (
+                  <li key={p.id}>
+                    <button
+                      type="button"
+                      onClick={() => setPackageId(String(p.id))}
+                      className={cn(
+                        'flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition-colors hover:bg-surfaceLight',
+                        packageId === String(p.id) && 'bg-blue-50',
+                      )}
+                    >
+                      <span className="min-w-0 truncate font-bold text-textPrimary">{p.label}</span>
+                      {p.price && (
+                        <span className="shrink-0 font-mono text-[12px] font-bold text-brandBlue">
+                          {formatMoney(String(p.price), p.currency ?? 'KZT')}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </>
+      )}
+
+      {type === 'DEFAULT' && (
+        <div className="mt-4">
+          <Select
+            label="Дефолтная услуга"
+            value={defaultId}
+            onChange={(e) => setDefaultId(e.target.value)}
+            disabled={isLoading}
+          >
+            <option value="">— Выберите —</option>
+            {(options?.default_services ?? []).map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.label}
+                {s.price_note ? ` · ${s.price_note}` : ''}
+              </option>
+            ))}
+          </Select>
+        </div>
+      )}
+
+      <SubmitRow
+        onClose={onClose}
+        loading={mutation.isPending}
+        label="Сохранить услугу"
+        disabled={
+          (type === 'PACKAGE' && !packageId) || (type === 'DEFAULT' && !defaultId)
+        }
+        onSubmit={() => {
+          const payload =
+            type === 'PACKAGE'
+              ? { service_type: 'PACKAGE' as const, service_package_id: Number(packageId), default_service_page_id: null }
+              : { service_type: 'DEFAULT' as const, default_service_page_id: Number(defaultId), service_package_id: null }
+          mutation.mutate(payload, {
+            onSuccess: () => {
+              toast.success('Услуга обновлена')
+              onClose()
+            },
+            onError: (e) => toast.error(parseApiError(e, 'Не удалось обновить услугу.').general),
+          })
+        }}
+      />
+    </Modal>
+  )
+}
+
+function PriceModal({ booking, onClose }: { booking: StaffBooking; onClose: () => void }) {
+  const mutation = useUpdateStaffBookingMutation(booking.id)
+  const currentPrice = (booking.price as { final?: string | number } | undefined)?.final ?? ''
+  const [price, setPrice] = useState(String(currentPrice ?? ''))
+
+  return (
+    <Modal open onClose={onClose} size="sm">
+      <h2 className="mb-5 text-center text-2xl font-900 uppercase tracking-tight text-textPrimary">
+        Изменить стоимость
+      </h2>
+      <Input
+        label="Новая итоговая стоимость"
+        type="text"
+        inputMode="decimal"
+        placeholder="15000.00"
+        value={price}
+        onChange={(e) => setPrice(e.target.value.replace(/[^\d.,]/g, '').replace(',', '.'))}
+      />
+      <p className="mt-2 text-[11px] font-medium text-textSecondary">
+        Цена будет зафиксирована как индивидуальный расчёт для этой записи.
+      </p>
+      <SubmitRow
+        onClose={onClose}
+        loading={mutation.isPending}
+        label="Сохранить стоимость"
+        disabled={!price.trim()}
+        onSubmit={() => {
+          mutation.mutate(
+            { price_snapshot: price.trim() },
+            {
+              onSuccess: () => {
+                toast.success('Стоимость обновлена')
+                onClose()
+              },
+              onError: (e) => toast.error(parseApiError(e, 'Не удалось обновить стоимость.').general),
+            },
+          )
+        }}
+      />
+    </Modal>
+  )
+}
+
 function StaffNoteModal({ booking, onClose }: { booking: StaffBooking; onClose: () => void }) {
-  const mutation = useUpdateStaffNoteMutation(booking.id)
+  const mutation = useUpdateStaffBookingMutation(booking.id)
   const [note, setNote] = useState(booking.staff_comment ?? '')
 
   return (
@@ -553,44 +678,6 @@ function StaffNoteModal({ booking, onClose }: { booking: StaffBooking; onClose: 
                 onClose()
               },
               onError: (e) => toast.error(parseApiError(e, 'Не удалось сохранить заметку.').general),
-            },
-          )
-        }}
-      />
-    </Modal>
-  )
-}
-
-function VinModal({ booking, onClose }: { booking: StaffBooking; onClose: () => void }) {
-  const mutation = useUpdateVinMutation(booking.id)
-  const currentVin = ((booking.car as { vin_code?: string } | undefined)?.vin_code ?? '') as string
-  const [vin, setVin] = useState(currentVin)
-
-  return (
-    <Modal open onClose={onClose} size="sm">
-      <h2 className="mb-5 text-center text-2xl font-900 uppercase tracking-tight text-textPrimary">
-        Редактирование VIN
-      </h2>
-      <Input
-        label="VIN-код"
-        placeholder="JTDBR32E720000001"
-        maxLength={17}
-        value={vin}
-        onChange={(e) => setVin(e.target.value.toUpperCase())}
-      />
-      <SubmitRow
-        onClose={onClose}
-        loading={mutation.isPending}
-        label="Сохранить VIN"
-        onSubmit={() => {
-          mutation.mutate(
-            { vin_code: vin.trim() },
-            {
-              onSuccess: () => {
-                toast.success('VIN обновлён')
-                onClose()
-              },
-              onError: (e) => toast.error(parseApiError(e, 'Не удалось обновить VIN.').general),
             },
           )
         }}
@@ -665,13 +752,7 @@ function SubmitRow({
       <Button variant="ghost" fullWidth onClick={onClose} disabled={loading}>
         Отмена
       </Button>
-      <Button
-        variant="primary"
-        fullWidth
-        loading={loading}
-        disabled={disabled}
-        onClick={onSubmit}
-      >
+      <Button variant="primary" fullWidth loading={loading} disabled={disabled} onClick={onSubmit}>
         {label}
       </Button>
     </div>
@@ -687,6 +768,5 @@ function toLocalInputValue(iso: string): string {
 }
 
 function fromLocalInputValue(v: string): string {
-  // Возвращаем ISO с локальным временем (без принудительной TZ). Бэк парсит.
   return new Date(v).toISOString()
 }

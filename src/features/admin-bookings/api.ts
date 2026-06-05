@@ -1,25 +1,20 @@
 /**
  * API-функции админских записей на сервис.
  *
- * Список (`GET /staff/bookings/`) и детальная (`GET .../:id/`), плюс
- * 6 PATCH под отдельные действия: cancel / schedule / staff-note /
- * station / status / vin. Бэк намеренно разделил мутации, чтобы каждая
- * проверяла свои permissions.
- *
- * Используем staffHttp — отдельный axios-инстанс с staff-токеном.
+ * Бэк объединил все действия (status / schedule / station / staff-note /
+ * service / price) в один PATCH-эндпоинт. Cancel остался отдельным POST.
+ * GET /staff/bookings/options/ отдаёт справочники (СТО, пакеты,
+ * default-услуги) для модалок выбора.
  */
 import { staffHttp } from '@/shared/api/staff-http'
 import { endpoints } from '@/shared/api/endpoints'
 import type {
   CancelPayload,
-  SchedulePayload,
   StaffBooking,
+  StaffBookingPatch,
   StaffBookingsListResponse,
+  StaffBookingsOptions,
   StaffBookingsQuery,
-  StaffNotePayload,
-  StationPayload,
-  StatusPayload,
-  VinPayload,
 } from './types'
 
 function pickParams(q?: StaffBookingsQuery): Record<string, string | number> {
@@ -52,73 +47,26 @@ export async function fetchStaffBooking(id: number) {
   return response.data
 }
 
+/**
+ * Универсальный PATCH-апдейт записи. Поддерживает все поля сразу или
+ * частично — статус, даты, СТО, услуга, цена, заметка, и т.д.
+ */
+export async function updateStaffBooking(id: number, payload: StaffBookingPatch) {
+  const response = await staffHttp.patch<StaffBooking>(endpoints.staffBooking(id), payload)
+  return response.data
+}
+
 export async function cancelStaffBooking(id: number, payload: CancelPayload) {
-  const response = await staffHttp.patch<StaffBooking>(
+  const response = await staffHttp.post<StaffBooking>(
     endpoints.staffBookingCancel(id),
     payload,
   )
   return response.data
 }
 
-export async function scheduleStaffBooking(id: number, payload: SchedulePayload) {
-  const response = await staffHttp.patch<StaffBooking>(
-    endpoints.staffBookingSchedule(id),
-    payload,
+export async function fetchStaffBookingsOptions() {
+  const response = await staffHttp.get<StaffBookingsOptions>(
+    endpoints.staffBookingsOptions,
   )
   return response.data
-}
-
-export async function updateStaffBookingStaffNote(
-  id: number,
-  payload: StaffNotePayload,
-) {
-  const response = await staffHttp.patch<StaffBooking>(
-    endpoints.staffBookingStaffNote(id),
-    payload,
-  )
-  return response.data
-}
-
-export async function updateStaffBookingStation(
-  id: number,
-  payload: StationPayload,
-) {
-  const response = await staffHttp.patch<StaffBooking>(
-    endpoints.staffBookingStation(id),
-    payload,
-  )
-  return response.data
-}
-
-export async function updateStaffBookingStatus(id: number, payload: StatusPayload) {
-  const response = await staffHttp.patch<StaffBooking>(
-    endpoints.staffBookingStatus(id),
-    payload,
-  )
-  return response.data
-}
-
-export async function updateStaffBookingVin(id: number, payload: VinPayload) {
-  const response = await staffHttp.patch<StaffBooking>(
-    endpoints.staffBookingVin(id),
-    payload,
-  )
-  return response.data
-}
-
-/**
- * Список филиалов под staff-токеном — для модалки «Изменить СТО».
- * `useServiceStationsQuery` гейтится на клиентском логине, поэтому
- * отдельный запрос с staffHttp.
- */
-export async function fetchStaffStations() {
-  const response = await staffHttp.get<{
-    results: Array<{ id: number; name: string; city: string; address: string }>
-  } | Array<{ id: number; name: string; city: string; address: string }>>(
-    endpoints.serviceStations,
-    { params: { days: 1 } },
-  )
-  const data = response.data
-  if (Array.isArray(data)) return data
-  return data.results ?? []
 }
