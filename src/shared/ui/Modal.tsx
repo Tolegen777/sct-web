@@ -69,22 +69,20 @@ export function Modal({
     >
       <div
         className={cn(
-          'relative w-full rounded-sct-xl bg-white p-6 md:p-8 shadow-2xl animate-fade',
+          // Внешний контейнер — фиксированной max-height, чтобы модалка не
+          // вылезала за экран. Скролл вешаем на внутренний div, чтобы
+          // X-кнопка (top-right) всегда оставалась видимой.
+          'relative flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-sct-xl bg-white shadow-2xl animate-fade',
           sizeClasses[size],
           className,
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        {title && (
-          <h2 className="mb-6 text-2xl font-900 uppercase tracking-tight text-textPrimary">
-            {title}
-          </h2>
-        )}
         <button
           type="button"
           aria-label="Закрыть"
           onClick={onClose}
-          className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-lg text-textSecondary transition-colors hover:bg-surfaceLight hover:text-textPrimary"
+          className="absolute right-4 top-4 z-10 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/80 text-textSecondary backdrop-blur-sm transition-colors hover:bg-surfaceLight hover:text-textPrimary"
         >
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -94,7 +92,14 @@ export function Modal({
             />
           </svg>
         </button>
-        {children}
+        <div className="overflow-y-auto p-6 md:p-8">
+          {title && (
+            <h2 className="mb-6 text-2xl font-900 uppercase tracking-tight text-textPrimary">
+              {title}
+            </h2>
+          )}
+          {children}
+        </div>
       </div>
     </div>,
     document.body,
