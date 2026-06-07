@@ -29,6 +29,18 @@ export default function ServicesPage() {
   // Категория, для которой открыта модалка выбора пакета.
   const [modalCode, setModalCode] = useState<string | null>(null)
 
+  // Разделяем regular_packages на «Спецпредложения» (featured) и «Все услуги».
+  // ВАЖНО: все хуки — ДО любых ранних return (Rules of Hooks). Иначе при
+  // переходе guest→authed (после hydrate) число хуков меняется и React падает
+  // с "Rendered more hooks than during the previous render".
+  const { specials, regulars } = useMemo(() => {
+    const all = data?.regular_packages ?? []
+    return {
+      specials: all.filter((p) => p.is_featured),
+      regulars: all.filter((p) => !p.is_featured),
+    }
+  }, [data])
+
   // Гостю показываем приглашение залогиниться вместо ошибки — query
   // запрос для него не делается (см. usePackagesQuery: enabled: isAuthed).
   if (!isAuthed) {
@@ -39,16 +51,6 @@ export default function ServicesPage() {
       />
     )
   }
-
-  // Разделяем regular_packages на «Спецпредложения» (featured) и «Все услуги».
-  // Если featured пуст — секцию «Спецпредложения» скрываем.
-  const { specials, regulars } = useMemo(() => {
-    const all = data?.regular_packages ?? []
-    return {
-      specials: all.filter((p) => p.is_featured),
-      regulars: all.filter((p) => !p.is_featured),
-    }
-  }, [data])
 
   if (isLoading) {
     return (
