@@ -31,6 +31,16 @@ export function formatMileage(km: number | null | undefined): string {
 }
 
 /**
+ * Объём двигателя: бэк отдаёт целое в см³ (1984, 1986, 2000…). Делим на 1000
+ * без округления до десятых (иначе 1984/1986/1994 сливаются в "2.0 L") и
+ * убираем хвостовые нули: 1984 → "1.984 L", 2000 → "2 L".
+ */
+export function formatEngineVolume(cc: number | null | undefined): string | null {
+  if (cc === null || cc === undefined) return null
+  return `${parseFloat((cc / 1000).toFixed(3))} L`
+}
+
+/**
  * ISO дата → "12 Апр 2026".
  */
 export function formatDate(iso: string | null | undefined): string {

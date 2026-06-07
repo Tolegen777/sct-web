@@ -10,6 +10,7 @@
  * марку+модель, год, название модификации, КПП·привод.
  */
 import { cn } from '@/shared/lib/cn'
+import { formatEngineVolume } from '@/shared/lib/format'
 import type { Mark, Model, Modification } from './types'
 import type { SpecsValues } from './SpecsStep'
 
@@ -32,8 +33,7 @@ export function ConfigSidebar({ mark, model, specs, modification, bodyLabel }: C
       .join(' ') || null
 
   // Характеристики и КПП·привод — из label-полей выбранной модификации.
-  const engineVol =
-    modification?.engine_volume ? `${(modification.engine_volume / 1000).toFixed(1)} L` : null
+  const engineVol = formatEngineVolume(modification?.engine_volume)
   const chars = modification
     ? [modification.fuel_type_label, engineVol].filter(Boolean).join(' ') || null
     : null

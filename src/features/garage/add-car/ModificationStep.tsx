@@ -15,6 +15,7 @@ import { useFiltersQuery, useModificationsQuery } from './queries'
 import { Spinner } from '@/shared/ui/Spinner'
 import { SafeImage } from '@/shared/ui/SafeImage'
 import { cn } from '@/shared/lib/cn'
+import { formatEngineVolume } from '@/shared/lib/format'
 import type { CarsQuery, CodeNameOption, FiltersResponse, Modification } from './types'
 import type { SpecsValues } from './SpecsStep'
 
@@ -72,7 +73,7 @@ export function ModificationStep({
   }))
   const volumeOpts: ChipOption[] = (filters?.engine_volumes ?? []).map((o) => ({
     value: String(o.value),
-    label: `${(o.value / 1000).toFixed(1)} L`,
+    label: formatEngineVolume(o.value) ?? String(o.value),
   }))
   const powerOpts: ChipOption[] = (filters?.horse_powers ?? []).map((o) => ({
     value: String(o.value),
