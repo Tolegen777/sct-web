@@ -1,26 +1,37 @@
 /**
  * Модалка выбора модификации авто для админ-формы пакета.
  *
- * UI: каскадные селекты Марка → Модель → Поколение + дополнительные
- * фильтры (Год, Кузов, Тип двигателя, КПП, Привод) + текстовый поиск.
- * Список модификаций обновляется реактивно по мере выбора.
+ * Источник — ПУБЛИЧНЫЙ конфигуратор `/api/v1/cars/*` (marks → models →
+ * filters → modifications), тот же, что в клиентском флоу добавления авто
+ * (`features/garage/add-car`). Раньше пикер тянул марки из
+ * `/staff_endpoints/cars/cars-list-page-data/` — это список клиентских
+ * гаражей, поэтому в «Марка» попадали только уже добавленные кем-то марки
+ * (бэкендщик заметил «очень мало вариантов марок», 05.06). Теперь каталог
+ * полный (411 марок).
  *
- * Источник: `/staff_endpoints/packages/cars-list-page-data/` (тот же,
- * что использует `AdminCarsPage`) — page-data со списком модификаций
- * клиентского парка + фильтры.
+ * Каскад: Марка → Модель → уточняющие фильтры (Год / Кузов / Поколение /
+ * Топливо / Объём / Мощность / КПП / Привод / Руль) → список модификаций.
+ * Клик по модификации отдаёт её `source_id` — это и есть
+ * `modification_source_id` формы пакета.
  *
- * Триггер: кнопка «Выбрать» рядом с полем; в форме `PackageForm` поле
- * становится read-only, а под ним показывается «человечный» лейбл.
+ * Интерфейс (open / onClose / onSelect) НЕ менялся — `PackageForm` править
+ * не нужно.
  */
 import { useMemo, useState } from 'react'
-import { useAdminCarsList } from '@/features/admin-cars/queries'
+import {
+  useFiltersQuery,
+  useMarksQuery,
+  useModelsQuery,
+  useModificationsQuery,
+} from '@/features/garage/add-car/queries'
+import type { CarsQuery, Mark, Model, Modification } from '@/features/garage/add-car/types'
 import { Modal } from '@/shared/ui/Modal'
-import { Input } from '@/shared/ui/Input'
 import { Select } from '@/shared/ui/Select'
 import { Button } from '@/shared/ui/Button'
 import { Spinner } from '@/shared/ui/Spinner'
+import { SafeImage } from '@/shared/ui/SafeImage'
 import { cn } from '@/shared/lib/cn'
-import type { CarRow } from '@/features/admin-cars/types'
+import { formatEngineVolume } from '@/shared/lib/format'
 
 interface ModificationPickerProps {
   open: boolean
@@ -28,74 +39,117 @@ interface ModificationPickerProps {
   onSelect: (sourceId: string, label: string) => void
 }
 
-interface PickerFilters {
-  search: string
-  mark: string
-  model: string
-  generation: string
-  year: string
-  body_type: string
-  powertrain_type: string
-  transmission_type: string
-  drive_type: string
+const PAGE_SIZE = 20
+
+/** Уточняющие параметры (всё опционально, постепенно сужают выборку). */
+interface Specs {
+  year?: number
+  body_type?: number
+  generation?: number
+  fuel_type?: string
+  engine_volume?: number
+  horse_power?: number
+  transmission_type?: string
+  drive_type?: string
+  steering_wheel_position?: string
 }
 
-const EMPTY: PickerFilters = {
-  search: '',
-  mark: '',
-  model: '',
-  generation: '',
-  year: '',
-  body_type: '',
-  powertrain_type: '',
-  transmission_type: '',
-  drive_type: '',
-}
+const EMPTY_SPECS: Specs = {}
 
-export function ModificationPicker({
-  open,
-  onClose,
-  onSelect,
-}: ModificationPickerProps) {
-  const [filters, setFilters] = useState<PickerFilters>(EMPTY)
+export function ModificationPicker({ open, onClose, onSelect }: ModificationPickerProps) {
+  const [markId, setMarkId] = useState<number | null>(null)
+  const [modelId, setModelId] = useState<number | null>(null)
+  const [specs, setSpecs] = useState<Specs>(EMPTY_SPECS)
   const [page, setPage] = useState(1)
 
-  const setFilter = (patch: Partial<PickerFilters>, resetPage = true) => {
-    setFilters((prev) => ({ ...prev, ...patch }))
-    if (resetPage) setPage(1)
-  }
+  // filters/modifications требуют mark И model — до их выбора не запрашиваем.
+  const ready = markId !== null && modelId !== null
 
-  const query = useMemo(
-    () => ({
-      search: filters.search.trim() || undefined,
-      mark: filters.mark ? Number(filters.mark) : undefined,
-      model: filters.model ? Number(filters.model) : undefined,
-      generation: filters.generation ? Number(filters.generation) : undefined,
-      year: filters.year ? Number(filters.year) : undefined,
-      body_type: filters.body_type ? Number(filters.body_type) : undefined,
-      powertrain_type: filters.powertrain_type || undefined,
-      transmission_type: filters.transmission_type || undefined,
-      drive_type: filters.drive_type || undefined,
-      page,
-      page_size: 20 as const,
-    }),
-    [filters, page],
+  const baseQuery: CarsQuery | null = useMemo(
+    () => (ready ? { mark: markId!, model: modelId!, ...specs } : null),
+    [ready, markId, modelId, specs],
   )
 
-  const { data, isLoading, isFetching } = useAdminCarsList(query)
+  const { data: marksData, isLoading: marksLoading } = useMarksQuery()
+  const { data: modelsData, isLoading: modelsLoading } = useModelsQuery(markId)
+  const { data: filters } = useFiltersQuery(baseQuery)
+  const {
+    data: mods,
+    isLoading: modsLoading,
+    isFetching: modsFetching,
+    isError: modsError,
+  } = useModificationsQuery(baseQuery ? { ...baseQuery, page, page_size: PAGE_SIZE } : null)
 
-  const handleSelect = (row: CarRow) => {
-    const label = `${row.car.mark.name} ${row.car.model.name} — ${row.car.modification.name}`
-    onSelect(row.id, label)
-    onClose()
-  }
+  const marks = marksData?.results ?? []
+  const models = modelsData?.results ?? []
+  const items = mods?.results ?? []
+  const totalPages = mods ? Math.max(1, Math.ceil((mods.count ?? 0) / PAGE_SIZE)) : 1
 
-  const reset = () => {
-    setFilters(EMPTY)
+  const selectedMark = marks.find((m) => m.id === markId) ?? null
+  const selectedModel = models.find((m) => m.id === modelId) ?? null
+
+  const changeMark = (v: string) => {
+    setMarkId(v ? Number(v) : null)
+    setModelId(null)
+    setSpecs(EMPTY_SPECS)
     setPage(1)
   }
 
-  const anyActive = Object.values(filters).some((v) => v !== '')
+  const changeModel = (v: string) => {
+    setModelId(v ? Number(v) : null)
+    setSpecs(EMPTY_SPECS)
+    setPage(1)
+  }
+
+  const setSpec = (patch: Specs) => {
+    setSpecs((prev) => ({ ...prev, ...patch }))
+    setPage(1)
+  }
+
+  const reset = () => {
+    setMarkId(null)
+    setModelId(null)
+    setSpecs(EMPTY_SPECS)
+    setPage(1)
+  }
+
+  const handleSelect = (mod: Modification) => {
+    // full_title — готовый полный лейбл от бэка («Audi | 100 | IV (C4) | …»).
+    // Если его нет — склеиваем из выбранной марки/модели (display_name модели
+    // уже содержит марку, поэтому это только фолбэк).
+    const markName = selectedMark?.display_name || selectedMark?.name || ''
+    const modelName = selectedModel?.display_name || selectedModel?.name || ''
+    const group = mod.group_name ? ` (${mod.group_name})` : ''
+    const label = mod.full_title || `${markName} ${modelName} — ${modTitle(mod)}${group}`.trim()
+    onSelect(mod.source_id, label)
+    onClose()
+  }
+
+  // Опции уточняющих селектов из filters/?mark=&model=&…
+  const yearOpts = (filters?.years ?? []).map((y) => ({ value: y, label: String(y) }))
+  const bodyOpts = (filters?.body_types ?? []).map((b) => ({ value: b.id, label: b.name || b.code }))
+  const genOpts = (filters?.generations ?? []).map((g) => ({
+    value: g.id,
+    label: `${g.display_name}${g.year_from ? ` (${g.year_from}${g.year_to ? `–${g.year_to}` : ''})` : ''}`,
+  }))
+  const fuelOpts = (filters?.fuel_types ?? []).map((f) => ({ value: f.value, label: f.label || f.value }))
+  const volumeOpts = (filters?.engine_volumes ?? []).map((o) => ({
+    value: o.value,
+    label: formatEngineVolume(o.value) ?? String(o.value),
+  }))
+  const powerOpts = (filters?.horse_powers ?? []).map((o) => ({ value: o.value, label: `${o.value} л.с.` }))
+  const transOpts = (filters?.transmission_types ?? []).map((o) => ({
+    value: o.value,
+    label: o.label ?? o.name ?? o.code ?? o.value,
+  }))
+  const driveOpts = (filters?.drive_types ?? []).map((o) => ({
+    value: o.value,
+    label: o.label ?? o.name ?? o.code ?? o.value,
+  }))
+  const steerOpts = (filters?.steering_positions ?? []).map((o) => ({
+    value: o.value,
+    label: o.label ?? o.name ?? o.code ?? o.value,
+  }))
 
   return (
     <Modal open={open} onClose={onClose} size="lg">
@@ -104,128 +158,177 @@ export function ModificationPicker({
           Выбор модификации
         </h2>
         <p className="mt-1.5 text-sm text-textSecondary">
-          Найдите модификацию авто, к которой привязать пакет услуг.
+          Полный каталог авто. Выберите марку и модель, при необходимости уточните фильтрами.
         </p>
       </div>
 
-      {/* Каскадные селекты */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      {/* Марка → Модель */}
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <SelectCol
           label="Марка"
-          value={filters.mark}
-          onChange={(v) =>
-            setFilter({ mark: v, model: '', generation: '', body_type: '', year: '' })
-          }
-          options={data?.filters.marks ?? []}
+          value={markId !== null ? String(markId) : ''}
+          onChange={changeMark}
+          placeholder={marksLoading ? 'Загрузка…' : '— Выберите марку —'}
+          disabled={marksLoading}
+          options={marks.map((m: Mark) => ({
+            value: m.id,
+            label: `${m.display_name || m.name}${m.modifications_count ? ` (${m.modifications_count})` : ''}`,
+          }))}
         />
         <SelectCol
           label="Модель"
-          value={filters.model}
-          onChange={(v) => setFilter({ model: v, generation: '' })}
-          options={data?.filters.models ?? []}
-          disabled={!filters.mark}
+          value={modelId !== null ? String(modelId) : ''}
+          onChange={changeModel}
+          placeholder={
+            markId === null ? 'Сначала марка' : modelsLoading ? 'Загрузка…' : '— Выберите модель —'
+          }
+          disabled={markId === null || modelsLoading}
+          options={models.map((m: Model) => ({
+            value: m.id,
+            label: `${m.display_name || m.name}${m.modifications_count ? ` (${m.modifications_count})` : ''}`,
+          }))}
         />
+      </div>
+
+      {/* Уточняющие фильтры — активны после выбора марки и модели */}
+      <div
+        className={cn(
+          'mt-3 grid grid-cols-2 gap-3 md:grid-cols-4',
+          !ready && 'pointer-events-none opacity-40',
+        )}
+      >
         <SelectCol
-          label="Поколение"
-          value={filters.generation}
-          onChange={(v) => setFilter({ generation: v })}
-          options={data?.filters.generations ?? []}
-          disabled={!filters.model}
-        />
-        <SelectCol
-          label="Год выпуска"
-          value={filters.year}
-          onChange={(v) => setFilter({ year: v })}
-          options={data?.filters.years ?? []}
+          label="Год"
+          value={specs.year !== undefined ? String(specs.year) : ''}
+          onChange={(v) =>
+            setSpec({ year: v ? Number(v) : undefined, body_type: undefined, generation: undefined })
+          }
+          options={yearOpts}
+          disabled={!ready}
         />
         <SelectCol
           label="Кузов"
-          value={filters.body_type}
-          onChange={(v) => setFilter({ body_type: v })}
-          options={data?.filters.body_types ?? []}
+          value={specs.body_type !== undefined ? String(specs.body_type) : ''}
+          onChange={(v) => setSpec({ body_type: v ? Number(v) : undefined, generation: undefined })}
+          options={bodyOpts}
+          disabled={!ready}
         />
         <SelectCol
-          label="Тип двигателя"
-          value={filters.powertrain_type}
-          onChange={(v) => setFilter({ powertrain_type: v })}
-          options={data?.filters.powertrain_types ?? []}
+          label="Поколение"
+          value={specs.generation !== undefined ? String(specs.generation) : ''}
+          onChange={(v) => setSpec({ generation: v ? Number(v) : undefined })}
+          options={genOpts}
+          disabled={!ready}
+        />
+        <SelectCol
+          label="Топливо"
+          value={specs.fuel_type ?? ''}
+          onChange={(v) => setSpec({ fuel_type: v || undefined })}
+          options={fuelOpts}
+          disabled={!ready}
+        />
+        <SelectCol
+          label="Объём"
+          value={specs.engine_volume !== undefined ? String(specs.engine_volume) : ''}
+          onChange={(v) => setSpec({ engine_volume: v ? Number(v) : undefined })}
+          options={volumeOpts}
+          disabled={!ready}
+        />
+        <SelectCol
+          label="Мощность"
+          value={specs.horse_power !== undefined ? String(specs.horse_power) : ''}
+          onChange={(v) => setSpec({ horse_power: v ? Number(v) : undefined })}
+          options={powerOpts}
+          disabled={!ready}
         />
         <SelectCol
           label="КПП"
-          value={filters.transmission_type}
-          onChange={(v) => setFilter({ transmission_type: v })}
-          options={data?.filters.transmission_types ?? []}
+          value={specs.transmission_type ?? ''}
+          onChange={(v) => setSpec({ transmission_type: v || undefined })}
+          options={transOpts}
+          disabled={!ready}
         />
         <SelectCol
           label="Привод"
-          value={filters.drive_type}
-          onChange={(v) => setFilter({ drive_type: v })}
-          options={data?.filters.drive_types ?? []}
+          value={specs.drive_type ?? ''}
+          onChange={(v) => setSpec({ drive_type: v || undefined })}
+          options={driveOpts}
+          disabled={!ready}
+        />
+        <SelectCol
+          label="Руль"
+          value={specs.steering_wheel_position ?? ''}
+          onChange={(v) => setSpec({ steering_wheel_position: v || undefined })}
+          options={steerOpts}
+          disabled={!ready}
         />
       </div>
 
-      <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-12">
-        <div className="md:col-span-9">
-          <Input
-            label="Поиск (необязательно)"
-            placeholder="Toyota, Camry, source_id…"
-            value={filters.search}
-            onChange={(e) => setFilter({ search: e.target.value })}
-          />
-        </div>
-        <div className="flex items-end md:col-span-3">
-          <button
-            type="button"
-            onClick={reset}
-            disabled={!anyActive}
-            className="w-full rounded-sct border border-borderLight bg-white px-4 py-3 text-[11px] font-900 uppercase tracking-widest text-textSecondary transition-colors hover:border-brandBlue hover:text-brandBlue disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Сбросить
-          </button>
-        </div>
+      <div className="mt-3 flex justify-end">
+        <button
+          type="button"
+          onClick={reset}
+          disabled={markId === null}
+          className="rounded-sct border border-borderLight bg-white px-4 py-2 text-[11px] font-900 uppercase tracking-widest text-textSecondary transition-colors hover:border-brandBlue hover:text-brandBlue disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Сбросить
+        </button>
       </div>
 
       {/* Результаты */}
-      <div className="mt-5 max-h-[360px] overflow-y-auto rounded-sct border border-borderLight">
-        {isLoading ? (
+      <div className="mt-4 max-h-[360px] overflow-y-auto rounded-sct border border-borderLight">
+        {!ready ? (
+          <div className="p-10 text-center text-sm font-bold text-textSecondary">
+            Выберите марку и модель, чтобы увидеть модификации.
+          </div>
+        ) : modsLoading ? (
           <div className="flex min-h-[200px] items-center justify-center">
             <Spinner />
           </div>
-        ) : !data || data.results.length === 0 ? (
+        ) : modsError ? (
+          <div className="p-10 text-center text-sm font-bold text-red-700">
+            Не удалось загрузить модификации.
+          </div>
+        ) : items.length === 0 ? (
           <div className="p-10 text-center text-sm font-bold text-textSecondary">
-            Ничего не нашлось. Попробуйте сбросить часть фильтров.
+            Ничего не нашлось. Уберите часть фильтров.
           </div>
         ) : (
-          <ul className={cn('divide-y divide-borderLight', isFetching && 'opacity-60')}>
-            {data.results.map((row) => (
-              <li key={row.id}>
+          <ul className={cn('divide-y divide-borderLight', modsFetching && 'opacity-60')}>
+            {items.map((m) => (
+              <li key={m.id}>
                 <button
                   type="button"
-                  onClick={() => handleSelect(row)}
-                  className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors hover:bg-surfaceLight"
+                  onClick={() => handleSelect(m)}
+                  className="flex w-full items-center gap-4 px-4 py-3 text-left transition-colors hover:bg-surfaceLight"
                 >
+                  <div className="h-12 w-16 shrink-0 overflow-hidden rounded-md border border-borderLight bg-surfaceLight">
+                    <SafeImage
+                      src={m.photo_url ?? undefined}
+                      alt={modTitle(m)}
+                      className="h-full w-full object-cover"
+                      fallback={
+                        <div className="flex h-full w-full items-center justify-center text-[10px] font-900 uppercase text-borderLight">
+                          {modTitle(m).slice(0, 2)}
+                        </div>
+                      }
+                    />
+                  </div>
                   <div className="min-w-0 flex-1">
+                    {m.group_name && (
+                      <p className="truncate text-[10px] font-900 uppercase tracking-widest text-brandBlue">
+                        {m.group_name}
+                      </p>
+                    )}
                     <p className="truncate text-sm font-900 uppercase tracking-tight text-textPrimary">
-                      {row.car.mark.name} {row.car.model.name}
+                      {modTitle(m)}
                     </p>
                     <p className="mt-0.5 truncate text-[11px] font-bold uppercase tracking-tighter text-textSecondary">
-                      {row.car.generation?.display_name && `${row.car.generation.display_name} · `}
-                      {row.car.configuration?.name && `${row.car.configuration.name} · `}
-                      {row.car.modification.name}
+                      {modSub(m)}
                     </p>
                     <p className="mt-1 font-mono text-[10px] text-textSecondary/70">
-                      {row.id}
+                      source_id: {m.source_id}
                     </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1 text-[10px] font-900 uppercase tracking-widest text-textSecondary">
-                    <span className="rounded-md bg-surfaceLight px-2 py-0.5">
-                      {row.clients_count} клиент.
-                    </span>
-                    {row.has_packages && (
-                      <span className="rounded-md border border-green-100 bg-green-50 px-2 py-0.5 text-green-700">
-                        {row.packages_count} пак.
-                      </span>
-                    )}
                   </div>
                 </button>
               </li>
@@ -235,16 +338,16 @@ export function ModificationPicker({
       </div>
 
       {/* Пагинация */}
-      {data && data.pagination.pages > 1 && (
+      {ready && totalPages > 1 && (
         <div className="mt-4 flex items-center justify-between">
           <p className="text-[11px] font-bold uppercase tracking-widest text-textSecondary">
-            Стр. {data.pagination.page} из {data.pagination.pages}
+            Стр. {page} из {totalPages}
           </p>
           <div className="flex gap-2">
             <Button
               size="sm"
               variant="secondary"
-              disabled={!data.pagination.has_previous}
+              disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
               ← Назад
@@ -252,7 +355,7 @@ export function ModificationPicker({
             <Button
               size="sm"
               variant="secondary"
-              disabled={!data.pagination.has_next}
+              disabled={page >= totalPages}
               onClick={() => setPage((p) => p + 1)}
             >
               Вперёд →
@@ -270,31 +373,47 @@ export function ModificationPicker({
   )
 }
 
+function modTitle(m: Modification): string {
+  return m.name || m.full_title || m.display_name || m.title || `Модификация ${m.id}`
+}
+
+function modSub(m: Modification): string {
+  const yearRange =
+    m.year_from || m.year_to ? `${m.year_from ?? ''}${m.year_to ? `–${m.year_to}` : ''}` : null
+  return (
+    [
+      m.configuration_name,
+      yearRange,
+      m.power_display || (m.horse_power ? `${m.horse_power} л.с.` : null),
+      m.transmission_type_label,
+      m.drive_type_label,
+    ]
+      .filter(Boolean)
+      .join(' · ') || `MOD ${m.id}`
+  )
+}
+
 function SelectCol({
   label,
   value,
   options,
   onChange,
   disabled,
+  placeholder,
 }: {
   label: string
   value: string
-  options: Array<{ value: string | number; label: string; count?: number }>
+  options: Array<{ value: string | number; label: string }>
   onChange: (next: string) => void
   disabled?: boolean
+  placeholder?: string
 }) {
   return (
-    <Select
-      label={label}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      disabled={disabled}
-    >
-      <option value="">Все</option>
+    <Select label={label} value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled}>
+      <option value="">{placeholder ?? 'Все'}</option>
       {options.map((o) => (
         <option key={o.value} value={String(o.value)}>
           {o.label}
-          {typeof o.count === 'number' ? ` (${o.count})` : ''}
         </option>
       ))}
     </Select>
