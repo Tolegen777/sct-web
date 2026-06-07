@@ -84,14 +84,22 @@ export interface BookingsListResponse {
   results: Booking[]
 }
 
-/** Payload для POST /create_booking/. Уточнено пробами на бэке. */
+/**
+ * Payload для POST /create_booking/ (сверено со свежей схемой
+ * ClientServiceBookingCreateRequest).
+ *
+ * Услуга — РОВНО одна из двух: `service_package_id` (точный пакет) ИЛИ
+ * `default_service_page_id` (дефолтная услуга). Бэк вернёт 400, если
+ * передать оба или ни одного.
+ */
 export interface CreateBookingPayload {
   client_car_id: number
-  service_package_id: number
+  service_package_id?: number
+  default_service_page_id?: number
   preferred_datetime: string // ISO 8601
-  comment?: string
+  client_comment?: string
   service_station_id?: number // филиал, опционально
-  current_mileage_km?: number // текущий пробег, опционально — добавится в историю
+  current_mileage_km?: number // текущий пробег, опционально
 }
 
 /** Payload для PATCH /bookings/{id}/. Все поля опциональные. */

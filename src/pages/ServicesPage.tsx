@@ -14,6 +14,7 @@ import { usePackagesQuery } from '@/features/packages/queries'
 import { ActiveCarStrip } from '@/features/packages/ActiveCarStrip'
 import { PromoCard } from '@/features/packages/PromoCard'
 import { ServiceCard } from '@/features/packages/ServiceCard'
+import { DefaultServiceCard } from '@/features/packages/DefaultServiceCard'
 import { PackageOptionsModal } from '@/features/packages/PackageOptionsModal'
 import { GuestPrompt } from '@/features/auth/GuestPrompt'
 import { useAuthStore } from '@/features/auth/store'
@@ -100,7 +101,9 @@ export default function ServicesPage() {
   }
 
   const allEmpty =
-    data.promotional_packages.length === 0 && data.regular_packages.length === 0
+    data.promotional_packages.length === 0 &&
+    data.regular_packages.length === 0 &&
+    (data.default_services?.length ?? 0) === 0
 
   return (
     <section className="container-sct space-y-10 py-6 md:py-8">
@@ -143,6 +146,17 @@ export default function ServicesPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {regulars.map((p) => (
               <ServiceCard key={p.id} pkg={p} onChoose={() => setModalCode(p.category.code)} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {(data.default_services?.length ?? 0) > 0 && (
+        <section>
+          <SectionHeader title="Услуги с индивидуальным расчётом" accent="blue" />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {data.default_services!.map((s) => (
+              <DefaultServiceCard key={s.id} service={s} />
             ))}
           </div>
         </section>

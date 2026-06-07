@@ -23,6 +23,8 @@ export const endpoints = {
   // --- Клиент: пакеты ---
   packages: '/api/v1/client_endpoints/packages/',
   package: (id: number) => `/api/v1/client_endpoints/packages/${id}/`,
+  defaultService: (id: number) =>
+    `/api/v1/client_endpoints/packages/default-services/${id}/`,
 
   // --- Клиент: сервисная книжка ---
   serviceBookPageData: '/api/v1/client_endpoints/service-book/page-data/',

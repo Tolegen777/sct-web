@@ -13,7 +13,7 @@
  */
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { usePackageQuery } from '@/features/packages/queries'
+import { usePackageQuery, useDefaultServiceQuery } from '@/features/packages/queries'
 import { useCarsQuery } from '@/features/garage/queries'
 import { useCreateBookingMutation } from '@/features/bookings/queries'
 import { Spinner } from '@/shared/ui/Spinner'
@@ -38,7 +38,10 @@ export default function BookServicePage() {
   const packageId = params.id ? Number(params.id) : undefined
   const [searchParams] = useSearchParams()
 
-  const packageQuery = usePackageQuery(packageId)
+  const isDefault = searchParams.get('type') === 'default'
+  const packageQuery = usePackageQuery(isDefault ? undefined : packageId)
+  const defaultQuery = useDefaultServiceQuery(isDefault ? packageId : undefined)
+  const sourceQuery = isDefault ? defaultQuery : packageQuery
   const carsQuery = useCarsQuery()
   const createMut = useCreateBookingMutation()
 
@@ -66,18 +69,18 @@ export default function BookServicePage() {
     if (target) setSelectedCarId(target.id)
   }, [carsQuery.data, urlCarId, selectedCarId])
 
-  if (packageQuery.isLoading || carsQuery.isLoading) {
+  if (sourceQuery.isLoading || carsQuery.isLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <Spinner />
       </div>
     )
   }
-  if (packageQuery.isError || !packageQuery.data) {
+  if (sourceQuery.isError || !sourceQuery.data) {
     return (
       <section className="container-sct py-12">
         <Card className="p-6 text-center">
-          <p className="font-bold text-red-700">Пакет не найден.</p>
+          <p className="font-bold text-red-700">Услуга не найдена.</p>
           <Link to="/services" className="mt-4 inline-block">
             <Button variant="ghost" size="sm">К услугам</Button>
           </Link>
@@ -103,14 +106,22 @@ export default function BookServicePage() {
     )
   }
 
-  const pkg = packageQuery.data
   const cars = carsQuery.data
   const selectedCar = cars.find((c) => c.id === selectedCarId) ?? null
-  const shortTitle = getPackageShortTitle(pkg)
-  const price = formatMoney(pkg.final_price, pkg.currency)
+
+  // Унифицированная вьюмодель: точный пакет ИЛИ дефолтная услуга.
+  const pkgData = packageQuery.data
+  const dsData = defaultQuery.data
+  const shortTitle = isDefault ? dsData?.title ?? 'Услуга' : getPackageShortTitle(pkgData!)
+  const price = isDefault
+    ? dsData?.price_note || 'Цена рассчитывается индивидуально'
+    : formatMoney(pkgData!.final_price, pkgData!.currency)
+  const imageUrl = isDefault ? undefined : pkgData!.image_url
+  const items = isDefault ? [] : pkgData!.package_items
+  const carFallback = isDefault ? '' : pkgData!.car_title
   const carLine = selectedCar
     ? `${selectedCar.display_name}${selectedCar.license_plate ? ` (${selectedCar.license_plate})` : ''}`
-    : pkg.car_title
+    : carFallback
 
   const stepIdx = STEP_ORDER.indexOf(step)
 
@@ -120,10 +131,12 @@ export default function BookServicePage() {
     try {
       await createMut.mutateAsync({
         client_car_id: selectedCar.id,
-        service_package_id: packageId,
+        ...(isDefault
+          ? { default_service_page_id: packageId }
+          : { service_package_id: packageId }),
         preferred_datetime: localIsoToUtcIso(selectedSlot),
         service_station_id: selectedBranch.id,
-        comment: comment.trim() || undefined,
+        client_comment: comment.trim() || undefined,
       })
       setDone(true)
     } catch (err) {
@@ -147,7 +160,7 @@ export default function BookServicePage() {
           </h1>
           <p className="mx-auto mt-3 max-w-sm text-sm font-medium text-textSecondary">
             Мы ждём вас и ваш{' '}
-            <span className="font-bold text-brandBlue">{selectedCar?.display_name ?? pkg.car_title}</span> на
+            <span className="font-bold text-brandBlue">{selectedCar?.display_name ?? carFallback}</span> на
             выбранном филиале.
           </p>
           <div className="mx-auto mt-8 flex max-w-sm flex-col gap-3">
@@ -184,7 +197,7 @@ export default function BookServicePage() {
           <div className="flex min-w-0 items-center gap-3">
             <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-white/10">
               <SafeImage
-                src={pkg.image_url || undefined}
+                src={imageUrl || undefined}
                 alt={shortTitle}
                 className="h-full w-full object-cover"
                 fallback={<div className="flex h-full w-full items-center justify-center text-white/40">🛠️</div>}
@@ -229,11 +242,12 @@ export default function BookServicePage() {
         )}
         {step === 'confirm' && selectedBranch && selectedSlot && (
           <ConfirmStep
-            items={pkg.package_items}
+            items={items}
             branch={selectedBranch}
             slotIso={selectedSlot}
             comment={comment}
             onCommentChange={setComment}
+            note={isDefault ? price : undefined}
           />
         )}
       </div>
@@ -297,18 +311,26 @@ function ConfirmStep({
   slotIso,
   comment,
   onCommentChange,
+  note,
 }: {
   items: ClientPackageItem[]
   branch: ServiceStation
   slotIso: string
   comment: string
   onCommentChange: (v: string) => void
+  note?: string
 }) {
   return (
     <div>
       <h2 className="mb-5 text-xl font-900 uppercase tracking-tight text-textPrimary md:text-2xl">
         Проверьте детали записи
       </h2>
+
+      {note && (
+        <div className="mb-4 rounded-sct border border-brandYellow/40 bg-brandYellow/10 p-4 text-sm font-medium text-textPrimary">
+          {note}. Точную стоимость менеджер рассчитает после уточнения автомобиля.
+        </div>
+      )}
 
       {items && items.length > 0 && (
         <Card className="overflow-hidden">

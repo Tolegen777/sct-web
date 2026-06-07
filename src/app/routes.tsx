@@ -31,6 +31,7 @@ const ContactsPage = lazy(() => import('@/pages/ContactsPage'))
 const ProfilePage = lazy(() => import('@/pages/ProfilePage'))
 const BookingDetailPage = lazy(() => import('@/pages/BookingDetailPage'))
 const BookServicePage = lazy(() => import('@/pages/BookServicePage'))
+const DefaultServiceDetailPage = lazy(() => import('@/pages/DefaultServiceDetailPage'))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
 
 const StaffLoginPage = lazy(() => import('@/pages/admin/StaffLoginPage'))
@@ -67,6 +68,7 @@ export const router = createBrowserRouter([
           { path: '/garage/add', element: <AddCarPage /> },
           { path: '/garage/edit/:id', element: <EditCarPage /> },
           { path: '/services/:id/book', element: <BookServicePage /> },
+          { path: '/services/default/:id', element: <DefaultServiceDetailPage /> },
           { path: '/bookings/:id', element: <BookingDetailPage /> },
         ],
       },
