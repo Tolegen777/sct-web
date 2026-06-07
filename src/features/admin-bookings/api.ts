@@ -1,18 +1,17 @@
 /**
  * API-функции админских записей на сервис.
  *
- * Бэк объединил все действия (status / schedule / station / staff-note /
- * service / price) в один PATCH-эндпоинт. Cancel остался отдельным POST.
- * GET /staff/bookings/options/ отдаёт справочники (СТО, пакеты,
- * default-услуги) для модалок выбора.
+ * Список — голый массив (бэк игнорирует пагинацию), нормализуем на всякий
+ * случай. Все действия идут одним PATCH /staff/bookings/{id}/; cancel —
+ * отдельным POST. options отдаёт справочники (СТО, пакеты, default-услуги).
  */
 import { staffHttp } from '@/shared/api/staff-http'
 import { endpoints } from '@/shared/api/endpoints'
 import type {
   CancelPayload,
-  StaffBooking,
+  StaffBookingDetail,
+  StaffBookingListRow,
   StaffBookingPatch,
-  StaffBookingsListResponse,
   StaffBookingsOptions,
   StaffBookingsQuery,
 } from './types'
@@ -20,53 +19,44 @@ import type {
 function pickParams(q?: StaffBookingsQuery): Record<string, string | number> {
   if (!q) return {}
   const out: Record<string, string | number> = {}
-  if (q.page) out.page = q.page
-  if (q.page_size) out.page_size = q.page_size
   if (q.status) out.status = q.status
   if (q.search) out.search = q.search
-  if (q.category) out.category = q.category
-  if (q.service_station) out.service_station = q.service_station
   if (q.ordering) out.ordering = q.ordering
   return out
 }
 
-export async function fetchStaffBookings(q?: StaffBookingsQuery) {
-  const response = await staffHttp.get<StaffBookingsListResponse | StaffBooking[]>(
+export async function fetchStaffBookings(q?: StaffBookingsQuery): Promise<StaffBookingListRow[]> {
+  const response = await staffHttp.get<StaffBookingListRow[] | { results?: StaffBookingListRow[] }>(
     endpoints.staffBookings,
     { params: pickParams(q) },
   )
   const data = response.data
-  if (Array.isArray(data)) {
-    return { count: data.length, next: null, previous: null, results: data }
-  }
-  return data
+  return Array.isArray(data) ? data : (data.results ?? [])
 }
 
-export async function fetchStaffBooking(id: number) {
-  const response = await staffHttp.get<StaffBooking>(endpoints.staffBooking(id))
+export async function fetchStaffBooking(id: number): Promise<StaffBookingDetail> {
+  const response = await staffHttp.get<StaffBookingDetail>(endpoints.staffBooking(id))
   return response.data
 }
 
-/**
- * Универсальный PATCH-апдейт записи. Поддерживает все поля сразу или
- * частично — статус, даты, СТО, услуга, цена, заметка, и т.д.
- */
-export async function updateStaffBooking(id: number, payload: StaffBookingPatch) {
-  const response = await staffHttp.patch<StaffBooking>(endpoints.staffBooking(id), payload)
+/** Универсальный PATCH-апдейт записи (любой набор полей сразу). */
+export async function updateStaffBooking(
+  id: number,
+  payload: StaffBookingPatch,
+): Promise<StaffBookingDetail> {
+  const response = await staffHttp.patch<StaffBookingDetail>(endpoints.staffBooking(id), payload)
   return response.data
 }
 
 export async function cancelStaffBooking(id: number, payload: CancelPayload) {
-  const response = await staffHttp.post<StaffBooking>(
+  const response = await staffHttp.post<StaffBookingDetail>(
     endpoints.staffBookingCancel(id),
     payload,
   )
   return response.data
 }
 
-export async function fetchStaffBookingsOptions() {
-  const response = await staffHttp.get<StaffBookingsOptions>(
-    endpoints.staffBookingsOptions,
-  )
+export async function fetchStaffBookingsOptions(): Promise<StaffBookingsOptions> {
+  const response = await staffHttp.get<StaffBookingsOptions>(endpoints.staffBookingsOptions)
   return response.data
 }

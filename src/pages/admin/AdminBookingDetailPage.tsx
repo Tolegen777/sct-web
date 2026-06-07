@@ -1,22 +1,16 @@
 /**
- * Детальная запись на сервис для админа.
+ * Детальная админ-запись (v2, по bookings_detail_v2.html).
  *
- * Бэк объединил все действия в один PATCH /staff/bookings/{id}/, поэтому
- * используется одна универсальная мутация — каждая модалка патчит свой
- * набор полей. Cancel остался отдельным POST.
+ * Единая форма + dirty-diff PATCH: по «Сохранить изменения» сравниваем стейт
+ * с серверным detail и шлём ОДНИМ PATCH только изменённые поля. Быстрые
+ * действия в сайдбаре — мгновенный PATCH статуса. Отмена — отдельный POST,
+ * блок вшит в форму.
  *
- * Опции (СТО, пакеты, default-услуги) — из GET /staff/bookings/options/.
- *
- * Действия из мокапа bookings_detail.html:
- *   - Изменить статус         → { status, staff_comment? }
- *   - Назначить дату и время  → { scheduled_datetime }
- *   - Изменить СТО            → { service_station_id }
- *   - Изменить услугу         → { service_type, service_package_id | default_service_page_id }
- *   - Изменить стоимость      → { price_snapshot }
- *   - Заметка сотрудника      → { staff_comment }
- *   - Отменить запись         → cancel POST
+ * Ограничение API: пробег = только mileage_km (полей источника/комментария
+ * в схеме нет). Время визита редактируем датой+временем → scheduled_datetime.
+ * status_label бэк не отдаёт — ярлык из STATUS_META. Без italic.
  */
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   useCancelStaffBookingMutation,
@@ -29,58 +23,173 @@ import { Button } from '@/shared/ui/Button'
 import { Input } from '@/shared/ui/Input'
 import { Select } from '@/shared/ui/Select'
 import { Textarea } from '@/shared/ui/Textarea'
-import { Modal } from '@/shared/ui/Modal'
 import { Spinner } from '@/shared/ui/Spinner'
 import { toast } from '@/shared/ui/Toast'
 import { parseApiError } from '@/features/auth/errors'
 import { formatDateTime, formatMoney } from '@/shared/lib/format'
 import { cn } from '@/shared/lib/cn'
-import type {
-  BookingStatus,
-  ServiceType,
-  StaffBooking,
-} from '@/features/admin-bookings/types'
+import type { StaffBookingDetail, StaffBookingPatch } from '@/features/admin-bookings/types'
 
-const STATUS_LABELS: Record<string, string> = {
-  DRAFT: 'Черновик',
-  CREATED: 'Создана',
-  CONFIRMED: 'Подтверждена',
-  IN_PROGRESS: 'В работе',
-  COMPLETED: 'Завершена',
-  CANCELLED_BY_CLIENT: 'Отменена клиентом',
-  CANCELLED_BY_STAFF: 'Отменена сотрудником',
-  NO_SHOW: 'Клиент не приехал',
+const STATUS_META: Record<string, { label: string; tone: string }> = {
+  DRAFT: { label: 'Черновик', tone: 'bg-surfaceMuted text-textSecondary' },
+  CREATED: { label: 'Новая', tone: 'bg-blue-50 text-brandBlue' },
+  CONFIRMED: { label: 'Подтверждена', tone: 'bg-green-50 text-green-700' },
+  IN_PROGRESS: { label: 'В работе', tone: 'bg-amber-50 text-amber-700' },
+  COMPLETED: { label: 'Завершена', tone: 'bg-slate-100 text-slate-700' },
+  CANCELLED_BY_CLIENT: { label: 'Отменена клиентом', tone: 'bg-rose-50 text-rose-700' },
+  CANCELLED_BY_STAFF: { label: 'Отменена сотрудником', tone: 'bg-rose-50 text-rose-700' },
+  NO_SHOW: { label: 'Не приехал', tone: 'bg-rose-50 text-rose-700' },
+}
+const STATUS_ORDER = [
+  'DRAFT',
+  'CREATED',
+  'CONFIRMED',
+  'IN_PROGRESS',
+  'COMPLETED',
+  'CANCELLED_BY_CLIENT',
+  'CANCELLED_BY_STAFF',
+  'NO_SHOW',
+]
+
+interface FormState {
+  status: string
+  visit_date: string
+  visit_time: string
+  service_station_id: string
+  service_type: 'PACKAGE' | 'DEFAULT'
+  service_package_id: string
+  default_service_page_id: string
+  mileage_km: string
+  price_snapshot: string
+  staff_comment: string
 }
 
-const STATUS_TONE: Record<string, string> = {
-  DRAFT: 'bg-surfaceMuted text-textSecondary',
-  CREATED: 'bg-blue-50 text-brandBlue',
-  CONFIRMED: 'bg-green-50 text-green-700',
-  IN_PROGRESS: 'bg-amber-50 text-amber-700',
-  COMPLETED: 'bg-green-50 text-green-700',
-  CANCELLED_BY_CLIENT: 'bg-red-50 text-red-700',
-  CANCELLED_BY_STAFF: 'bg-red-50 text-red-700',
-  NO_SHOW: 'bg-red-50 text-red-700',
+function pad(n: number) {
+  return String(n).padStart(2, '0')
+}
+function toDateInput(iso?: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+function toTimeInput(iso?: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+function combineMs(date: string, time: string): number | null {
+  if (!date) return null
+  const d = new Date(`${date}T${time || '00:00'}`)
+  return Number.isNaN(d.getTime()) ? null : d.getTime()
+}
+function combineIso(date: string, time: string): string | null {
+  const ms = combineMs(date, time)
+  return ms === null ? null : new Date(ms).toISOString()
 }
 
-type ActionKind =
-  | 'status'
-  | 'schedule'
-  | 'station'
-  | 'service'
-  | 'price'
-  | 'note'
-  | 'cancel'
-  | null
+function buildForm(d: StaffBookingDetail): FormState {
+  const sched = d.scheduled_datetime ?? d.preferred_datetime ?? null
+  const type = (d.service_type ?? d.service?.type ?? 'PACKAGE') as 'PACKAGE' | 'DEFAULT'
+  return {
+    status: d.status,
+    visit_date: toDateInput(d.scheduled_datetime ?? sched),
+    visit_time: toTimeInput(d.scheduled_datetime ?? sched),
+    service_station_id: String(d.service_station_id ?? d.station_id ?? '' ?? ''),
+    service_type: type === 'DEFAULT' ? 'DEFAULT' : 'PACKAGE',
+    service_package_id: String(d.service_package_id ?? d.service?.service_package_id ?? '' ?? ''),
+    default_service_page_id: String(
+      d.default_service_page_id ?? d.service?.default_service_page_id ?? '' ?? '',
+    ),
+    mileage_km: d.mileage_km != null ? String(d.mileage_km) : '',
+    price_snapshot: d.price_snapshot ?? '',
+    staff_comment: d.staff_comment ?? '',
+  }
+}
+
+/**
+ * Dirty-diff: сравниваем форму с её ЖЕ исходным снапшотом (строка-в-строку),
+ * а не с сырым detail — иначе минутная точность инпута времени даёт ложный
+ * diff против секунд из API.
+ */
+function buildPatch(form: FormState, init: FormState): StaffBookingPatch {
+  const patch: StaffBookingPatch = {}
+
+  if (form.status !== init.status) patch.status = form.status
+
+  if (form.visit_date !== init.visit_date || form.visit_time !== init.visit_time) {
+    patch.scheduled_datetime = combineIso(form.visit_date, form.visit_time)
+  }
+
+  if (form.service_station_id !== init.service_station_id) {
+    patch.service_station_id = form.service_station_id ? Number(form.service_station_id) : null
+  }
+
+  if (
+    form.service_type !== init.service_type ||
+    form.service_package_id !== init.service_package_id ||
+    form.default_service_page_id !== init.default_service_page_id
+  ) {
+    if (form.service_type === 'PACKAGE') {
+      patch.service_type = 'PACKAGE'
+      patch.service_package_id = form.service_package_id ? Number(form.service_package_id) : null
+      patch.default_service_page_id = null
+    } else {
+      patch.service_type = 'DEFAULT'
+      patch.default_service_page_id = form.default_service_page_id
+        ? Number(form.default_service_page_id)
+        : null
+      patch.service_package_id = null
+    }
+  }
+
+  if (form.mileage_km !== init.mileage_km) {
+    patch.mileage_km = form.mileage_km.trim() ? Number(form.mileage_km) : null
+  }
+
+  if (form.price_snapshot !== init.price_snapshot) {
+    patch.price_snapshot = form.price_snapshot.trim() || null
+  }
+
+  if (form.staff_comment !== init.staff_comment) patch.staff_comment = form.staff_comment
+
+  return patch
+}
 
 export default function AdminBookingDetailPage() {
   const params = useParams<{ id: string }>()
   const id = params.id ? Number(params.id) : undefined
   const navigate = useNavigate()
-  const { data, isLoading, isError } = useStaffBookingQuery(id)
-  const [action, setAction] = useState<ActionKind>(null)
 
-  if (isLoading) {
+  const { data, isLoading, isError } = useStaffBookingQuery(id)
+  const { data: options } = useStaffBookingsOptionsQuery()
+  const updateMut = useUpdateStaffBookingMutation(id ?? 0)
+  const cancelMut = useCancelStaffBookingMutation(id ?? 0)
+
+  const [form, setForm] = useState<FormState | null>(null)
+  const [pkgSearch, setPkgSearch] = useState('')
+  const [cancelReason, setCancelReason] = useState('')
+  const initedRef = useRef<number | null>(null)
+  const initialRef = useRef<FormState | null>(null)
+
+  useEffect(() => {
+    if (data && initedRef.current !== data.id) {
+      const f = buildForm(data)
+      setForm(f)
+      initialRef.current = { ...f }
+      initedRef.current = data.id
+    }
+  }, [data])
+
+  const filteredPackages = useMemo(() => {
+    const all = options?.service_packages ?? []
+    const q = pkgSearch.trim().toLowerCase()
+    if (!q) return all.slice(0, 50)
+    return all.filter((p) => p.label.toLowerCase().includes(q)).slice(0, 50)
+  }, [options, pkgSearch])
+
+  if (isLoading || !form) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <Spinner />
@@ -101,13 +210,64 @@ export default function AdminBookingDetailPage() {
     )
   }
 
-  const perms = (data.permissions ?? {}) as Record<string, boolean | unknown>
-  const client = (data.client ?? {}) as Record<string, string | number | null | undefined>
-  const car = (data.car ?? {}) as Record<string, unknown>
-  const pkg = (data.service_package_data ?? {}) as Record<string, unknown>
-  const station = (data.service_station_data ?? null) as Record<string, unknown> | null
-  // Большинство кнопок гейтятся на can_edit (бэк отдаёт его в permissions).
-  const canEdit = perms.can_edit !== false
+  const set = (patch: Partial<FormState>) => setForm((f) => (f ? { ...f, ...patch } : f))
+  const meta = STATUS_META[form.status]
+  const terminal = form.status === 'COMPLETED' || form.status.startsWith('CANCELLED') || form.status === 'NO_SHOW'
+
+  const selectedPkgLabel =
+    options?.service_packages.find((p) => String(p.id) === form.service_package_id)?.label ?? null
+
+  const save = () => {
+    const patch = buildPatch(form, initialRef.current ?? form)
+    if (Object.keys(patch).length === 0) {
+      toast.info('Изменений нет')
+      return
+    }
+    updateMut.mutate(patch, {
+      onSuccess: () => {
+        initialRef.current = { ...form }
+        toast.success('Изменения сохранены')
+      },
+      onError: (e) => toast.error(parseApiError(e, 'Не удалось сохранить.').general),
+    })
+  }
+
+  const quickStatus = (status: string) => {
+    set({ status })
+    updateMut.mutate(
+      { status },
+      {
+        onSuccess: () => {
+          if (initialRef.current) initialRef.current.status = status
+          toast.success('Статус обновлён')
+        },
+        onError: (e) => toast.error(parseApiError(e, 'Не удалось обновить статус.').general),
+      },
+    )
+  }
+
+  const doCancel = () => {
+    cancelMut.mutate(
+      { cancel_reason: cancelReason.trim() || undefined },
+      {
+        onSuccess: () => {
+          set({ status: 'CANCELLED_BY_STAFF' })
+          if (initialRef.current) initialRef.current.status = 'CANCELLED_BY_STAFF'
+          toast.success('Запись отменена')
+          setCancelReason('')
+        },
+        onError: (e) => toast.error(parseApiError(e, 'Не удалось отменить запись.').general),
+      },
+    )
+  }
+
+  const heroDate = form.visit_date
+    ? formatDateTime(combineIso(form.visit_date, form.visit_time) ?? '')
+    : 'Не назначено'
+  const heroStation =
+    options?.stations.find((s) => String(s.id) === form.service_station_id)?.label ??
+    data.station ??
+    'Не выбрано'
 
   return (
     <section className="space-y-6">
@@ -118,226 +278,262 @@ export default function AdminBookingDetailPage() {
         ← К списку записей
       </Link>
 
-      <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="text-3xl font-900 uppercase tracking-tight text-textPrimary md:text-4xl">
-            Запись <span className="text-brandBlue">#{data.id}</span>
-          </h1>
-          <p className="mt-2 text-sm font-medium text-textSecondary">
-            Создана {data.created_at ? formatDateTime(data.created_at) : '—'}
-          </p>
+      {/* Hero */}
+      <div className="rounded-sct-lg bg-navy p-5 text-white md:p-7">
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-[11px] font-900 uppercase tracking-widest text-white/50">
+              Запись · создана {data.created_at ? formatDateTime(data.created_at) : '—'}
+            </p>
+            <h1 className="mt-1 text-3xl font-900 uppercase tracking-tight md:text-4xl">
+              Заявка #{data.id}
+            </h1>
+          </div>
+          <span
+            className={cn(
+              'inline-block self-start rounded-md px-3 py-1.5 text-[11px] font-900 uppercase tracking-widest',
+              meta?.tone ?? 'bg-white/10 text-white',
+            )}
+          >
+            {meta?.label ?? form.status}
+          </span>
         </div>
-        <span
-          className={cn(
-            'inline-block self-start rounded-md px-3 py-1.5 text-[11px] font-900 uppercase tracking-widest',
-            STATUS_TONE[data.status] ?? 'bg-surfaceMuted text-textSecondary',
-          )}
-        >
-          {data.status_label || STATUS_LABELS[data.status] || data.status}
-        </span>
-      </header>
+        <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
+          <HeroCard label="Статус" value={meta?.label ?? form.status} />
+          <HeroCard label="Дата визита" value={heroDate} />
+          <HeroCard label="СТО" value={heroStation} />
+          <HeroCard label="Пробег" value={form.mileage_km ? `${Number(form.mileage_km).toLocaleString('ru-RU')} км` : '—'} />
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Контент */}
+        {/* Форма */}
         <div className="space-y-4 lg:col-span-8">
           <Card className="p-5 md:p-6">
-            <SectionTitle>Клиент</SectionTitle>
-            <Row label="ФИО" value={String(client.full_name ?? '—')} />
-            <Row label="Телефон" value={String(client.phone ?? '—')} mono />
-            <Row label="Email" value={String(client.email ?? '—')} />
+            <SectionTitle>Дата и время визита</SectionTitle>
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Input type="date" label="Дата визита" value={form.visit_date} onChange={(e) => set({ visit_date: e.target.value })} />
+              <Input type="time" label="Время визита" value={form.visit_time} onChange={(e) => set({ visit_time: e.target.value })} />
+            </div>
+            <p className="mt-3 text-[11px] font-medium text-textSecondary">
+              Исходное время клиента:{' '}
+              <span className="font-bold text-textPrimary">
+                {data.preferred_datetime ? formatDateTime(data.preferred_datetime) : '—'}
+              </span>
+            </p>
           </Card>
 
           <Card className="p-5 md:p-6">
-            <SectionTitle>Автомобиль</SectionTitle>
-            <Row label="Название" value={String(car.title ?? data.car_title_snapshot ?? '—')} />
-            <Row
-              label="Госномер"
-              value={String((car.license_plate as string) ?? data.license_plate_snapshot ?? '—')}
-              mono
-            />
-            <Row label="VIN" value={String((car.vin_code as string) ?? '—')} mono />
-            <Row
-              label="Пробег"
-              value={
-                typeof data.current_mileage_km === 'number'
-                  ? `${data.current_mileage_km.toLocaleString('ru-RU')} км`
-                  : '—'
-              }
-            />
+            <SectionTitle>СТО и статус</SectionTitle>
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Select label="Сервисный центр" value={form.service_station_id} onChange={(e) => set({ service_station_id: e.target.value })}>
+                <option value="">— Не выбрано —</option>
+                {(options?.stations ?? []).map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label}
+                  </option>
+                ))}
+              </Select>
+              <Select label="Статус" value={form.status} onChange={(e) => set({ status: e.target.value })}>
+                {STATUS_ORDER.map((s) => (
+                  <option key={s} value={s}>
+                    {STATUS_META[s]?.label ?? s}
+                  </option>
+                ))}
+              </Select>
+            </div>
           </Card>
 
           <Card className="p-5 md:p-6">
             <SectionTitle>Услуга</SectionTitle>
-            <Row
-              label="Название"
-              value={String(pkg.title ?? data.service_package_title_snapshot ?? '—')}
-            />
-            <Row
-              label="Категория"
-              value={String(
-                ((pkg.category as { name?: string } | undefined)?.name as string) ?? '—',
-              )}
-            />
-            <Row
-              label="Цена"
-              value={
-                typeof pkg.final_price === 'string' && pkg.final_price
-                  ? formatMoney(pkg.final_price, (pkg.currency as string) ?? 'KZT')
-                  : '—'
-              }
-              accent
-            />
+            <div className="mt-3">
+              <Select label="Тип услуги" value={form.service_type} onChange={(e) => set({ service_type: e.target.value as 'PACKAGE' | 'DEFAULT' })}>
+                <option value="PACKAGE">Пакет услуги</option>
+                <option value="DEFAULT">Дефолтная услуга</option>
+              </Select>
+            </div>
+
+            {form.service_type === 'PACKAGE' ? (
+              <div className="mt-3">
+                {selectedPkgLabel && (
+                  <p className="mb-2 text-[12px] font-bold text-textPrimary">
+                    Выбрано: <span className="text-brandBlue">{selectedPkgLabel}</span>
+                  </p>
+                )}
+                <Input label="Поиск пакета" placeholder="Название, авто…" value={pkgSearch} onChange={(e) => setPkgSearch(e.target.value)} />
+                <div className="mt-2 max-h-[220px] overflow-y-auto rounded-sct border border-borderLight">
+                  <ul className="divide-y divide-borderLight">
+                    {filteredPackages.map((p) => (
+                      <li key={p.id}>
+                        <button
+                          type="button"
+                          onClick={() => set({ service_package_id: String(p.id) })}
+                          className={cn(
+                            'flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm transition-colors hover:bg-surfaceLight',
+                            form.service_package_id === String(p.id) && 'bg-blue-50',
+                          )}
+                        >
+                          <span className="min-w-0 truncate font-bold text-textPrimary">{p.label}</span>
+                          {p.price != null && (
+                            <span className="shrink-0 font-mono text-[12px] font-bold text-brandBlue">
+                              {formatMoney(String(p.price), p.currency ?? 'KZT')}
+                            </span>
+                          )}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-3">
+                <Select label="Дефолтная услуга" value={form.default_service_page_id} onChange={(e) => set({ default_service_page_id: e.target.value })}>
+                  <option value="">— Выберите —</option>
+                  {(options?.default_services ?? []).map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.label}
+                      {s.price_note ? ` · ${s.price_note}` : ''}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            )}
+
+            <div className="mt-4">
+              <Input
+                label="Индивидуальная цена (price_snapshot)"
+                inputMode="decimal"
+                placeholder="напр. 15000.00"
+                value={form.price_snapshot}
+                onChange={(e) => set({ price_snapshot: e.target.value.replace(/[^\d.,]/g, '').replace(',', '.') })}
+              />
+            </div>
           </Card>
 
           <Card className="p-5 md:p-6">
-            <SectionTitle>План визита</SectionTitle>
-            <Row
-              label="Желаемая дата клиента"
-              value={data.preferred_datetime ? formatDateTime(data.preferred_datetime) : '—'}
-            />
-            <Row
-              label="Назначенное время"
-              value={
-                data.scheduled_datetime
-                  ? formatDateTime(data.scheduled_datetime)
-                  : 'Не назначено'
-              }
-              accent
-            />
-            {data.final_datetime && (
-              <Row label="Финальное время" value={formatDateTime(data.final_datetime)} accent />
-            )}
-            <Row
-              label="СТО"
-              value={
-                station
-                  ? `${(station.name as string) ?? ''}, ${(station.address as string) ?? ''}`
-                  : 'Не выбрана'
-              }
-            />
+            <SectionTitle>Пробег автомобиля</SectionTitle>
+            <div className="mt-3">
+              <Input
+                label="Пробег, км"
+                inputMode="numeric"
+                placeholder="напр. 85000"
+                value={form.mileage_km}
+                onChange={(e) => set({ mileage_km: e.target.value.replace(/[^\d]/g, '') })}
+              />
+            </div>
+            <p className="mt-2 text-[11px] font-medium text-textSecondary">
+              Источник и комментарий пробега бэк пока не принимает — только значение.
+            </p>
           </Card>
 
-          {(data.comment || data.staff_comment) && (
+          <Card className="p-5 md:p-6">
+            <SectionTitle>Заметка сотрудника</SectionTitle>
+            <p className="mb-3 mt-1 text-[11px] font-medium text-textSecondary">Видна только команде, клиент её не видит.</p>
+            <Textarea rows={4} value={form.staff_comment} onChange={(e) => set({ staff_comment: e.target.value })} />
+          </Card>
+
+          {data.comment && (
             <Card className="p-5 md:p-6">
-              <SectionTitle>Комментарии</SectionTitle>
-              {data.comment && (
-                <div className="mt-3">
-                  <p className="text-[10px] font-900 uppercase tracking-widest text-textSecondary">
-                    Комментарий клиента
-                  </p>
-                  <p className="mt-1 whitespace-pre-line rounded-sct border border-borderLight bg-surfaceLight/40 p-3 text-sm text-textPrimary">
-                    {data.comment}
-                  </p>
-                </div>
-              )}
-              {data.staff_comment && (
-                <div className="mt-4">
-                  <p className="text-[10px] font-900 uppercase tracking-widest text-brandBlue">
-                    Заметка сотрудника (видна только команде)
-                  </p>
-                  <p className="mt-1 whitespace-pre-line rounded-sct border border-blue-100 bg-blue-50/40 p-3 text-sm text-textPrimary">
-                    {data.staff_comment}
-                  </p>
-                </div>
-              )}
+              <SectionTitle>Комментарий клиента</SectionTitle>
+              <p className="mt-3 whitespace-pre-line rounded-sct border border-borderLight bg-surfaceLight/40 p-3 text-sm text-textPrimary">
+                {data.comment}
+              </p>
             </Card>
           )}
 
-          {data.cancel_reason && (
-            <Card className="p-5 md:p-6">
-              <SectionTitle>Причина отмены</SectionTitle>
-              <p className="mt-3 whitespace-pre-line text-sm text-red-700">{data.cancel_reason}</p>
-            </Card>
-          )}
+          <div className="flex justify-end">
+            <Button variant="primary" size="lg" loading={updateMut.isPending} onClick={save}>
+              Сохранить изменения
+            </Button>
+          </div>
+
+          {/* Отмена */}
+          <Card className="border-rose-200 p-5 md:p-6">
+            <SectionTitle danger>Отмена заявки</SectionTitle>
+            {data.cancel_reason ? (
+              <p className="mt-3 whitespace-pre-line text-sm text-rose-700">
+                Причина: {data.cancel_reason}
+              </p>
+            ) : (
+              <>
+                <p className="mb-3 mt-1 text-[11px] font-medium text-textSecondary">
+                  Действие нельзя отменить. Укажите причину для истории.
+                </p>
+                <Textarea rows={2} placeholder="Например: клиент попросил отменить запись…" value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} />
+                <div className="mt-3 flex justify-end">
+                  <Button variant="danger" loading={cancelMut.isPending} disabled={form.status.startsWith('CANCELLED')} onClick={doCancel}>
+                    Отменить заявку
+                  </Button>
+                </div>
+              </>
+            )}
+          </Card>
         </div>
 
-        {/* Панель действий */}
+        {/* Сайдбар */}
         <aside className="lg:col-span-4">
-          <div className="space-y-2 lg:sticky lg:top-24">
+          <div className="space-y-4 lg:sticky lg:top-24">
             <Card className="p-5 md:p-6">
-              <p className="text-[10px] font-900 uppercase tracking-widest text-textSecondary">
-                Панель действий
-              </p>
-              <div className="mt-4 space-y-2">
-                <ActionBtn label="Изменить статус" onClick={() => setAction('status')} disabled={!canEdit} />
-                <ActionBtn label="Назначить дату и время" onClick={() => setAction('schedule')} disabled={!canEdit} />
-                <ActionBtn label="Изменить СТО" onClick={() => setAction('station')} disabled={!canEdit} />
-                <ActionBtn label="Изменить услугу" onClick={() => setAction('service')} disabled={!canEdit} />
-                <ActionBtn label="Изменить стоимость" onClick={() => setAction('price')} disabled={!canEdit} />
-                <ActionBtn label="Заметка сотрудника" onClick={() => setAction('note')} disabled={!canEdit} />
-                <ActionBtn
-                  label="Отменить запись"
-                  danger
-                  onClick={() => setAction('cancel')}
-                  disabled={perms.can_cancel === false}
+              <p className="text-[10px] font-900 uppercase tracking-widest text-textSecondary">Сводка</p>
+              <div className="mt-3 space-y-3">
+                <SummaryRow label="Клиент" value={data.client_name || data.client?.name || '—'} />
+                <SummaryRow label="Телефон" value={data.phone || data.client?.phone || '—'} mono />
+                <SummaryRow label="Авто" value={data.car_title || data.car?.title || '—'} />
+                <SummaryRow label="Госномер" value={data.plate || data.car?.license_plate || '—'} mono />
+                <SummaryRow label="Услуга" value={data.service_title || data.service?.title || '—'} />
+                <SummaryRow
+                  label="Цена"
+                  value={data.price_snapshot ? formatMoney(data.price_snapshot, data.currency ?? 'KZT') : data.price ? formatMoney(String(data.price), data.currency ?? 'KZT') : '—'}
+                  accent
                 />
+              </div>
+            </Card>
+
+            <Card className="p-5 md:p-6">
+              <p className="text-[10px] font-900 uppercase tracking-widest text-textSecondary">Быстрые действия</p>
+              <div className="mt-3 space-y-2">
+                <QuickBtn label="Подтвердить заявку" disabled={updateMut.isPending || terminal || form.status === 'CONFIRMED'} onClick={() => quickStatus('CONFIRMED')} />
+                <QuickBtn label="Начать работу" disabled={updateMut.isPending || terminal || form.status === 'IN_PROGRESS'} onClick={() => quickStatus('IN_PROGRESS')} />
+                <QuickBtn label="Завершить заявку" disabled={updateMut.isPending || terminal} onClick={() => quickStatus('COMPLETED')} />
+                <QuickBtn label="Отменить заявку" danger disabled={cancelMut.isPending || form.status.startsWith('CANCELLED')} onClick={() => quickStatus('CANCELLED_BY_STAFF')} />
               </div>
             </Card>
           </div>
         </aside>
       </div>
-
-      {action === 'status' && <StatusModal booking={data} onClose={() => setAction(null)} />}
-      {action === 'schedule' && <ScheduleModal booking={data} onClose={() => setAction(null)} />}
-      {action === 'station' && <StationModal booking={data} onClose={() => setAction(null)} />}
-      {action === 'service' && <ServiceModal booking={data} onClose={() => setAction(null)} />}
-      {action === 'price' && <PriceModal booking={data} onClose={() => setAction(null)} />}
-      {action === 'note' && <StaffNoteModal booking={data} onClose={() => setAction(null)} />}
-      {action === 'cancel' && <CancelModal booking={data} onClose={() => setAction(null)} />}
     </section>
   )
 }
 
-// === Вспомогательные ===
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
+function SectionTitle({ children, danger }: { children: React.ReactNode; danger?: boolean }) {
   return (
-    <p className="text-[10px] font-900 uppercase tracking-widest text-textSecondary">
+    <p className={cn('text-[10px] font-900 uppercase tracking-widest', danger ? 'text-rose-700' : 'text-textSecondary')}>
       {children}
     </p>
   )
 }
 
-function Row({
-  label,
-  value,
-  mono,
-  accent,
-}: {
-  label: string
-  value: string
-  mono?: boolean
-  accent?: boolean
-}) {
+function HeroCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="mt-3 flex items-start justify-between gap-3 text-sm">
-      <span className="text-[10px] font-bold uppercase tracking-widest text-textSecondary">
-        {label}
-      </span>
-      <span
-        className={cn(
-          'text-right',
-          mono && 'font-mono text-[12px]',
-          accent ? 'font-900 text-brandBlue' : 'font-bold text-textPrimary',
-        )}
-      >
+    <div className="rounded-sct bg-white/5 p-3">
+      <p className="text-[10px] font-900 uppercase tracking-widest text-white/40">{label}</p>
+      <p className="mt-1 truncate text-sm font-900 text-white">{value}</p>
+    </div>
+  )
+}
+
+function SummaryRow({ label, value, mono, accent }: { label: string; value: string; mono?: boolean; accent?: boolean }) {
+  return (
+    <div className="flex items-start justify-between gap-3 text-sm">
+      <span className="text-[10px] font-bold uppercase tracking-widest text-textSecondary">{label}</span>
+      <span className={cn('text-right', mono && 'font-mono text-[12px]', accent ? 'font-900 text-brandBlue' : 'font-bold text-textPrimary')}>
         {value}
       </span>
     </div>
   )
 }
 
-function ActionBtn({
-  label,
-  onClick,
-  disabled,
-  danger,
-}: {
-  label: string
-  onClick: () => void
-  disabled?: boolean
-  danger?: boolean
-}) {
+function QuickBtn({ label, onClick, disabled, danger }: { label: string; onClick: () => void; disabled?: boolean; danger?: boolean }) {
   return (
     <button
       type="button"
@@ -345,428 +541,11 @@ function ActionBtn({
       disabled={disabled}
       className={cn(
         'flex w-full items-center justify-between gap-3 rounded-sct border px-4 py-3 text-[12px] font-900 uppercase tracking-widest transition-all disabled:cursor-not-allowed disabled:opacity-40',
-        danger
-          ? 'border-red-200 bg-white text-red-600 hover:bg-red-50'
-          : 'border-borderLight bg-white text-textPrimary hover:border-brandBlue hover:text-brandBlue',
+        danger ? 'border-rose-200 bg-white text-rose-600 hover:bg-rose-50' : 'border-borderLight bg-white text-textPrimary hover:border-brandBlue hover:text-brandBlue',
       )}
     >
       {label}
       <span aria-hidden>→</span>
     </button>
   )
-}
-
-// === Модалки действий — все через один PATCH ===
-
-function StatusModal({ booking, onClose }: { booking: StaffBooking; onClose: () => void }) {
-  const mutation = useUpdateStaffBookingMutation(booking.id)
-  const [status, setStatus] = useState<BookingStatus>(booking.status)
-  const [comment, setComment] = useState('')
-
-  return (
-    <Modal open onClose={onClose} size="sm">
-      <h2 className="mb-5 text-center text-2xl font-900 uppercase tracking-tight text-textPrimary">
-        Изменение статуса
-      </h2>
-      <Select label="Новый статус" value={status} onChange={(e) => setStatus(e.target.value)}>
-        {Object.entries(STATUS_LABELS).map(([v, l]) => (
-          <option key={v} value={v}>
-            {l}
-          </option>
-        ))}
-      </Select>
-      <div className="mt-4">
-        <Textarea
-          label="Комментарий к изменению (необязательно)"
-          rows={3}
-          placeholder="Например: клиент подтвердил по телефону…"
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-        />
-      </div>
-      <SubmitRow
-        onClose={onClose}
-        loading={mutation.isPending}
-        label="Сохранить статус"
-        onSubmit={() => {
-          mutation.mutate(
-            {
-              status,
-              ...(comment.trim() ? { staff_comment: comment.trim() } : {}),
-            },
-            {
-              onSuccess: () => {
-                toast.success('Статус обновлён')
-                onClose()
-              },
-              onError: (e) => toast.error(parseApiError(e, 'Не удалось обновить статус.').general),
-            },
-          )
-        }}
-      />
-    </Modal>
-  )
-}
-
-function ScheduleModal({ booking, onClose }: { booking: StaffBooking; onClose: () => void }) {
-  const mutation = useUpdateStaffBookingMutation(booking.id)
-  const initial = booking.scheduled_datetime ?? booking.preferred_datetime ?? ''
-  const [dt, setDt] = useState(initial ? toLocalInputValue(initial) : '')
-
-  return (
-    <Modal open onClose={onClose} size="sm">
-      <h2 className="mb-5 text-center text-2xl font-900 uppercase tracking-tight text-textPrimary">
-        Назначить дату и время
-      </h2>
-      <Input
-        label="Дата и время визита"
-        type="datetime-local"
-        value={dt}
-        onChange={(e) => setDt(e.target.value)}
-      />
-      <SubmitRow
-        onClose={onClose}
-        loading={mutation.isPending}
-        label="Назначить"
-        disabled={!dt}
-        onSubmit={() => {
-          mutation.mutate(
-            { scheduled_datetime: fromLocalInputValue(dt) },
-            {
-              onSuccess: () => {
-                toast.success('Дата и время назначены')
-                onClose()
-              },
-              onError: (e) => toast.error(parseApiError(e, 'Не удалось назначить время.').general),
-            },
-          )
-        }}
-      />
-    </Modal>
-  )
-}
-
-function StationModal({ booking, onClose }: { booking: StaffBooking; onClose: () => void }) {
-  const mutation = useUpdateStaffBookingMutation(booking.id)
-  const { data: options, isLoading } = useStaffBookingsOptionsQuery()
-  const currentId = (booking.service_station_data as { id?: number } | null)?.id ?? null
-  const [stationId, setStationId] = useState<string>(currentId ? String(currentId) : '')
-
-  return (
-    <Modal open onClose={onClose} size="sm">
-      <h2 className="mb-5 text-center text-2xl font-900 uppercase tracking-tight text-textPrimary">
-        Изменить СТО
-      </h2>
-      <Select
-        label="Сервисный центр"
-        value={stationId}
-        onChange={(e) => setStationId(e.target.value)}
-        disabled={isLoading}
-      >
-        <option value="">— Выберите СТО —</option>
-        {(options?.stations ?? []).map((s) => (
-          <option key={s.id} value={s.id}>
-            {s.label}
-          </option>
-        ))}
-      </Select>
-      <SubmitRow
-        onClose={onClose}
-        loading={mutation.isPending}
-        label="Сохранить СТО"
-        disabled={!stationId}
-        onSubmit={() => {
-          mutation.mutate(
-            { service_station_id: Number(stationId) },
-            {
-              onSuccess: () => {
-                toast.success('СТО обновлён')
-                onClose()
-              },
-              onError: (e) => toast.error(parseApiError(e, 'Не удалось обновить СТО.').general),
-            },
-          )
-        }}
-      />
-    </Modal>
-  )
-}
-
-function ServiceModal({ booking, onClose }: { booking: StaffBooking; onClose: () => void }) {
-  const mutation = useUpdateStaffBookingMutation(booking.id)
-  const { data: options, isLoading } = useStaffBookingsOptionsQuery()
-  const [type, setType] = useState<ServiceType>('PACKAGE')
-  const [packageId, setPackageId] = useState('')
-  const [defaultId, setDefaultId] = useState('')
-  const [search, setSearch] = useState('')
-
-  const filteredPackages = (options?.service_packages ?? []).filter((p) =>
-    p.label.toLowerCase().includes(search.trim().toLowerCase()),
-  )
-
-  return (
-    <Modal open onClose={onClose} size="md">
-      <h2 className="mb-5 text-center text-2xl font-900 uppercase tracking-tight text-textPrimary">
-        Изменить услугу
-      </h2>
-      <Select
-        label="Тип услуги"
-        value={type}
-        onChange={(e) => setType(e.target.value as ServiceType)}
-      >
-        <option value="PACKAGE">Пакет услуги</option>
-        <option value="DEFAULT">Дефолтная услуга</option>
-      </Select>
-
-      {type === 'PACKAGE' && (
-        <>
-          <div className="mt-4">
-            <Input
-              label="Поиск пакета"
-              placeholder="Название, авто..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <div className="mt-3 max-h-[260px] overflow-y-auto rounded-sct border border-borderLight">
-            {isLoading ? (
-              <div className="p-6 text-center"><Spinner /></div>
-            ) : filteredPackages.length === 0 ? (
-              <div className="p-6 text-center text-sm text-textSecondary">Ничего не нашлось.</div>
-            ) : (
-              <ul className="divide-y divide-borderLight">
-                {filteredPackages.slice(0, 50).map((p) => (
-                  <li key={p.id}>
-                    <button
-                      type="button"
-                      onClick={() => setPackageId(String(p.id))}
-                      className={cn(
-                        'flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition-colors hover:bg-surfaceLight',
-                        packageId === String(p.id) && 'bg-blue-50',
-                      )}
-                    >
-                      <span className="min-w-0 truncate font-bold text-textPrimary">{p.label}</span>
-                      {p.price && (
-                        <span className="shrink-0 font-mono text-[12px] font-bold text-brandBlue">
-                          {formatMoney(String(p.price), p.currency ?? 'KZT')}
-                        </span>
-                      )}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </>
-      )}
-
-      {type === 'DEFAULT' && (
-        <div className="mt-4">
-          <Select
-            label="Дефолтная услуга"
-            value={defaultId}
-            onChange={(e) => setDefaultId(e.target.value)}
-            disabled={isLoading}
-          >
-            <option value="">— Выберите —</option>
-            {(options?.default_services ?? []).map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.label}
-                {s.price_note ? ` · ${s.price_note}` : ''}
-              </option>
-            ))}
-          </Select>
-        </div>
-      )}
-
-      <SubmitRow
-        onClose={onClose}
-        loading={mutation.isPending}
-        label="Сохранить услугу"
-        disabled={
-          (type === 'PACKAGE' && !packageId) || (type === 'DEFAULT' && !defaultId)
-        }
-        onSubmit={() => {
-          const payload =
-            type === 'PACKAGE'
-              ? { service_type: 'PACKAGE' as const, service_package_id: Number(packageId), default_service_page_id: null }
-              : { service_type: 'DEFAULT' as const, default_service_page_id: Number(defaultId), service_package_id: null }
-          mutation.mutate(payload, {
-            onSuccess: () => {
-              toast.success('Услуга обновлена')
-              onClose()
-            },
-            onError: (e) => toast.error(parseApiError(e, 'Не удалось обновить услугу.').general),
-          })
-        }}
-      />
-    </Modal>
-  )
-}
-
-function PriceModal({ booking, onClose }: { booking: StaffBooking; onClose: () => void }) {
-  const mutation = useUpdateStaffBookingMutation(booking.id)
-  const currentPrice = (booking.price as { final?: string | number } | undefined)?.final ?? ''
-  const [price, setPrice] = useState(String(currentPrice ?? ''))
-
-  return (
-    <Modal open onClose={onClose} size="sm">
-      <h2 className="mb-5 text-center text-2xl font-900 uppercase tracking-tight text-textPrimary">
-        Изменить стоимость
-      </h2>
-      <Input
-        label="Новая итоговая стоимость"
-        type="text"
-        inputMode="decimal"
-        placeholder="15000.00"
-        value={price}
-        onChange={(e) => setPrice(e.target.value.replace(/[^\d.,]/g, '').replace(',', '.'))}
-      />
-      <p className="mt-2 text-[11px] font-medium text-textSecondary">
-        Цена будет зафиксирована как индивидуальный расчёт для этой записи.
-      </p>
-      <SubmitRow
-        onClose={onClose}
-        loading={mutation.isPending}
-        label="Сохранить стоимость"
-        disabled={!price.trim()}
-        onSubmit={() => {
-          mutation.mutate(
-            { price_snapshot: price.trim() },
-            {
-              onSuccess: () => {
-                toast.success('Стоимость обновлена')
-                onClose()
-              },
-              onError: (e) => toast.error(parseApiError(e, 'Не удалось обновить стоимость.').general),
-            },
-          )
-        }}
-      />
-    </Modal>
-  )
-}
-
-function StaffNoteModal({ booking, onClose }: { booking: StaffBooking; onClose: () => void }) {
-  const mutation = useUpdateStaffBookingMutation(booking.id)
-  const [note, setNote] = useState(booking.staff_comment ?? '')
-
-  return (
-    <Modal open onClose={onClose} size="sm">
-      <h2 className="mb-3 text-center text-2xl font-900 uppercase tracking-tight text-textPrimary">
-        Заметка сотрудника
-      </h2>
-      <p className="mb-5 text-center text-[11px] font-medium text-textSecondary">
-        Видна только команде SCT, клиент её не видит.
-      </p>
-      <Textarea
-        label="Внутренняя заметка"
-        rows={5}
-        value={note}
-        onChange={(e) => setNote(e.target.value)}
-      />
-      <SubmitRow
-        onClose={onClose}
-        loading={mutation.isPending}
-        label="Сохранить заметку"
-        onSubmit={() => {
-          mutation.mutate(
-            { staff_comment: note.trim() },
-            {
-              onSuccess: () => {
-                toast.success('Заметка сохранена')
-                onClose()
-              },
-              onError: (e) => toast.error(parseApiError(e, 'Не удалось сохранить заметку.').general),
-            },
-          )
-        }}
-      />
-    </Modal>
-  )
-}
-
-function CancelModal({ booking, onClose }: { booking: StaffBooking; onClose: () => void }) {
-  const mutation = useCancelStaffBookingMutation(booking.id)
-  const [reason, setReason] = useState('')
-
-  return (
-    <Modal open onClose={onClose} size="sm">
-      <h2 className="mb-3 text-center text-2xl font-900 uppercase tracking-tight text-textPrimary">
-        Отменить запись?
-      </h2>
-      <p className="mb-5 text-center text-sm text-textSecondary">
-        Действие нельзя отменить. Укажите причину для истории.
-      </p>
-      <Textarea
-        label="Причина отмены"
-        rows={3}
-        placeholder="Например: клиент не приехал, перенос на следующую неделю…"
-        value={reason}
-        onChange={(e) => setReason(e.target.value)}
-      />
-      <div className="mt-5 flex gap-3">
-        <Button variant="ghost" fullWidth onClick={onClose} disabled={mutation.isPending}>
-          Не отменять
-        </Button>
-        <Button
-          variant="danger"
-          fullWidth
-          loading={mutation.isPending}
-          onClick={() =>
-            mutation.mutate(
-              { cancel_reason: reason.trim() || undefined },
-              {
-                onSuccess: () => {
-                  toast.success('Запись отменена')
-                  onClose()
-                },
-                onError: (e) =>
-                  toast.error(parseApiError(e, 'Не удалось отменить запись.').general),
-              },
-            )
-          }
-        >
-          Отменить запись
-        </Button>
-      </div>
-    </Modal>
-  )
-}
-
-function SubmitRow({
-  onClose,
-  loading,
-  label,
-  onSubmit,
-  disabled,
-}: {
-  onClose: () => void
-  loading: boolean
-  label: string
-  onSubmit: () => void
-  disabled?: boolean
-}) {
-  return (
-    <div className="mt-5 flex gap-3">
-      <Button variant="ghost" fullWidth onClick={onClose} disabled={loading}>
-        Отмена
-      </Button>
-      <Button variant="primary" fullWidth loading={loading} disabled={disabled} onClick={onSubmit}>
-        {label}
-      </Button>
-    </div>
-  )
-}
-
-// === datetime-local helpers ===
-function toLocalInputValue(iso: string): string {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
-
-function fromLocalInputValue(v: string): string {
-  return new Date(v).toISOString()
 }
