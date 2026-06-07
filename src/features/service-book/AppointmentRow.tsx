@@ -36,7 +36,11 @@ export function AppointmentRow({ appointment, highlighted }: AppointmentRowProps
     appointment.scheduled_datetime ??
     appointment.preferred_datetime
   const { time, date } = splitDateTime(datetime)
-  const title = appointment.service_package.title
+  const svc = appointment.service
+  const isDefault = svc?.source_type === 'default_service_page'
+  const title = svc?.title || appointment.service_package?.title || 'Услуга'
+  const typeLabel = isDefault ? 'Дефолтная услуга' : 'Точный пакет'
+  const priceLabel = svc?.display_price || appointment.service_package?.display_price || ''
   const station = appointment.address?.trim()
   const isHighlighted = highlighted || appointment.is_active
 
@@ -58,6 +62,9 @@ export function AppointmentRow({ appointment, highlighted }: AppointmentRowProps
               </span>
             </div>
             <p className="mt-2 truncate text-base font-900 uppercase tracking-tight">{title}</p>
+            <p className="mt-1 truncate text-[11px] font-bold uppercase tracking-widest text-brandYellow">
+              {typeLabel}{priceLabel ? ` · ${priceLabel}` : ''}
+            </p>
             {station && (
               <p className="mt-0.5 truncate text-[11px] font-bold uppercase tracking-widest text-white/50">
                 {station}
@@ -123,6 +130,9 @@ export function AppointmentRow({ appointment, highlighted }: AppointmentRowProps
             )}
           >
             {title}
+          </p>
+          <p className="mt-1 truncate text-[11px] font-bold uppercase tracking-widest text-textSecondary">
+            {typeLabel}{priceLabel ? ` · ${priceLabel}` : ''}
           </p>
           {station && (
             <p className="mt-0.5 truncate text-[11px] font-bold uppercase tracking-widest text-textSecondary">

@@ -72,7 +72,7 @@ export function HistorySection({ history }: HistorySectionProps) {
                   </div>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-900 uppercase tracking-tight text-textPrimary md:text-base">
-                      {visit.service_package.title}
+                      {visit.service?.title || visit.service_package?.title || 'Услуга'}
                     </p>
                     <p className="mt-0.5 truncate text-[11px] font-bold uppercase tracking-widest text-textSecondary">
                       {station || formatDate(iso)}

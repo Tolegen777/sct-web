@@ -67,7 +67,25 @@ export default function BookingDetailPage() {
 
   const datetime =
     data.final_datetime ?? data.scheduled_datetime ?? data.preferred_datetime
-  const priceDisplay = data.service_package_data.price.display || data.price.display
+
+  // Дискриминатор услуги: пакет ИЛИ дефолтная.
+  const isDefault = data.service_source_type === 'default_service_page'
+  const svc = data.service_data
+  const pkg = data.service_package_data
+  const def = data.default_service_page_data
+  const title = svc?.title || pkg?.title || def?.title || 'Услуга'
+  const typeLabel = isDefault ? 'Дефолтная услуга' : 'Точный пакет'
+  const priceDisplay = isDefault
+    ? def?.price_note || svc?.price?.display || 'Цена рассчитывается индивидуально'
+    : pkg?.price?.display || data.price?.display || svc?.price?.display || '—'
+  const descShort = isDefault ? def?.short_description : pkg?.short_description
+  const descFull = isDefault ? def?.description : pkg?.description
+  const detailId = svc?.id ?? (isDefault ? def?.id : pkg?.id)
+  const detailHref = detailId
+    ? isDefault
+      ? `/services/default/${detailId}`
+      : `/services/${detailId}`
+    : null
 
   return (
     <section className="container-sct max-w-[920px] space-y-6 py-8 md:py-12">
@@ -85,10 +103,13 @@ export default function BookingDetailPage() {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
             <StatusBadge status={data.status} label={data.status_label} />
+            <span className="rounded-full bg-surfaceMuted px-2.5 py-1 text-[10px] font-900 uppercase tracking-widest text-textSecondary">
+              {typeLabel}
+            </span>
             <span className="font-mono text-xs text-textSecondary">Запись #{data.id}</span>
           </div>
           <h1 className="mt-3 text-3xl font-900 uppercase leading-tight tracking-tight text-textPrimary md:text-4xl">
-            {data.service_package_data.title}
+            {title}
           </h1>
         </div>
       </header>
@@ -140,28 +161,30 @@ export default function BookingDetailPage() {
         </div>
       </Card>
 
-      {/* Описание пакета */}
-      <Card className="p-6">
-        <p className="text-[10px] font-900 uppercase tracking-widest text-textSecondary">
-          О пакете
-        </p>
-        {data.service_package_data.short_description && (
-          <p className="mt-2 text-sm font-medium leading-relaxed text-textSecondary">
-            {data.service_package_data.short_description}
+      {/* Описание услуги */}
+      {(descShort || descFull || detailHref) && (
+        <Card className="p-6">
+          <p className="text-[10px] font-900 uppercase tracking-widest text-textSecondary">
+            {isDefault ? 'Об услуге' : 'О пакете'}
           </p>
-        )}
-        {data.service_package_data.description && (
-          <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-textPrimary">
-            {data.service_package_data.description}
-          </p>
-        )}
-        <Link
-          to={`/services/${data.service_package_data.id}`}
-          className="mt-4 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-brandBlue hover:underline"
-        >
-          Подробнее о пакете →
-        </Link>
-      </Card>
+          {descShort && (
+            <p className="mt-2 text-sm font-medium leading-relaxed text-textSecondary">{descShort}</p>
+          )}
+          {descFull && (
+            <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-textPrimary">
+              {descFull}
+            </p>
+          )}
+          {detailHref && (
+            <Link
+              to={detailHref}
+              className="mt-4 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-brandBlue hover:underline"
+            >
+              {isDefault ? 'Подробнее об услуге →' : 'Подробнее о пакете →'}
+            </Link>
+          )}
+        </Card>
+      )}
 
       {/* Комментарии */}
       {(data.comment || data.staff_comment) && (

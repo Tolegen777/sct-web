@@ -70,7 +70,7 @@ export function AppointmentCard({ appointment, highlighted }: AppointmentCardPro
             tone === 'dark' ? 'text-white' : 'text-textSecondary',
           )}
         >
-          {appointment.service_package.title}
+          {appointment.service?.title || appointment.service_package?.title || 'Услуга'}
         </p>
         <div
           className={cn(
@@ -85,10 +85,12 @@ export function AppointmentCard({ appointment, highlighted }: AppointmentCardPro
               <span className="font-mono">{appointment.car.license_plate}</span>
             </>
           )}
-          {appointment.service_package.display_price && (
+          {(appointment.service?.display_price || appointment.service_package?.display_price) && (
             <>
               <span className="h-1 w-1 rounded-full bg-current opacity-50" />
-              <span>{appointment.service_package.display_price}</span>
+              <span>
+                {appointment.service?.display_price || appointment.service_package?.display_price}
+              </span>
             </>
           )}
         </div>

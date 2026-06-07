@@ -112,7 +112,16 @@ export function EditBookingModal({ open, onClose, booking }: EditBookingModalPro
       <div className="mb-5 grid grid-cols-1 gap-2 rounded-sct border border-borderLight bg-surfaceLight/50 p-4 md:grid-cols-3">
         <SummaryField label="Текущая дата" value={currentDateLabel} />
         <SummaryField label="Текущий филиал" value={currentStation} />
-        <SummaryField label="Услуга" value={booking.service_package_data.title} compact />
+        <SummaryField
+          label="Услуга"
+          value={
+            booking.service_data?.title ||
+            booking.service_package_data?.title ||
+            booking.default_service_page_data?.title ||
+            '—'
+          }
+          compact
+        />
       </div>
 
       {/* Вкладки редактирования. На мобиле — горизонтальный скролл с

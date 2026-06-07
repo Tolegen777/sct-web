@@ -119,6 +119,17 @@ export interface AppointmentPackage {
   display_price: string
 }
 
+/** Унифицированный объект услуги визита (пакет ИЛИ дефолтная). */
+export interface AppointmentService {
+  source_type?: 'service_package' | 'default_service_page' | string
+  id?: number
+  title?: string
+  slug?: string
+  price?: string | null
+  currency?: string
+  display_price?: string
+}
+
 export interface AppointmentUrls {
   detail_api: string
   edit_api: string
@@ -141,7 +152,9 @@ export interface Appointment {
   can_cancel: boolean
   can_repeat: boolean
   car: AppointmentCarRef
-  service_package: AppointmentPackage
+  /** Унифицированный объект услуги (пакет ИЛИ дефолтная). */
+  service?: AppointmentService | null
+  service_package?: AppointmentPackage | null
   urls: AppointmentUrls
 }
 

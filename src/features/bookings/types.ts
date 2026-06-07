@@ -39,6 +39,26 @@ export interface BookingPackageData {
   has_promotion: boolean
 }
 
+/** Унифицированный объект услуги записи (service_data) — пакет ИЛИ дефолтная. */
+export interface BookingServiceData {
+  source_type?: 'service_package' | 'default_service_page' | string
+  id?: number
+  title?: string
+  slug?: string
+  price?: MoneyValue | null
+}
+
+/** Данные дефолтной услуги в записи (default_service_page_data). */
+export interface BookingDefaultServiceData {
+  id?: number
+  title?: string
+  slug?: string
+  short_description?: string
+  description?: string
+  price_note?: string
+  price?: MoneyValue | null
+}
+
 export interface BookingPermissions {
   can_edit: boolean
   can_cancel: boolean
@@ -69,8 +89,13 @@ export interface Booking {
   cancel_reason: string
   current_mileage_km: number | null
   car: BookingCarRef
-  service_package_data: BookingPackageData
-  service_station_data: unknown // пока всегда null — филиалы в работе
+  /** Дискриминатор услуги: 'service_package' | 'default_service_page'. */
+  service_source_type?: 'service_package' | 'default_service_page' | string
+  /** Унифицированный объект услуги (есть и для пакета, и для дефолтной). */
+  service_data?: BookingServiceData | null
+  service_package_data?: BookingPackageData | null
+  default_service_page_data?: BookingDefaultServiceData | null
+  service_station_data?: unknown
   permissions: BookingPermissions
   actions: BookingActions
   created_at: string
