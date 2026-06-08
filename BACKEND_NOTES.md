@@ -9,6 +9,38 @@
 
 ---
 
+## 🔵 Статус на 08.06.2026 (для синка)
+
+### Закрыто бэком (спасибо!) — фронт подключил
+- Клиентский `POST /service-book/bookings/{id}/cancel/` и `PATCH .../{id}/` — работают.
+- Default-services: `GET /client_endpoints/packages/default-services/{id}/` +
+  `default_service_page_id` в `create_booking` — подключено. Прим.: фронт шлёт
+  `client_comment` (не `comment` — раньше комментарий клиента терялся).
+- Staff bookings: один `PATCH /staff_endpoints/bookings/{id}/`, `options`, `cancel`,
+  голый массив списка + фильтры/поиск/`ordering` — подключено (Bookings v2).
+- Запись клиента: дискриминатор `service_data {source_type,id,title,price}` —
+  «Мои записи» показывают и пакеты, и дефолтные услуги.
+
+### Ждём / вопросы
+1. **Telegram VIN-заявки** — все пути 404 на демо (`telegram_vehicle_requests/`
+   и варианты), в `/api/schema/` нет. Раздел `/admin/telegram` собран НА СТАТИКЕ.
+   Нужно: точные пути (список/детальная/действия), на каком стенде задеплоено,
+   пример ответа. Или открыть `/api/schema/`.
+2. **`GET /api/schema/` → 403** даже со staff-токеном. Откройте — фронт автогенерит
+   типы и перестанет угадывать пути.
+3. **Сортировка staff-bookings**: фронт шлёт `ordering` (`id, created_at,
+   client__full_name, client_car__license_plate, preferred_date,
+   service_station__name`). Подтвердите, что на демо это уже активно.
+4. **Пробег записи**: PATCH принимает только `mileage_km`. Полей
+   `mileage_recorded_at / mileage_source / mileage_comment` нет (в мокапе v2 есть).
+   Добавлять или убрать из дизайна?
+5. **`status_label`** у staff-bookings = `null` (у клиента заполнен) — фронт мапит
+   сам, но лучше заполнять и для staff.
+6. Без изменений (см. ниже): `PATCH /auth/profile/` (405), `/reviews/`,
+   password-reset, публичный `/packages/` для гостя, S3-лого.
+
+---
+
 ## 1. Расхождения OpenAPI ↔ реальный ответ
 
 Все эти места сейчас на фронте обработаны костылями (cast, нормализация).

@@ -34,52 +34,77 @@ Django + DRF + JWT.
 
 ---
 
-## Где мы остановились (27 мая 2026)
+## Где мы остановились (08.06.2026)
 
-### Готово (51 задача в TaskList)
+Большая сессия — много фич сделано и **запушено в `main`** (Vercel автодеплоит).
+Главный урок: реальный API сильно расходится с OpenAPI — всё сверялось
+live-curl'ом. Свежий `Template.yaml` лежит в корне (untracked, новее 01.06).
 
-Полный клиентский ЛК + админка пакетов + админка авто. Основной флоу
-«регистрация → добавление авто → выбор пакета → запись с филиалом и
-датой → просмотр в сервисной книжке → редактирование» работает E2E.
+### Сделано и в проде (эта сессия)
+- **ModificationPicker** (форма пакета, `admin-packages/edit-form`) — брал марки
+  из гаражного списка → мало вариантов. Переключён на публичный конфигуратор
+  `cars/marks→models→filters→modifications` (переиспользует `garage/add-car`),
+  отдаёт `modification_source_id`.
+- **Объём двигателя** — `formatEngineVolume` в `shared/lib/format.ts` (деление
+  без `.toFixed(1)`, иначе 1984/1986/1994 сливались в «2.0 L»). Применён в
+  `ModificationStep`, `ConfigSidebar`, `ModificationPicker`.
+- **Default-services (клиент)** — fallback-услуги, когда точного пакета нет:
+  блок «Услуги с индивидуальным расчётом» на `/services`, `DefaultServiceCard`,
+  `DefaultServiceDetailPage` (`/services/default/:id`), ветка `?type=default` в
+  `BookServicePage` (шлёт `default_service_page_id`). Фича в `features/packages`.
+  Endpoint: `GET /client_endpoints/packages/default-services/{id}/` (detail-by-id).
+- **Унификация detail-страниц** — `PackageDetailPage` + `DefaultServiceDetailPage`
+  одно семейство (hero+пиллы+3 мини-карточки+липкий сайдбар) по Figma
+  (`service_screens_figma/`, `service_html_files/`).
+- **Bookings v2 (админка)** — `AdminBookingsPage` (hero-стат-фильтры, поиск,
+  плоский маппинг, сортировка колонок через серверный `ordering`) +
+  `AdminBookingDetailPage` (единая **dirty-diff** форма: сравнение с исходным
+  снапшотом формы, не с сырыми данными). Типы `features/admin-bookings`.
+- **«Мои записи»** — дискриминатор услуги в записях клиента: поле `service_data`
+  `{source_type,id,title,price}` (+ `service_source_type`, `service_package_data`,
+  `default_service_page_data`). Учтён в `AppointmentRow/AppointmentCard/
+  HistorySection/BookingDetailPage`. Фикс: `BookingDetailPage` падал на
+  дефолтной записи (жёстко читал `service_package_data.title`, а он null).
+- **Telegram VIN (админ)** — раздел «VIN-заявки», `/admin/telegram[/:id]`
+  (`features/admin-telegram`, `pages/admin/AdminTelegramRequests*`).
+  ⚠️ **НА СТАТИКЕ** (`features/admin-telegram/api.ts` — мок-массив + TODO).
+  Бэк-API ещё не задеплоен (404). Подключение = заменить тело 2 fetch-функций
+  в `api.ts`, страницы не трогать.
+- **Фиксы:** `comment→client_comment` в create_booking (комментарий клиента
+  терялся); hooks-order краш на `/services` (`useMemo` стоял ПОСЛЕ
+  `if(!isAuthed) return`); клик по всей строке админ-списков (записи/авто).
 
-Доп. фичи: маска телефона, Error Boundary, Toast-уведомления, Skeleton
-вместо Spinner на главных страницах, Mobile bottom-bar, защита для
-BLOCKED-клиента, выпадающее меню профиля, 2GIS-карта филиалов,
-красивая 404.
+### Ключевые факты по реальному API (сверено live)
+- Staff bookings list/detail — **ПЛОСКИЕ** (`client_name, plate, car_title,
+  service_title, mileage_km, station`). `status_label` у staff = null (ярлык
+  держит фронт через `STATUS_META`), у клиента — заполнен.
+- Staff PATCH (`PatchedStaffBookingUpdateRequest`) принимает только `mileage_km`
+  — полей `mileage_recorded_at/source/comment` в API **НЕТ** (мокап v2 их рисует,
+  но собрать нельзя).
+- Статусы booking: `DRAFT/CREATED/CONFIRMED/IN_PROGRESS/COMPLETED/
+  CANCELLED_BY_CLIENT/CANCELLED_BY_STAFF/NO_SHOW` (мокап с `NEW`/`CANCELED_*`
+  врёт — брать коды из API).
+- Демо-клиент **`+77010000012`** (`string`) — авто С пакетами + записи: на нём
+  тестировать пакетную деталь и «Мои записи». `+77010000001` — только дефолты.
 
-Дизайн обновлён по `new_screens/SCT админка/*.png` — тёмный navy
-хедер/футер, двух- → одно-колоночная главная, переименованные шаги
-конфигуратора авто, и т.д.
+### Заблокировано / ждём бэк (детали в BACKEND_NOTES)
+- **Telegram VIN API** — все пути 404 на демо, в схеме нет. Раздел на статике.
+  Ждём точные пути / открытия `/api/schema/`.
+- `GET /api/schema/` — всё ещё 403 (даже со staff-токеном).
+- **Сортировка записей** — фронт шлёт `ordering`, но live НЕ проверено (бэк
+  сказал «добавил»). Если порядок не меняется в проде — серверная сортировка
+  не активна на стенде, переключить на клиентскую.
+- `PATCH /auth/profile/` (405), `/reviews/`, password-reset, публичный
+  `/packages/` для гостя, S3-лого — без изменений.
+- ✅ Уже РАБОТАЕТ (раньше «заблокировано»): клиентский cancel + PATCH bookings,
+  default-services.
 
-### В работе сейчас (открытые вопросы)
-
-Пользователь тестирует и присылает замечания пачками. Последняя пачка
-(28 мая) — на главной не хватает секций «Спецпредложения», «Популярные
-услуги», «Предстоящие визиты», «История» — **это уже сделано в этой
-сессии** (см. последние коммиты или `src/features/home/*`).
-
-**Открытые пункты, ждут скринов от пользователя:**
-
-1. **AddCarPage — панель «Конфигурация и VIN код»** — не уверен где она
-   в дизайне (sidebar / отдельный экран / поле). Жду скрин.
-2. **AddCarPage — логика шагов «Поколение» и «Характеристики»** —
-   в дизайне они могут быть разделены логически (сейчас у меня оба на
-   одном `SpecsStep`). Жду скрин.
-3. **Несколько вариантов главной от дизайнера** — ПМ обещал, что когда
-   дизайнер определится с финальным вариантом, скажет. Пока ничего не
-   меняем по главной (есть две альтернативы).
-
-### Заблокировано (см. BACKEND_NOTES для деталей)
-
-- `POST /bookings/{id}/cancel/` отсутствует
-- `POST /auth/password-reset/{request,verify,confirm}/` отсутствуют
-- `PATCH /auth/profile/` возвращает 405
-- `GET/POST /reviews/` отсутствуют
-- `GET /packages/` и `/service_stations/` требуют JWT (должны быть public)
-- `GET /api/schema/` всё ещё 403
-- S3-бакет картинок закрыт
-
-Все они уже в шорт-листе `BACKEND_NOTES.md → ## Шорт-лист к следующему синку`.
+### Verify-нюанс
+Прогон через **Claude Preview MCP** (`.claude/launch.json` уже создан, untracked).
+Логин инъекцией JWT в localStorage: клиент — `sct_client_access/refresh`, стафф —
+`sct_staff_access/refresh` (см. `shared/api/token-storage.ts`), затем
+`location.href='/нужный-роут'` (AuthBootstrap.hydrate поднимет сессию).
+⚠️ Пользователь просил dev-сервер лишний раз НЕ гонять — жрёт токены.
 
 ---
 
@@ -115,6 +140,8 @@ src/
 │   ├── service-stations/
 │   ├── admin-packages/
 │   ├── admin-cars/
+│   ├── admin-bookings/  — staff-записи v2 (плоские типы, dirty-diff)
+│   ├── admin-telegram/  — VIN-заявки (СТАТИКА, ждёт реальный API)
 │   └── home/
 └── shared/
     ├── api/       — http клиенты, endpoints, типы
@@ -147,7 +174,8 @@ src/
 
 | Роль   | Логин                | Пароль   |
 |--------|----------------------|----------|
-| Клиент | `+77010000001`       | `string` |
+| Клиент | `+77010000001`       | `string` | (только дефолт-услуги, без пакетов)
+| Клиент | `+77010000012`       | `string` | (есть пакеты + записи — для тестов)
 | Стафф  | `admin_staff`        | `string` |
 
 Клиентский логин — модалка с главной (`/?modal=login`).
