@@ -9,7 +9,7 @@
  * status_label бэк не отдаёт — ярлык из STATUS_META.
  */
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useStaffBookingsQuery } from '@/features/admin-bookings/queries'
 import { Card } from '@/shared/ui/Card'
 import { Input } from '@/shared/ui/Input'
@@ -239,16 +239,18 @@ function timeCell(r: StaffBookingListRow): { text: string; muted: boolean } {
 }
 
 function BookingRow({ r }: { r: StaffBookingListRow }) {
+  const navigate = useNavigate()
   const t = timeCell(r)
   return (
-    <tr className="cursor-pointer hover:bg-surfaceLight/50">
+    <tr
+      className="cursor-pointer hover:bg-surfaceLight/50"
+      onClick={() => navigate(`/admin/bookings/${r.id}`)}
+    >
       <td className="px-5 py-4">
-        <Link to={`/admin/bookings/${r.id}`} className="block">
-          <p className="font-900 text-textPrimary">#{r.id}</p>
-          <span className="mt-1 inline-block">
-            <StatusPill status={r.status} label={r.status_label} />
-          </span>
-        </Link>
+        <p className="font-900 text-textPrimary">#{r.id}</p>
+        <span className="mt-1 inline-block">
+          <StatusPill status={r.status} label={r.status_label} />
+        </span>
       </td>
       <td className="px-5 py-4">
         <p className="font-bold text-textPrimary">{r.client_name || '—'}</p>

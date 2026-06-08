@@ -10,7 +10,7 @@
  * Фильтры в URL, чтобы можно было поделиться ссылкой на выборку.
  */
 import { useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAdminCarsList } from '@/features/admin-cars/queries'
 import { Spinner } from '@/shared/ui/Spinner'
 import { Card } from '@/shared/ui/Card'
@@ -338,6 +338,7 @@ function StatsRow({
 }
 
 function ResultsTable({ items, loading }: { items: CarRow[]; loading: boolean }) {
+  const navigate = useNavigate()
   if (items.length === 0) {
     return (
       <div className="p-10 text-center">
@@ -365,6 +366,7 @@ function ResultsTable({ items, loading }: { items: CarRow[]; loading: boolean })
             <tr
               key={row.id}
               className="cursor-pointer transition-colors hover:bg-surfaceLight/60"
+              onClick={() => navigate(`/admin/cars/${encodeURIComponent(row.id)}`)}
             >
               <td className="px-6 py-4 font-mono text-[10px] font-bold text-textSecondary">
                 #{row.modification_id}
@@ -408,12 +410,9 @@ function ResultsTable({ items, loading }: { items: CarRow[]; loading: boolean })
                 )}
               </td>
               <td className="px-6 py-4 text-right">
-                <Link
-                  to={`/admin/cars/${encodeURIComponent(row.id)}`}
-                  className="text-[11px] font-bold uppercase tracking-widest text-brandBlue hover:underline"
-                >
+                <span className="text-[11px] font-bold uppercase tracking-widest text-brandBlue">
                   →
-                </Link>
+                </span>
               </td>
             </tr>
           ))}
