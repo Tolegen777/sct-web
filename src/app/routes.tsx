@@ -42,6 +42,10 @@ const AdminCarsPage = lazy(() => import('@/pages/admin/AdminCarsPage'))
 const AdminCarDetailPage = lazy(() => import('@/pages/admin/AdminCarDetailPage'))
 const AdminBookingsPage = lazy(() => import('@/pages/admin/AdminBookingsPage'))
 const AdminBookingDetailPage = lazy(() => import('@/pages/admin/AdminBookingDetailPage'))
+const AdminTelegramRequestsPage = lazy(() => import('@/pages/admin/AdminTelegramRequestsPage'))
+const AdminTelegramRequestDetailPage = lazy(
+  () => import('@/pages/admin/AdminTelegramRequestDetailPage'),
+)
 
 export const router = createBrowserRouter([
   {
@@ -99,6 +103,8 @@ export const router = createBrowserRouter([
       { path: 'cars/:sourceId', element: <AdminCarDetailPage /> },
       { path: 'bookings', element: <AdminBookingsPage /> },
       { path: 'bookings/:id', element: <AdminBookingDetailPage /> },
+      { path: 'telegram', element: <AdminTelegramRequestsPage /> },
+      { path: 'telegram/:id', element: <AdminTelegramRequestDetailPage /> },
     ],
   },
 ])

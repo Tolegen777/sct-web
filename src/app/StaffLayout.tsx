@@ -14,6 +14,7 @@ import { cn } from '@/shared/lib/cn'
 
 const nav = [
   { to: '/admin/bookings', label: 'Записи' },
+  { to: '/admin/telegram', label: 'VIN-заявки' },
   { to: '/admin/packages', label: 'Пакеты услуг' },
   { to: '/admin/cars', label: 'Автомобили' },
 ]
