@@ -165,7 +165,7 @@ export default function AdminBookingsPage() {
                     <SortTh label="Автомобиль" field="client_car__license_plate" ordering={ordering} onSort={sort} />
                     <th className="px-5 py-3">Услуга</th>
                     <th className="px-5 py-3">Цена</th>
-                    <SortTh label="Время" field="preferred_date" ordering={ordering} onSort={sort} />
+                    <SortTh label="Время" field="preferred_date_time" ordering={ordering} onSort={sort} />
                     <SortTh label="СТО" field="service_station__name" ordering={ordering} onSort={sort} />
                     <SortTh label="Создана" field="created_at" ordering={ordering} onSort={sort} />
                   </tr>
