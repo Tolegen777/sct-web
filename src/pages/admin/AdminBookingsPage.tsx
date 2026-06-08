@@ -50,10 +50,16 @@ function rowTimeIso(r: StaffBookingListRow): string | null {
 }
 
 export default function AdminBookingsPage() {
-  const { data, isLoading, isError, refetch } = useStaffBookingsQuery()
   const [bucket, setBucket] = useState<Bucket>('all')
   const [search, setSearch] = useState('')
   const [serviceType, setServiceType] = useState<string>('')
+  // Серверная сортировка (ordering) — поля по инструкции бэка.
+  const [ordering, setOrdering] = useState('')
+  const { data, isLoading, isError, refetch } = useStaffBookingsQuery({
+    ordering: ordering || undefined,
+  })
+  const sort = (field: string) =>
+    setOrdering((prev) => (prev === field ? `-${field}` : prev === `-${field}` ? field : field))
 
   const rows = useMemo(() => data ?? [], [data])
 
@@ -154,14 +160,14 @@ export default function AdminBookingsPage() {
               <table className="w-full text-left text-sm">
                 <thead className="bg-surfaceLight text-[10px] font-900 uppercase tracking-widest text-textSecondary">
                   <tr>
-                    <th className="px-5 py-3">Заявка</th>
-                    <th className="px-5 py-3">Клиент</th>
-                    <th className="px-5 py-3">Автомобиль</th>
+                    <SortTh label="Заявка" field="id" ordering={ordering} onSort={sort} />
+                    <SortTh label="Клиент" field="client__full_name" ordering={ordering} onSort={sort} />
+                    <SortTh label="Автомобиль" field="client_car__license_plate" ordering={ordering} onSort={sort} />
                     <th className="px-5 py-3">Услуга</th>
                     <th className="px-5 py-3">Цена</th>
-                    <th className="px-5 py-3">Время</th>
-                    <th className="px-5 py-3">СТО</th>
-                    <th className="px-5 py-3">Создана</th>
+                    <SortTh label="Время" field="preferred_date" ordering={ordering} onSort={sort} />
+                    <SortTh label="СТО" field="service_station__name" ordering={ordering} onSort={sort} />
+                    <SortTh label="Создана" field="created_at" ordering={ordering} onSort={sort} />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-borderLight">
@@ -180,6 +186,35 @@ export default function AdminBookingsPage() {
         )}
       </Card>
     </section>
+  )
+}
+
+function SortTh({
+  label,
+  field,
+  ordering,
+  onSort,
+}: {
+  label: string
+  field: string
+  ordering: string
+  onSort: (field: string) => void
+}) {
+  const dir = ordering === field ? '↑' : ordering === `-${field}` ? '↓' : ''
+  return (
+    <th className="px-5 py-3">
+      <button
+        type="button"
+        onClick={() => onSort(field)}
+        className={cn(
+          'inline-flex items-center gap-1 uppercase tracking-widest transition-colors hover:text-brandBlue',
+          dir && 'text-brandBlue',
+        )}
+      >
+        {label}
+        {dir && <span>{dir}</span>}
+      </button>
+    </th>
   )
 }
 
