@@ -63,6 +63,7 @@ export default function AdminCarDetailPage() {
   const servicePackages = d.service_packages ?? { results: [] }
   const related = d.related_modifications ?? { results: [] }
   const clientCars = d.client_cars ?? {}
+  const compatibleParts = d.compatible_parts ?? { results: [], total: 0, has_parts: false }
   const meta = d.meta ?? {}
 
   return (
@@ -141,7 +142,7 @@ export default function AdminCarDetailPage() {
       </Card>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-5">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4 md:gap-5">
         <StatCard
           label="Клиентских авто"
           value={clientCars.total ?? 0}
@@ -151,6 +152,11 @@ export default function AdminCarDetailPage() {
           label="Активных пакетов"
           value={servicePackages.total ?? 0}
           accent="border-l-green-500"
+        />
+        <StatCard
+          label="Совместимых запчастей"
+          value={compatibleParts.total ?? 0}
+          accent="border-l-sky-500"
         />
         <StatCard
           label="Родственных модификаций"
@@ -281,6 +287,92 @@ export default function AdminCarDetailPage() {
         )}
       </Card>
 
+      {/* Совместимые запчасти */}
+      <Card className="overflow-hidden">
+        <header className="flex items-center justify-between border-b border-borderLight bg-surfaceLight px-6 py-4">
+          <div>
+            <h3 className="text-xl font-900 uppercase tracking-tight">
+              Совместимые запчасти
+            </h3>
+            <p className="mt-1 text-[11px] font-medium text-textSecondary">
+              Позиции, используемые в пакетах для этой модификации · всего:{' '}
+              {compatibleParts.total ?? 0}
+            </p>
+          </div>
+        </header>
+
+        {compatibleParts.has_parts && compatibleParts.results?.length > 0 ? (
+          <>
+            {/* Desktop table */}
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-surfaceLight text-[10px] font-900 uppercase tracking-widest text-textSecondary">
+                  <tr>
+                    <th className="px-6 py-3">Наименование</th>
+                    <th className="px-5 py-3">Код</th>
+                    <th className="px-5 py-3">Категория</th>
+                    <th className="px-5 py-3">Используется в пакетах</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-borderLight">
+                  {compatibleParts.results.map((part: CompatiblePart) => (
+                    <tr key={part.id} className="align-top transition-colors hover:bg-surfaceLight/60">
+                      <td className="px-6 py-3.5">
+                        <p className="font-bold text-textPrimary">{part.name}</p>
+                        {part.article && (
+                          <p className="mt-0.5 text-[11px] font-medium text-textSecondary/70">
+                            Артикул: {part.article}
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5 font-mono text-[12px] text-textSecondary">
+                        {part.display_code ?? part.article ?? '—'}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        {part.category?.name ? (
+                          <span className="rounded-md bg-sky-50 px-2 py-0.5 text-[10px] font-900 uppercase tracking-widest text-sky-700">
+                            {part.category.name}
+                          </span>
+                        ) : (
+                          <span className="text-textSecondary/50">—</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <PartPackages packages={part.used_in_packages} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile cards */}
+            <ul className="divide-y divide-borderLight md:hidden">
+              {compatibleParts.results.map((part: CompatiblePart) => (
+                <li key={part.id} className="px-5 py-4">
+                  <p className="text-sm font-bold text-textPrimary">{part.name}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] font-medium text-textSecondary">
+                    <span className="font-mono">{part.display_code ?? part.article ?? '—'}</span>
+                    {part.category?.name && (
+                      <span className="rounded-md bg-sky-50 px-2 py-0.5 text-[10px] font-900 uppercase tracking-widest text-sky-700">
+                        {part.category.name}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-2">
+                    <PartPackages packages={part.used_in_packages} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <div className="p-8 text-center text-sm font-bold text-textSecondary">
+            Совместимых запчастей пока нет.
+          </div>
+        )}
+      </Card>
+
       {/* Родственные модификации */}
       {related.results?.length > 0 && (
         <Card className="overflow-hidden">
@@ -334,6 +426,51 @@ export default function AdminCarDetailPage() {
         </div>
       </Card>
     </section>
+  )
+}
+
+/** Запчасть из compatible_parts.results (плоский дедуплицированный список). */
+interface CompatiblePartPackage {
+  id: number
+  title: string
+  slug?: string
+  quantity?: string
+  unit_price?: string
+  final_total?: string
+  currency?: string
+}
+interface CompatiblePart {
+  id: number
+  name: string
+  article?: string
+  display_code?: string
+  item_type?: string
+  category?: { id: number; name: string }
+  used_in_packages?: CompatiblePartPackage[]
+}
+
+function PartPackages({ packages }: { packages?: CompatiblePartPackage[] }) {
+  if (!packages || packages.length === 0) {
+    return <span className="text-[11px] text-textSecondary/50">—</span>
+  }
+  return (
+    <ul className="space-y-1">
+      {packages.map((pkg) => (
+        <li key={pkg.id}>
+          <Link
+            to={`/admin/packages/${pkg.id}`}
+            className="inline-flex items-baseline gap-1.5 text-[12px] font-medium text-brandBlue hover:underline"
+          >
+            <span className="line-clamp-1 max-w-[280px]">{pkg.title}</span>
+            {pkg.quantity != null && (
+              <span className="shrink-0 text-[10px] font-bold text-textSecondary/70">
+                ×{Number(pkg.quantity)}
+              </span>
+            )}
+          </Link>
+        </li>
+      ))}
+    </ul>
   )
 }
 

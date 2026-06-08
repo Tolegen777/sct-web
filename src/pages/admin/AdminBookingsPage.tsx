@@ -161,7 +161,7 @@ export default function AdminBookingsPage() {
                 <thead className="bg-surfaceLight text-[10px] font-900 uppercase tracking-widest text-textSecondary">
                   <tr>
                     <SortTh label="Заявка" field="id" ordering={ordering} onSort={sort} />
-                    <SortTh label="Клиент" field="client__full_name" ordering={ordering} onSort={sort} />
+                    <th className="px-5 py-3">Клиент</th>
                     <SortTh label="Автомобиль" field="client_car__license_plate" ordering={ordering} onSort={sort} />
                     <th className="px-5 py-3">Услуга</th>
                     <th className="px-5 py-3">Цена</th>
