@@ -20,7 +20,7 @@ import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useServiceBookQuery } from '@/features/service-book/queries'
 import { CarHeroCompact } from '@/features/service-book/CarHeroCompact'
-// import { RecommendationStrip } from '@/features/service-book/RecommendationStrip'
+import { RecommendationStrip } from '@/features/service-book/RecommendationStrip'
 import { BookServiceCTA } from '@/features/service-book/BookServiceCTA'
 import { AppointmentRow } from '@/features/service-book/AppointmentRow'
 import { HistorySection } from '@/features/service-book/HistorySection'
@@ -96,7 +96,7 @@ export default function ServiceBookPage() {
         <div className="space-y-5 lg:col-span-8 lg:space-y-6">
           <CarHeroCompact car={data.selected_car} />
 
-          {/*<RecommendationStrip nextServiceDate={data.summary.next_service_date} />*/}
+          <RecommendationStrip recommendation={data.service_recommendations?.engine_oil} />
 
           <BookServiceCTA />
 

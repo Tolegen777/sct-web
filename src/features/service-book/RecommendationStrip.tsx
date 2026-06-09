@@ -1,20 +1,23 @@
 /**
- * Горизонтальная плашка рекомендации сервиса.
+ * Горизонтальная плашка рекомендации сервиса (по дизайну).
  *
  * Лёгкая, single-line: иконка слева → подпись «Рекомендация сервиса /
- * следующая замена масла в ДВС» → справа крупно «59 000 км» (значение).
+ * следующая замена масла в ДВС» → справа крупно пробег следующей замены
+ * («14 000 км»). Бэк отдаёт рекомендацию в service_recommendations.engine_oil
+ * (последняя замена + interval_km).
  *
- * Если бэк не отдал next_service_date — компонент не рендерим.
+ * Если рекомендации нет (например, не было прошлой замены) — не рендерим.
  */
 import { Card } from '@/shared/ui/Card'
-import { formatDate } from '@/shared/lib/format'
+import { formatMileage } from '@/shared/lib/format'
+import type { EngineOilRecommendation } from './types'
 
 interface RecommendationStripProps {
-  nextServiceDate: string | null
+  recommendation: EngineOilRecommendation | null | undefined
 }
 
-export function RecommendationStrip({ nextServiceDate }: RecommendationStripProps) {
-  if (!nextServiceDate) return null
+export function RecommendationStrip({ recommendation }: RecommendationStripProps) {
+  if (!recommendation || recommendation.next_service_mileage_km == null) return null
   return (
     <Card className="flex items-center justify-between gap-4 border-blue-100 bg-blue-50/40 px-5 py-4 md:px-6">
       <div className="flex items-center gap-4">
@@ -30,15 +33,20 @@ export function RecommendationStrip({ nextServiceDate }: RecommendationStripProp
         </div>
         <div>
           <p className="text-[10px] font-900 uppercase tracking-widest text-brandBlue">
-            Рекомендация сервиса
+            {recommendation.title || 'Рекомендация сервиса'}
           </p>
           <p className="mt-0.5 text-[12px] font-bold uppercase tracking-tight text-textSecondary">
             Следующая замена масла в ДВС
           </p>
+          {recommendation.last_service_mileage_km != null && (
+            <p className="mt-0.5 text-[10px] text-textSecondary/70">
+              последняя замена — {formatMileage(recommendation.last_service_mileage_km)}
+            </p>
+          )}
         </div>
       </div>
       <p className="text-right text-xl font-900 leading-none tracking-tighter text-brandBlue md:text-2xl">
-        {formatDate(nextServiceDate)}
+        {formatMileage(recommendation.next_service_mileage_km)}
       </p>
     </Card>
   )

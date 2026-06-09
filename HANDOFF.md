@@ -98,6 +98,10 @@ live-curl'ом. Свежий `Template.yaml` лежит в корне (untracked
   (нормализация/опечатки на бэке). `edit-form/api.ts → searchPackageItems`.
 - **Краткое описание акции** — `PromoCard` на `/services` показывает
   `short_description` пакета.
+- **Рекомендация замены масла** — бэк отдаёт `service_recommendations.engine_oil`
+  (`next_service_mileage_km` + готовый `message`). `RecommendationStrip` на
+  КНИЖКЕ снова включён и показывает пробег; на главной чип/плашка тоже по
+  пробегу (фолбэк на дату, если рекомендации нет). Проверено на `+77010000012`.
 - **SearchableSelect** (`shared/ui/`) — новый combobox с поиском по вводу;
   применён ко всем селектам `ModificationPicker` (411 марок → ввод «toyo»).
 - Свежая схема: `Template.yaml` в корне обновлён (6033 строки, untracked).

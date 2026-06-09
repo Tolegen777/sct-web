@@ -31,6 +31,11 @@
   с фронта. Если они нужны по дизайну — скажите, добавим обратно.
 - **Поиск товаров пакета** — `/staff_endpoints/packages/package-items/search/`
   (`?q=&limit=`, fuzzy + нормализация) подключён в составе пакета.
+- **Рекомендация замены масла** — `service-book/page-data` отдаёт новый блок
+  `service_recommendations.engine_oil` (`next_service_mileage_km`,
+  `last_service_mileage_km`, `interval_km`, готовый `message`). Подключено:
+  `RecommendationStrip` (КНИЖКА) + чип/плашка на главной показывают пробег
+  следующей замены вместо даты.
 
 ### Ждём / вопросы
 1. **`GET /api/schema/` → 403** даже со staff-токеном. Откройте — фронт автогенерит
@@ -45,11 +50,7 @@
    Добавлять или убрать из дизайна?
 4. **`status_label`** у staff-bookings = `null` (у клиента заполнен) — фронт мапит
    сам, но лучше заполнять и для staff.
-5. **`next_service_mileage_km`** (рекомендация замены масла) — в ответе
-   `service-book/page-data/` пока не приходит (проверял на клиенте без
-   завершённых замен). Подтвердите, что поле деплоится — фронт готов показать
-   пробег в `RecommendationStrip` вместо даты.
-6. Без изменений (см. ниже): `PATCH /auth/profile/` (405), `/reviews/`,
+5. Без изменений (см. ниже): `PATCH /auth/profile/` (405), `/reviews/`,
    password-reset, публичный `/packages/` для гостя, S3-лого.
 
 ---

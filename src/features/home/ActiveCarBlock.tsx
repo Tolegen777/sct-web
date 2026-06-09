@@ -68,6 +68,7 @@ export function ActiveCarBlock() {
   }
 
   const car = data.selected_car
+  const oilRec = data.service_recommendations?.engine_oil
   const nextVisitDt =
     data.next_appointment?.final_datetime ??
     data.next_appointment?.scheduled_datetime ??
@@ -152,9 +153,11 @@ export function ActiveCarBlock() {
             <SpecChip
               label="Замена масла в ДВС"
               value={
-                data.summary.next_service_date
-                  ? formatDate(data.summary.next_service_date)
-                  : '—'
+                oilRec?.next_service_mileage_km != null
+                  ? formatMileage(oilRec.next_service_mileage_km)
+                  : data.summary.next_service_date
+                    ? formatDate(data.summary.next_service_date)
+                    : '—'
               }
             />
             <SpecChip
@@ -165,11 +168,13 @@ export function ActiveCarBlock() {
           </div>
 
           {/* Рекомендация-плашка */}
-          {data.summary.next_service_date && (
+          {oilRec?.message ? (
+            <RecommendationStrip message={oilRec.message} />
+          ) : data.summary.next_service_date ? (
             <RecommendationStrip
-              recommendationDate={data.summary.next_service_date}
+              message={`К ${formatDate(data.summary.next_service_date)} желательно заменить масло в двигателе`}
             />
-          )}
+          ) : null}
         </div>
       </div>
     </Card>
@@ -202,14 +207,13 @@ function SpecChip({
   )
 }
 
-function RecommendationStrip({ recommendationDate }: { recommendationDate: string }) {
+function RecommendationStrip({ message }: { message: string }) {
   return (
     <div className="mt-5 flex flex-col items-start gap-3 rounded-sct border-l-4 border-brandYellow bg-brandYellow/15 p-3 md:flex-row md:items-center md:justify-between md:p-4">
       <div className="flex items-start gap-3">
         <div className="mt-0.5 text-xl">⏳</div>
         <p className="text-[12px] font-bold uppercase tracking-tight text-textPrimary">
-          К <span className="text-brandBlue">{formatDate(recommendationDate)}</span> желательно заменить
-          <span className="text-brandBlue"> масло в двигателе</span>.
+          {message}
         </p>
       </div>
       <Link

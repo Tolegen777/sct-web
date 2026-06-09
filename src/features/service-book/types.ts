@@ -197,11 +197,33 @@ export interface ServiceBookMeta {
   has_more: boolean
 }
 
+/**
+ * Рекомендация сервиса (бэк добавил 10.06). Сейчас единственная —
+ * замена масла в ДВС: пробег последней замены + interval_km.
+ * Блок приходит как service_recommendations.engine_oil в page-data.
+ */
+export interface EngineOilRecommendation {
+  type: string
+  title: string
+  /** Готовый текст: «Следующая замена масла в ДВС на 14000 км». */
+  message: string
+  category_id: number | null
+  interval_km: number | null
+  last_appointment_id: number | null
+  last_service_mileage_km: number | null
+  next_service_mileage_km: number | null
+}
+
+export interface ServiceRecommendations {
+  engine_oil?: EngineOilRecommendation | null
+}
+
 export interface ServiceBookPageData {
   page_state: PageState
   client: ClientInfo
   cars: ServiceBookCar[]
   selected_car: ServiceBookCar | null
+  service_recommendations?: ServiceRecommendations | null
   summary: ServiceBookSummary
   next_appointment: Appointment | null
   appointments: Appointment[]
