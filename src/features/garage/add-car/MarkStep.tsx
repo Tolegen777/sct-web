@@ -18,7 +18,7 @@ interface MarkStepProps {
   onSelect: (mark: Mark) => void
 }
 
-const FALLBACK_LIMIT = 8
+const INITIAL_LIMIT = 10
 
 export function MarkStep({ selectedMarkId, onSelect }: MarkStepProps) {
   const { data, isLoading, isError } = useMarksQuery()
@@ -37,13 +37,11 @@ export function MarkStep({ selectedMarkId, onSelect }: MarkStepProps) {
 
   const popular = useMemo(() => filtered.filter((m) => m.is_popular), [filtered])
 
-  // Что показываем: при поиске/раскрытии — всё, иначе только популярные
-  // (или первые N, если бэк не разметил популярные).
-  const visible = q || showAll ? filtered : popular.length > 0 ? popular : filtered.slice(0, FALLBACK_LIMIT)
-  const canExpand =
-    !q &&
-    !showAll &&
-    (popular.length > 0 ? filtered.length > popular.length : filtered.length > FALLBACK_LIMIT)
+  // Что показываем: при поиске/раскрытии — всё, иначе первые INITIAL_LIMIT
+  // (приоритет популярным, если бэк их разметил, но не больше лимита).
+  const base = popular.length > 0 ? popular : filtered
+  const visible = q || showAll ? filtered : base.slice(0, INITIAL_LIMIT)
+  const canExpand = !q && !showAll && filtered.length > visible.length
 
   if (isLoading) {
     return (

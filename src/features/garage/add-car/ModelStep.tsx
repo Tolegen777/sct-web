@@ -14,18 +14,26 @@ interface ModelStepProps {
   onSelect: (model: Model) => void
 }
 
+const INITIAL_LIMIT = 6
+
 export function ModelStep({ mark, selectedModelId, onSelect }: ModelStepProps) {
   const { data, isLoading, isError } = useModelsQuery(mark.id)
   const [search, setSearch] = useState('')
+  const [showAll, setShowAll] = useState(false)
+
+  const q = search.trim().toLowerCase()
 
   const filtered = useMemo(() => {
     if (!data?.results) return []
-    const q = search.trim().toLowerCase()
     if (!q) return data.results
     return data.results.filter((m) =>
       [m.name, m.name_ru, m.display_name].some((v) => v?.toLowerCase().includes(q)),
     )
-  }, [data, search])
+  }, [data, q])
+
+  // При поиске/раскрытии — всё, иначе первые INITIAL_LIMIT.
+  const visible = q || showAll ? filtered : filtered.slice(0, INITIAL_LIMIT)
+  const canExpand = !q && !showAll && filtered.length > visible.length
 
   if (isLoading) {
     return (
@@ -52,7 +60,7 @@ export function ModelStep({ mark, selectedModelId, onSelect }: ModelStepProps) {
       />
 
       <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        {filtered.map((model) => {
+        {visible.map((model) => {
           const isActive = model.id === selectedModelId
           return (
             <button
@@ -81,6 +89,16 @@ export function ModelStep({ mark, selectedModelId, onSelect }: ModelStepProps) {
         <div className="mt-5 rounded-sct border border-borderLight bg-surfaceLight p-8 text-center">
           <p className="text-sm font-bold text-textSecondary">Модели не найдены.</p>
         </div>
+      )}
+
+      {canExpand && (
+        <button
+          type="button"
+          onClick={() => setShowAll(true)}
+          className="mt-4 w-full rounded-sct border-2 border-dashed border-borderLight py-4 text-[12px] font-900 uppercase tracking-widest text-textSecondary transition-all hover:border-brandBlue hover:text-brandBlue"
+        >
+          Показать все модели ({filtered.length})
+        </button>
       )}
     </div>
   )

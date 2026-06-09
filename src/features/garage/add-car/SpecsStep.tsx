@@ -11,7 +11,7 @@
  *
  * Фото поколений бэк не отдаёт — SafeImage показывает фолбэк.
  */
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useFiltersQuery } from './queries'
 import { Spinner } from '@/shared/ui/Spinner'
 import { Button } from '@/shared/ui/Button'
@@ -30,6 +30,8 @@ export interface SpecsValues {
   drive_type?: string
   steering_wheel_position?: string
 }
+
+const YEAR_LIMIT = 10
 
 interface SpecsStepProps {
   markId: number
@@ -51,9 +53,16 @@ export function SpecsStep({ markId, modelId, values, onChange, onBodyLabel, onNe
 
   const { data, isFetching, isError } = useFiltersQuery(query)
 
+  const [showAllYears, setShowAllYears] = useState(false)
+
   const years = data?.years ?? []
   const bodyTypes = data?.body_types ?? []
   const generations = data?.generations ?? []
+
+  // Свежие года первыми (2026 → …), по умолчанию показываем 10, остальное под раскрытие.
+  const sortedYears = useMemo(() => [...years].sort((a, b) => b - a), [years])
+  const visibleYears = showAllYears ? sortedYears : sortedYears.slice(0, YEAR_LIMIT)
+  const canExpandYears = !showAllYears && sortedYears.length > YEAR_LIMIT
 
   const selectYear = (y: number) => {
     // Смена года сбрасывает кузов и поколение — они зависят от года.
@@ -110,23 +119,34 @@ export function SpecsStep({ markId, modelId, values, onChange, onBodyLabel, onNe
             Нет доступных годов — перейдите к выбору модификации.
           </p>
         ) : (
-          <div className="grid grid-cols-4 gap-3 lg:grid-cols-6">
-            {years.map((y) => (
+          <>
+            <div className="grid grid-cols-4 gap-3 lg:grid-cols-6">
+              {visibleYears.map((y) => (
+                <button
+                  key={y}
+                  type="button"
+                  onClick={() => selectYear(y)}
+                  className={cn(
+                    'rounded-sct border py-3.5 text-base font-900 tracking-tight transition-all',
+                    values.year === y
+                      ? 'border-brandBlue bg-blue-50/50 text-brandBlue shadow-soft-blue'
+                      : 'border-borderLight bg-white text-textPrimary hover:border-brandBlue/40',
+                  )}
+                >
+                  {y}
+                </button>
+              ))}
+            </div>
+            {canExpandYears && (
               <button
-                key={y}
                 type="button"
-                onClick={() => selectYear(y)}
-                className={cn(
-                  'rounded-sct border py-3.5 text-base font-900 tracking-tight transition-all',
-                  values.year === y
-                    ? 'border-brandBlue bg-blue-50/50 text-brandBlue shadow-soft-blue'
-                    : 'border-borderLight bg-white text-textPrimary hover:border-brandBlue/40',
-                )}
+                onClick={() => setShowAllYears(true)}
+                className="mt-3 w-full rounded-sct border-2 border-dashed border-borderLight py-3.5 text-[12px] font-900 uppercase tracking-widest text-textSecondary transition-all hover:border-brandBlue hover:text-brandBlue"
               >
-                {y}
+                Показать все года ({sortedYears.length})
               </button>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </section>
 
