@@ -52,6 +52,11 @@ export function PromoCard({ pkg }: PromoCardProps) {
         <h3 className="mt-1 line-clamp-2 text-[13px] font-900 uppercase leading-tight tracking-tight text-textPrimary">
           {title}
         </h3>
+        {pkg.short_description && (
+          <p className="mt-1.5 line-clamp-2 text-[11px] font-medium leading-snug text-textSecondary">
+            {pkg.short_description}
+          </p>
+        )}
 
         <div className="mt-auto flex items-baseline gap-2 pt-3">
           <span className="text-lg font-900 tracking-tighter text-textPrimary">

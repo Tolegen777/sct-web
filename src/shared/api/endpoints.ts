@@ -73,6 +73,10 @@ export const endpoints = {
   staffCarDetailPageData: (sourceId: string) =>
     `/api/v1/staff_endpoints/cars/${sourceId}/detail-page-data/`,
   staffPackageItems: '/api/v1/staff_endpoints/packages/package-items/',
+  // Fuzzy-поиск товаров/услуг (нормализация + опечатки на бэке).
+  // Ответ: { query, normalized_query, count, results[] }.
+  staffPackageItemsSearch:
+    '/api/v1/staff_endpoints/packages/package-items/search/',
 
   // --- Staff: записи на сервис (admin bookings) ---
   // Бэк объединил все действия в один PATCH /staff/bookings/{id}/.
@@ -83,4 +87,17 @@ export const endpoints = {
   staffBookingCancel: (id: number) =>
     `/api/v1/staff_endpoints/bookings/${id}/cancel/`,
   staffBookingsOptions: '/api/v1/staff_endpoints/bookings/options/',
+
+  // --- Staff: Telegram VIN-заявки (telegram_vehicle_requests) ---
+  // Касса шлёт через TG-бота фото госномера/VIN; менеджер вводит данные,
+  // ищет авто клиента (find-client-car) и присваивает VIN (assign-vin).
+  staffTelegramRequests: '/api/v1/staff_endpoints/telegram_vehicle_requests/',
+  staffTelegramRequest: (id: number) =>
+    `/api/v1/staff_endpoints/telegram_vehicle_requests/${id}/`,
+  staffTelegramRequestFindCar: (id: number) =>
+    `/api/v1/staff_endpoints/telegram_vehicle_requests/${id}/find-client-car/`,
+  staffTelegramRequestAssignVin: (id: number) =>
+    `/api/v1/staff_endpoints/telegram_vehicle_requests/${id}/assign-vin/`,
+  staffTelegramRequestsStats:
+    '/api/v1/staff_endpoints/telegram_vehicle_requests/stats/',
 } as const

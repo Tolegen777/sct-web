@@ -67,9 +67,13 @@ live-curl'ом. Свежий `Template.yaml` лежит в корне (untracked
   дефолтной записи (жёстко читал `service_package_data.title`, а он null).
 - **Telegram VIN (админ)** — раздел «VIN-заявки», `/admin/telegram[/:id]`
   (`features/admin-telegram`, `pages/admin/AdminTelegramRequests*`).
-  ⚠️ **НА СТАТИКЕ** (`features/admin-telegram/api.ts` — мок-массив + TODO).
-  Бэк-API ещё не задеплоен (404). Подключение = заменить тело 2 fetch-функций
-  в `api.ts`, страницы не трогать.
+  ✅ **НА РЕАЛЬНОМ API** (10.06): бэк задеплоил
+  `/staff_endpoints/telegram_vehicle_requests/` (list/detail/PATCH/DELETE +
+  `find-client-car`, `assign-vin`, `stats`). Контракт оказался ДРУГИМ, чем
+  мок: `detected_license_plate/detected_vin_code`, `client_car` (объект),
+  `status {value,label}`, `possible_client_cars`. Убраны несуществующие
+  поля (events/staff_comment/«проблема»). Мутации live не прогонялись
+  (классификатор блокирует write на демо), формы взяты из схемы.
 - **Фиксы:** `comment→client_comment` в create_booking (комментарий клиента
   терялся); hooks-order краш на `/services` (`useMemo` стоял ПОСЛЕ
   `if(!isAuthed) return`); клик по всей строке админ-списков (записи/авто).
@@ -87,10 +91,20 @@ live-curl'ом. Свежий `Template.yaml` лежит в корне (untracked
 - Демо-клиент **`+77010000012`** (`string`) — авто С пакетами + записи: на нём
   тестировать пакетную деталь и «Мои записи». `+77010000001` — только дефолты.
 
+### Обновление 10.06.2026
+- **Telegram VIN API подключён** (см. выше) — статика выкинута.
+- **package-items search** — поиск товаров в составе пакета переведён на
+  fuzzy-эндпоинт `/staff_endpoints/packages/package-items/search/?q=&limit=`
+  (нормализация/опечатки на бэке). `edit-form/api.ts → searchPackageItems`.
+- **Краткое описание акции** — `PromoCard` на `/services` показывает
+  `short_description` пакета.
+- **SearchableSelect** (`shared/ui/`) — новый combobox с поиском по вводу;
+  применён ко всем селектам `ModificationPicker` (411 марок → ввод «toyo»).
+- Свежая схема: `Template.yaml` в корне обновлён (6033 строки, untracked).
+
 ### Заблокировано / ждём бэк (детали в BACKEND_NOTES)
-- **Telegram VIN API** — все пути 404 на демо, в схеме нет. Раздел на статике.
-  Ждём точные пути / открытия `/api/schema/`.
-- `GET /api/schema/` — всё ещё 403 (даже со staff-токеном).
+- `GET /api/schema/` — всё ещё 403 (даже со staff-токеном). Но актуальный
+  `Template.yaml` бэкендщик присылает руками (лежит в корне).
 - **Сортировка записей** — фронт шлёт `ordering`, но live НЕ проверено (бэк
   сказал «добавил»). Если порядок не меняется в проде — серверная сортировка
   не активна на стенде, переключить на клиентскую.
@@ -141,7 +155,7 @@ src/
 │   ├── admin-packages/
 │   ├── admin-cars/
 │   ├── admin-bookings/  — staff-записи v2 (плоские типы, dirty-diff)
-│   ├── admin-telegram/  — VIN-заявки (СТАТИКА, ждёт реальный API)
+│   ├── admin-telegram/  — VIN-заявки (реальный API telegram_vehicle_requests)
 │   └── home/
 └── shared/
     ├── api/       — http клиенты, endpoints, типы

@@ -41,27 +41,27 @@ export async function updatePackage(
   return response.data
 }
 
-export interface PackageItemSearchResult {
-  results?: StaffPackageItemDetail[]
+/** Ответ /package-items/search/ — бэк сам нормализует и делает fuzzy-поиск. */
+export interface PackageItemSearchResponse {
+  query: string
+  normalized_query: string
+  count: number
+  results: StaffPackageItemDetail[]
 }
 
 /**
  * Поиск товаров/услуг для добавления в состав пакета.
- * Используется в автокомплите. В paginate=false режиме возвращает массив,
- * в обычном — { results }.
+ *
+ * Дёргает выделенный fuzzy-эндпоинт `/package-items/search/?q=&limit=`:
+ * нормализация (O.E.M. → oem), опечатки (malonn → MANNOL), поиск по
+ * названию/бренду/артикулу делает БЭК. Клиент НЕ фильтрует сам.
  */
-export async function searchPackageItems(query: string) {
-  if (!query.trim()) return []
-  const response = await staffHttp.get<
-    PackageItemSearchResult | StaffPackageItemDetail[]
-  >(endpoints.staffPackageItems, {
-    params: {
-      autocomplete: 1,
-      q: query,
-      page_size: 20,
-    },
-  })
-  const data = response.data
-  if (Array.isArray(data)) return data
-  return data.results ?? []
+export async function searchPackageItems(query: string, limit = 20) {
+  const q = query.trim()
+  if (q.length < 2) return []
+  const response = await staffHttp.get<PackageItemSearchResponse>(
+    endpoints.staffPackageItemsSearch,
+    { params: { q, limit } },
+  )
+  return response.data.results ?? []
 }

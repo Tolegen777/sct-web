@@ -21,21 +21,34 @@
 - Запись клиента: дискриминатор `service_data {source_type,id,title,price}` —
   «Мои записи» показывают и пакеты, и дефолтные услуги.
 
+### Закрыто бэком — 10.06 (фронт подключил)
+- **Telegram VIN-заявки** — `/staff_endpoints/telegram_vehicle_requests/`
+  (list/detail/PATCH/DELETE + `find-client-car`, `assign-vin`, `stats`)
+  задеплоено. Статика выкинута, раздел на реальном API. Прим.: контракт
+  отличается от прежнего мока (`detected_license_plate/detected_vin_code`,
+  `client_car`, `status {value,label}`, `possible_client_cars`). Полей
+  `staff_comment` / истории событий / статуса «проблема» в API нет — убрали
+  с фронта. Если они нужны по дизайну — скажите, добавим обратно.
+- **Поиск товаров пакета** — `/staff_endpoints/packages/package-items/search/`
+  (`?q=&limit=`, fuzzy + нормализация) подключён в составе пакета.
+
 ### Ждём / вопросы
-1. **Telegram VIN-заявки** — все пути 404 на демо (`telegram_vehicle_requests/`
-   и варианты), в `/api/schema/` нет. Раздел `/admin/telegram` собран НА СТАТИКЕ.
-   Нужно: точные пути (список/детальная/действия), на каком стенде задеплоено,
-   пример ответа. Или открыть `/api/schema/`.
-2. **`GET /api/schema/` → 403** даже со staff-токеном. Откройте — фронт автогенерит
-   типы и перестанет угадывать пути.
-3. **Сортировка staff-bookings**: фронт шлёт `ordering` (`id, created_at,
-   client__full_name, client_car__license_plate, preferred_date,
-   service_station__name`). Подтвердите, что на демо это уже активно.
-4. **Пробег записи**: PATCH принимает только `mileage_km`. Полей
+1. **`GET /api/schema/` → 403** даже со staff-токеном. Откройте — фронт автогенерит
+   типы и перестанет угадывать пути. (Пока актуальный `Template.yaml` присылаете
+   руками — спасибо, лежит в корне фронта.)
+2. **Сортировка staff-bookings**: фронт шлёт `ordering` (`id, created_at,
+   client_car__license_plate, preferred_date, service_station__name`).
+   `client__full_name` убрали из сортировки по вашей просьбе (09.06).
+   Подтвердите, что серверный `ordering` на демо активен.
+3. **Пробег записи**: PATCH принимает только `mileage_km`. Полей
    `mileage_recorded_at / mileage_source / mileage_comment` нет (в мокапе v2 есть).
    Добавлять или убрать из дизайна?
-5. **`status_label`** у staff-bookings = `null` (у клиента заполнен) — фронт мапит
+4. **`status_label`** у staff-bookings = `null` (у клиента заполнен) — фронт мапит
    сам, но лучше заполнять и для staff.
+5. **`next_service_mileage_km`** (рекомендация замены масла) — в ответе
+   `service-book/page-data/` пока не приходит (проверял на клиенте без
+   завершённых замен). Подтвердите, что поле деплоится — фронт готов показать
+   пробег в `RecommendationStrip` вместо даты.
 6. Без изменений (см. ниже): `PATCH /auth/profile/` (405), `/reviews/`,
    password-reset, публичный `/packages/` для гостя, S3-лого.
 

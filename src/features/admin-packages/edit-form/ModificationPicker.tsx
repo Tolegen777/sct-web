@@ -26,7 +26,7 @@ import {
 } from '@/features/garage/add-car/queries'
 import type { CarsQuery, Mark, Model, Modification } from '@/features/garage/add-car/types'
 import { Modal } from '@/shared/ui/Modal'
-import { Select } from '@/shared/ui/Select'
+import { SearchableSelect } from '@/shared/ui/SearchableSelect'
 import { Button } from '@/shared/ui/Button'
 import { Spinner } from '@/shared/ui/Spinner'
 import { SafeImage } from '@/shared/ui/SafeImage'
@@ -409,13 +409,13 @@ function SelectCol({
   placeholder?: string
 }) {
   return (
-    <Select label={label} value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled}>
-      <option value="">{placeholder ?? 'Все'}</option>
-      {options.map((o) => (
-        <option key={o.value} value={String(o.value)}>
-          {o.label}
-        </option>
-      ))}
-    </Select>
+    <SearchableSelect
+      label={label}
+      value={value}
+      options={options}
+      onChange={onChange}
+      disabled={disabled}
+      placeholder={placeholder ?? 'Все'}
+    />
   )
 }

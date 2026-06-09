@@ -1,77 +1,58 @@
 /**
- * Список Telegram VIN-заявок (по list.html).
+ * Список Telegram VIN-заявок (реальный API).
  *
- * ⚠️ Данные пока статические (бэк-API не задеплоен). Сверху стат-карточки =
- * быстрые фильтры + доп. чипы (Без госномера / Авто не найдено) + поиск.
- * Колонки: ID / Дата / Фото / Госномер / VIN / Найденный авто / Telegram /
+ * Сверху стат-карточки (из /stats/) = серверные фильтры (status / has_car /
+ * has_vin). Поиск и фильтры уходят на бэк (?search=&status=&has_*=).
+ * Колонки: ID / Дата / Фото / Госномер / VIN / Авто клиента / Telegram /
  * Статус / Действие.
  */
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useTelegramRequestsQuery } from '@/features/admin-telegram/queries'
-import { TELEGRAM_STATUS_META } from '@/features/admin-telegram/types'
-import type { TelegramRequest } from '@/features/admin-telegram/types'
+import {
+  useTelegramRequestsQuery,
+  useTelegramStatsQuery,
+} from '@/features/admin-telegram/queries'
+import { telegramStatusMeta } from '@/features/admin-telegram/types'
+import type {
+  TelegramRequest,
+  TelegramRequestsQuery,
+} from '@/features/admin-telegram/types'
 import { Card } from '@/shared/ui/Card'
 import { Input } from '@/shared/ui/Input'
+import { SafeImage } from '@/shared/ui/SafeImage'
 import { Spinner } from '@/shared/ui/Spinner'
 import { cn } from '@/shared/lib/cn'
 import { formatDateTime } from '@/shared/lib/format'
 
-type Bucket = 'all' | 'new' | 'no_vin' | 'no_plate' | 'not_found' | 'done' | 'problem'
+type Bucket = 'all' | 'new' | 'with_car' | 'with_vin' | 'no_car'
 
-function vinAssigned(r: TelegramRequest): boolean {
-  return Boolean(r.found_car?.vin)
-}
-function matchBucket(r: TelegramRequest, b: Bucket): boolean {
-  switch (b) {
-    case 'new':
-      return r.status === 'new'
-    case 'no_vin':
-      return !vinAssigned(r) && r.status !== 'done' && r.status !== 'problem'
-    case 'no_plate':
-      return !r.entered_plate
-    case 'not_found':
-      return !r.found_car && r.status !== 'new'
-    case 'done':
-      return r.status === 'done'
-    case 'problem':
-      return r.status === 'problem'
-    default:
-      return true
-  }
+const BUCKET_QUERY: Record<Bucket, TelegramRequestsQuery> = {
+  all: {},
+  new: { status: 'new' },
+  with_car: { has_car: true },
+  with_vin: { has_vin: true },
+  no_car: { has_car: false },
 }
 
 export default function AdminTelegramRequestsPage() {
-  const { data, isLoading, isError, refetch } = useTelegramRequestsQuery()
   const [bucket, setBucket] = useState<Bucket>('all')
+  const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
 
-  const rows = useMemo(() => data ?? [], [data])
+  // Дебаунс поиска — на бэк уходит не на каждое нажатие.
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput.trim()), 350)
+    return () => clearTimeout(t)
+  }, [searchInput])
 
-  const stats = useMemo(
-    () => ({
-      total: rows.length,
-      new: rows.filter((r) => r.status === 'new').length,
-      no_vin: rows.filter((r) => matchBucket(r, 'no_vin')).length,
-      done: rows.filter((r) => r.status === 'done').length,
-      problem: rows.filter((r) => r.status === 'problem').length,
-    }),
-    [rows],
+  const query = useMemo<TelegramRequestsQuery>(
+    () => ({ ...BUCKET_QUERY[bucket], ...(search ? { search } : {}), ordering: '-created_at' }),
+    [bucket, search],
   )
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    return rows.filter((r) => {
-      if (!matchBucket(r, bucket)) return false
-      if (q) {
-        const hay = [r.id, r.entered_plate, r.entered_vin, r.found_car?.title, r.telegram_username]
-          .map((v) => String(v ?? '').toLowerCase())
-          .join(' ')
-        if (!hay.includes(q)) return false
-      }
-      return true
-    })
-  }, [rows, bucket, search])
+  const { data: stats } = useTelegramStatsQuery()
+  const { data, isLoading, isError, refetch } = useTelegramRequestsQuery(query)
+  const rows = data ?? []
 
   return (
     <section className="space-y-6">
@@ -85,30 +66,34 @@ export default function AdminTelegramRequestsPage() {
         </p>
       </header>
 
-      {/* Стат-карточки = фильтры */}
+      {/* Стат-карточки = серверные фильтры */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
-        <StatCard label="Всего" value={stats.total} active={bucket === 'all'} onClick={() => setBucket('all')} tone="text-textPrimary" />
-        <StatCard label="Новые" value={stats.new} active={bucket === 'new'} onClick={() => setBucket('new')} tone="text-brandBlue" />
-        <StatCard label="Без VIN" value={stats.no_vin} active={bucket === 'no_vin'} onClick={() => setBucket('no_vin')} tone="text-amber-700" />
-        <StatCard label="Готово" value={stats.done} active={bucket === 'done'} onClick={() => setBucket('done')} tone="text-green-700" />
-        <StatCard label="Проблемные" value={stats.problem} active={bucket === 'problem'} onClick={() => setBucket('problem')} tone="text-rose-700" />
+        <StatCard label="Всего" value={stats?.total} active={bucket === 'all'} onClick={() => setBucket('all')} tone="text-textPrimary" />
+        <StatCard label="Новые" value={stats?.new} active={bucket === 'new'} onClick={() => setBucket('new')} tone="text-brandBlue" />
+        <StatCard label="С авто" value={stats?.with_car} active={bucket === 'with_car'} onClick={() => setBucket('with_car')} tone="text-indigo-700" />
+        <StatCard label="С VIN" value={stats?.with_vin} active={bucket === 'with_vin'} onClick={() => setBucket('with_vin')} tone="text-green-700" />
+        <StatCard label="Без авто" value={stats?.without_car} active={bucket === 'no_car'} onClick={() => setBucket('no_car')} tone="text-amber-700" />
       </div>
 
       <Card className="p-4 md:p-5">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div className="flex flex-wrap gap-2">
-            <Chip active={bucket === 'no_plate'} onClick={() => setBucket('no_plate')}>Без госномера</Chip>
-            <Chip active={bucket === 'not_found'} onClick={() => setBucket('not_found')}>Авто не найдено</Chip>
             {bucket !== 'all' && (
-              <Chip active={false} onClick={() => setBucket('all')}>× Сбросить</Chip>
+              <button
+                type="button"
+                onClick={() => setBucket('all')}
+                className="rounded-full border border-borderLight bg-white px-4 py-2 text-[11px] font-900 uppercase tracking-widest text-textSecondary transition-colors hover:border-brandBlue/40"
+              >
+                × Сбросить фильтр
+              </button>
             )}
           </div>
           <div className="md:w-80">
             <Input
               label="Поиск"
-              placeholder="ID, госномер, VIN, авто, @username…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              placeholder="ID, госномер, VIN, телефон, @username…"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
             />
           </div>
         </div>
@@ -130,7 +115,7 @@ export default function AdminTelegramRequestsPage() {
               Повторить
             </button>
           </div>
-        ) : filtered.length === 0 ? (
+        ) : rows.length === 0 ? (
           <div className="p-12 text-center text-sm font-medium text-textSecondary">
             По выбранным фильтрам заявок нет.
           </div>
@@ -145,21 +130,21 @@ export default function AdminTelegramRequestsPage() {
                     <th className="px-5 py-3">Фото</th>
                     <th className="px-5 py-3">Госномер</th>
                     <th className="px-5 py-3">VIN</th>
-                    <th className="px-5 py-3">Найденный автомобиль</th>
+                    <th className="px-5 py-3">Авто клиента</th>
                     <th className="px-5 py-3">Telegram</th>
                     <th className="px-5 py-3 text-center">Статус</th>
                     <th className="px-5 py-3 text-right">Действие</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-borderLight">
-                  {filtered.map((r) => (
+                  {rows.map((r) => (
                     <Row key={r.id} r={r} />
                   ))}
                 </tbody>
               </table>
             </div>
             <ul className="divide-y divide-borderLight lg:hidden">
-              {filtered.map((r) => (
+              {rows.map((r) => (
                 <CardMobile key={r.id} r={r} />
               ))}
             </ul>
@@ -170,7 +155,19 @@ export default function AdminTelegramRequestsPage() {
   )
 }
 
-function StatCard({ label, value, active, onClick, tone }: { label: string; value: number; active: boolean; onClick: () => void; tone: string }) {
+function StatCard({
+  label,
+  value,
+  active,
+  onClick,
+  tone,
+}: {
+  label: string
+  value: number | undefined
+  active: boolean
+  onClick: () => void
+  tone: string
+}) {
   return (
     <button
       type="button"
@@ -181,46 +178,30 @@ function StatCard({ label, value, active, onClick, tone }: { label: string; valu
       )}
     >
       <p className="text-[10px] font-900 uppercase tracking-widest text-textSecondary">{label}</p>
-      <p className={cn('mt-1 text-2xl font-900 tracking-tight', tone)}>{value}</p>
+      <p className={cn('mt-1 text-2xl font-900 tracking-tight', tone)}>
+        {value ?? '—'}
+      </p>
     </button>
   )
 }
 
-function Chip({ children, active, onClick }: { children: React.ReactNode; active: boolean; onClick: () => void }) {
+function PhotoThumb({ url, title }: { url: string | null; title: string }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'rounded-full border px-4 py-2 text-[11px] font-900 uppercase tracking-widest transition-colors',
-        active ? 'border-brandBlue bg-blue-50 text-brandBlue' : 'border-borderLight bg-white text-textSecondary hover:border-brandBlue/40',
-      )}
+    <span
+      className="block h-9 w-9 overflow-hidden rounded-md border border-borderLight bg-surfaceMuted"
+      title={title}
     >
-      {children}
-    </button>
-  )
-}
-
-function StatusPill({ status }: { status: string }) {
-  const meta = TELEGRAM_STATUS_META[status]
-  return (
-    <span className={cn('inline-block rounded-md px-2.5 py-1 text-[10px] font-900 uppercase tracking-widest', meta?.tone ?? 'bg-surfaceMuted text-textSecondary')}>
-      {meta?.label ?? status}
+      <SafeImage
+        src={url ?? undefined}
+        alt={title}
+        className="h-full w-full object-cover"
+        fallback={
+          <span className="flex h-full w-full items-center justify-center text-textSecondary/60">
+            <CamIcon />
+          </span>
+        }
+      />
     </span>
-  )
-}
-
-function PhotoDots() {
-  // Фото из Telegram (URL пока нет) — показываем индикатор наличия.
-  return (
-    <div className="flex gap-1.5">
-      <span className="flex h-7 w-7 items-center justify-center rounded-md bg-surfaceMuted text-textSecondary" title="Фото госномера">
-        <CamIcon />
-      </span>
-      <span className="flex h-7 w-7 items-center justify-center rounded-md bg-surfaceMuted text-textSecondary" title="Фото VIN">
-        <CamIcon />
-      </span>
-    </div>
   )
 }
 
@@ -233,29 +214,49 @@ function CamIcon() {
   )
 }
 
+function StatusPill({ r }: { r: TelegramRequest }) {
+  const meta = telegramStatusMeta(r.status)
+  return (
+    <span className={cn('inline-block rounded-md px-2.5 py-1 text-[10px] font-900 uppercase tracking-widest', meta.tone)}>
+      {meta.label}
+    </span>
+  )
+}
+
 function Row({ r }: { r: TelegramRequest }) {
   return (
     <tr className="hover:bg-surfaceLight/50">
       <td className="px-5 py-4 font-900 text-textPrimary">#{r.id}</td>
       <td className="px-5 py-4 text-textSecondary">{formatDateTime(r.created_at)}</td>
-      <td className="px-5 py-4"><PhotoDots /></td>
       <td className="px-5 py-4">
-        {r.entered_plate ? (
-          <span className="rounded bg-surfaceMuted px-2 py-0.5 font-mono text-[11px] font-bold uppercase text-textPrimary">{r.entered_plate}</span>
+        <div className="flex gap-1.5">
+          <PhotoThumb url={r.plate_photo_url} title="Фото госномера" />
+          <PhotoThumb url={r.vin_photo_url} title="Фото VIN" />
+        </div>
+      </td>
+      <td className="px-5 py-4">
+        {r.detected_license_plate ? (
+          <span className="rounded bg-surfaceMuted px-2 py-0.5 font-mono text-[11px] font-bold uppercase text-textPrimary">{r.detected_license_plate}</span>
         ) : (
           <span className="text-[11px] font-bold uppercase tracking-widest text-amber-700">нет</span>
         )}
       </td>
       <td className="px-5 py-4">
-        {vinAssigned(r) ? (
-          <span className="font-mono text-[11px] text-textPrimary">{r.found_car?.vin}</span>
+        {r.detected_vin_code ? (
+          <span className="font-mono text-[11px] text-textPrimary">{r.detected_vin_code}</span>
         ) : (
-          <span className="text-[11px] font-bold uppercase tracking-widest text-amber-700">не присвоен</span>
+          <span className="text-[11px] font-bold uppercase tracking-widest text-amber-700">нет</span>
         )}
       </td>
-      <td className="px-5 py-4">{r.found_car ? <span className="font-bold text-textPrimary">{r.found_car.title}</span> : <span className="text-[11px] font-bold uppercase tracking-widest text-rose-600">не найдено</span>}</td>
-      <td className="px-5 py-4 font-mono text-[12px] text-textSecondary">{r.telegram_username}</td>
-      <td className="px-5 py-4 text-center"><StatusPill status={r.status} /></td>
+      <td className="px-5 py-4">
+        {r.client_car ? (
+          <span className="font-bold text-textPrimary">{r.client_car.full_car_title}</span>
+        ) : (
+          <span className="text-[11px] font-bold uppercase tracking-widest text-rose-600">не привязано</span>
+        )}
+      </td>
+      <td className="px-5 py-4 font-mono text-[12px] text-textSecondary">@{r.telegram_username}</td>
+      <td className="px-5 py-4 text-center"><StatusPill r={r} /></td>
       <td className="px-5 py-4 text-right">
         <Link to={`/admin/telegram/${r.id}`} className="inline-block rounded-md bg-brandBlue px-3 py-1.5 text-[10px] font-900 uppercase tracking-widest text-white hover:bg-brandBlueDark">
           Открыть
@@ -274,12 +275,12 @@ function CardMobile({ r }: { r: TelegramRequest }) {
             <p className="font-900 text-textPrimary">#{r.id}</p>
             <p className="mt-0.5 text-[12px] font-bold text-textSecondary">{formatDateTime(r.created_at)}</p>
           </div>
-          <StatusPill status={r.status} />
+          <StatusPill r={r} />
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px]">
-          <span className="font-mono font-bold text-textPrimary">{r.entered_plate || 'без госномера'}</span>
+          <span className="font-mono font-bold text-textPrimary">{r.detected_license_plate || 'без госномера'}</span>
           <span className="text-textSecondary/50">·</span>
-          <span className="text-textSecondary">{r.found_car?.title ?? 'авто не найдено'}</span>
+          <span className="text-textSecondary">{r.client_car?.full_car_title ?? 'авто не привязано'}</span>
         </div>
       </Link>
     </li>

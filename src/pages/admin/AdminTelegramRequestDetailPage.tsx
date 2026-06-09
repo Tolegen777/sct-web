@@ -1,30 +1,34 @@
 /**
- * Детальная Telegram VIN-заявки (по detail_full.html).
+ * Детальная Telegram VIN-заявки (реальный API).
  *
- * ⚠️ СТАТИКА: бэк-API не подключён. Действия (Сохранить / Найти авто /
- * Присвоить VIN / Изменить статус / Отметить проблему) обновляют ЛОКАЛЬНЫЙ
- * стейт + показывают тост. Когда появится реальный API — заменить хендлеры
- * на мутации (PATCH/POST к /staff_endpoints/telegram_vehicle_requests/{id}/…).
+ * Workflow менеджера:
+ *   1. Ввести госномер/VIN с фото → PATCH detected_* («Сохранить»).
+ *   2. «Найти авто» → POST find-client-car (автопривязка если найден один,
+ *      иначе выбор из possible_client_cars).
+ *   3. «Присвоить VIN» → POST assign-vin {client_car_id, detected_vin_code} →
+ *      заявка переходит в done.
+ * Статус вычисляется сервером, вручную не задаётся.
  */
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { useTelegramRequestQuery } from '@/features/admin-telegram/queries'
 import {
-  TELEGRAM_STATUS_META,
-  TELEGRAM_STATUS_ORDER,
-} from '@/features/admin-telegram/types'
-import type { TelegramEvent, TelegramFoundCar } from '@/features/admin-telegram/types'
+  useAssignVinMutation,
+  useDeleteTelegramRequestMutation,
+  useFindClientCarMutation,
+  usePatchTelegramRequestMutation,
+  useTelegramRequestQuery,
+} from '@/features/admin-telegram/queries'
+import { telegramStatusMeta } from '@/features/admin-telegram/types'
+import type { TelegramClientCar } from '@/features/admin-telegram/types'
+import { parseApiError } from '@/features/auth/errors'
 import { Card } from '@/shared/ui/Card'
 import { Button } from '@/shared/ui/Button'
 import { Input } from '@/shared/ui/Input'
-import { Select } from '@/shared/ui/Select'
-import { Textarea } from '@/shared/ui/Textarea'
+import { SafeImage } from '@/shared/ui/SafeImage'
 import { Spinner } from '@/shared/ui/Spinner'
 import { toast } from '@/shared/ui/Toast'
-import { formatDateTime } from '@/shared/lib/format'
+import { formatDateTime, formatMileage } from '@/shared/lib/format'
 import { cn } from '@/shared/lib/cn'
-
-const STUB = 'Сохранено локально — бэк-API ещё не подключён.'
 
 export default function AdminTelegramRequestDetailPage() {
   const params = useParams<{ id: string }>()
@@ -34,20 +38,17 @@ export default function AdminTelegramRequestDetailPage() {
 
   const [plate, setPlate] = useState('')
   const [vin, setVin] = useState('')
-  const [comment, setComment] = useState('')
-  const [status, setStatus] = useState('')
-  const [foundCar, setFoundCar] = useState<TelegramFoundCar | null>(null)
-  const [events, setEvents] = useState<TelegramEvent[]>([])
   const initedRef = useRef<number | null>(null)
+
+  const patchMut = usePatchTelegramRequestMutation(id ?? 0)
+  const findMut = useFindClientCarMutation(id ?? 0)
+  const assignMut = useAssignVinMutation(id ?? 0)
+  const deleteMut = useDeleteTelegramRequestMutation(id ?? 0)
 
   useEffect(() => {
     if (data && initedRef.current !== data.id) {
-      setPlate(data.entered_plate)
-      setVin(data.entered_vin || data.found_car?.vin || '')
-      setComment(data.staff_comment)
-      setStatus(data.status)
-      setFoundCar(data.found_car)
-      setEvents(data.events)
+      setPlate(data.detected_license_plate ?? '')
+      setVin(data.detected_vin_code ?? '')
       initedRef.current = data.id
     }
   }, [data])
@@ -73,54 +74,80 @@ export default function AdminTelegramRequestDetailPage() {
     )
   }
 
-  const meta = TELEGRAM_STATUS_META[status]
-  const addEvent = (title: string, text?: string) =>
-    setEvents((prev) => [{ at: new Date().toISOString(), title, text }, ...prev])
+  const meta = telegramStatusMeta(data.status)
+  const car = data.client_car
+  const vinAssigned = Boolean(car?.vin_code)
+  const candidates = data.possible_client_cars ?? []
+
+  const onError = (err: unknown, fallback: string) =>
+    toast.error(parseApiError(err, fallback).general ?? fallback)
 
   const saveData = () => {
-    addEvent('Данные обновлены', plate ? `Госномер: ${plate}` : undefined)
-    toast.info(STUB)
+    patchMut.mutate(
+      { detected_license_plate: plate.trim(), detected_vin_code: vin.trim() },
+      {
+        onSuccess: () => toast.success('Данные сохранены.'),
+        onError: (e) => onError(e, 'Не удалось сохранить данные.'),
+      },
+    )
   }
+
   const findCar = () => {
-    if (!plate.trim()) {
-      toast.error('Сначала введите госномер')
+    const plateValue = plate.trim()
+    if (!plateValue) {
+      toast.error('Сначала введите госномер.')
       return
     }
-    const car: TelegramFoundCar = data.found_car ?? {
-      id: 0,
-      title: `Авто по ${plate.trim()}`,
-      plate: plate.trim(),
-      vin: null,
-    }
-    setFoundCar(car)
-    setStatus('car_found')
-    addEvent('Автомобиль найден', car.title)
-    toast.info(`Найдено локально. ${STUB}`)
+    findMut.mutate(
+      { detected_license_plate: plateValue },
+      {
+        onSuccess: () => toast.success('Поиск выполнен — см. подходящие авто ниже.'),
+        onError: (e) => onError(e, 'Не удалось выполнить поиск авто.'),
+      },
+    )
   }
-  const assignVin = () => {
-    if (!foundCar) {
-      toast.error('Сначала найдите автомобиль')
+
+  const bindCar = (clientCarId: number) => {
+    patchMut.mutate(
+      { client_car_id: clientCarId },
+      {
+        onSuccess: () => toast.success('Автомобиль привязан к заявке.'),
+        onError: (e) => onError(e, 'Не удалось привязать автомобиль.'),
+      },
+    )
+  }
+
+  const assign = () => {
+    if (!car) {
+      toast.error('Сначала привяжите автомобиль клиента.')
       return
     }
-    if (!vin.trim()) {
-      toast.error('Введите VIN')
+    const vinValue = vin.trim()
+    if (!vinValue) {
+      toast.error('Введите VIN.')
       return
     }
-    setFoundCar({ ...foundCar, vin: vin.trim() })
-    setStatus('done')
-    addEvent('VIN присвоен автомобилю', vin.trim())
-    toast.info(`Присвоено локально. ${STUB}`)
+    assignMut.mutate(
+      { client_car_id: car.id, detected_vin_code: vinValue },
+      {
+        onSuccess: () => toast.success('VIN присвоен автомобилю клиента.'),
+        onError: (e) => onError(e, 'Не удалось присвоить VIN.'),
+      },
+    )
   }
-  const changeStatus = (next: string) => {
-    setStatus(next)
-    addEvent('Статус изменён', TELEGRAM_STATUS_META[next]?.label ?? next)
-    toast.info(STUB)
+
+  const remove = () => {
+    if (!window.confirm(`Удалить Telegram-заявку #${data.id}? Действие необратимо.`)) return
+    deleteMut.mutate(undefined, {
+      onSuccess: () => {
+        toast.success('Заявка удалена.')
+        navigate('/admin/telegram')
+      },
+      onError: (e) => onError(e, 'Не удалось удалить заявку.'),
+    })
   }
-  const markProblem = () => {
-    setStatus('problem')
-    addEvent('Отмечена проблема', comment.trim() || undefined)
-    toast.info(STUB)
-  }
+
+  const busy = patchMut.isPending || findMut.isPending || assignMut.isPending
 
   return (
     <section className="space-y-6">
@@ -137,22 +164,16 @@ export default function AdminTelegramRequestDetailPage() {
             Telegram Vehicle Request
           </p>
           <h1 className="mt-1 text-2xl font-900 uppercase tracking-tight text-textPrimary md:text-4xl">
-            Telegram-заявка #{data.id}
+            {data.page?.title ?? `Telegram-заявка #${data.id}`}
           </h1>
           <p className="mt-2 text-sm font-medium text-textSecondary">
             Создана {formatDateTime(data.created_at)} • источник: Telegram-бот
           </p>
         </div>
-        <span className={cn('inline-block self-start rounded-md px-3 py-1.5 text-[11px] font-900 uppercase tracking-widest', meta?.tone ?? 'bg-surfaceMuted text-textSecondary')}>
-          {meta?.label ?? status}
+        <span className={cn('inline-block self-start rounded-md px-3 py-1.5 text-[11px] font-900 uppercase tracking-widest', meta.tone)}>
+          {meta.label}
         </span>
       </header>
-
-      {/* Индикатор статики */}
-      <div className="rounded-sct border border-amber-200 bg-amber-50 p-3 text-[12px] font-medium text-amber-800">
-        Демо-режим: данные статические, действия сохраняются только локально — бэк-API
-        Telegram-заявок ещё не подключён.
-      </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* Контент */}
@@ -161,54 +182,57 @@ export default function AdminTelegramRequestDetailPage() {
           <Card className="p-5 md:p-6">
             <SectionTitle>Фото из Telegram</SectionTitle>
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <PhotoBox label="Фото госномера" />
-              <PhotoBox label="Фото VIN-кода" />
+              <PhotoBox label="Фото госномера" url={data.plate_photo_url} />
+              <PhotoBox label="Фото VIN-кода" url={data.vin_photo_url} />
             </div>
           </Card>
 
-          {/* Найденный автомобиль */}
+          {/* Привязанный автомобиль */}
           <Card className="p-5 md:p-6">
-            <SectionTitle>Найденный автомобиль</SectionTitle>
-            {foundCar ? (
+            <SectionTitle>Привязанный автомобиль</SectionTitle>
+            {car ? (
               <div className="mt-3">
                 <div className="flex flex-wrap items-center gap-3">
-                  <h3 className="text-2xl font-900 uppercase tracking-tight text-textPrimary">{foundCar.title}</h3>
-                  {foundCar.vin ? (
+                  <h3 className="text-2xl font-900 uppercase tracking-tight text-textPrimary">{car.full_car_title}</h3>
+                  {vinAssigned ? (
                     <span className="rounded-full bg-green-50 px-3 py-1 text-[10px] font-900 uppercase tracking-widest text-green-700">VIN присвоен</span>
                   ) : (
                     <span className="rounded-full bg-orange-50 px-3 py-1 text-[10px] font-900 uppercase tracking-widest text-orange-700">VIN ещё не присвоен</span>
                   )}
                 </div>
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <MiniRow label="Госномер" value={foundCar.plate} mono />
-                  <MiniRow label="VIN" value={foundCar.vin || '—'} mono />
+                  <MiniRow label="Клиент" value={car.client_name} />
+                  <MiniRow label="Телефон" value={car.client_phone} mono />
+                  <MiniRow label="Госномер" value={car.license_plate || '—'} mono />
+                  <MiniRow label="VIN" value={car.vin_code || '—'} mono />
+                  <MiniRow label="Пробег" value={car.latest_mileage_km != null ? formatMileage(car.latest_mileage_km) : '—'} />
+                  <MiniRow label="Авто по умолчанию" value={car.is_default ? 'Да' : 'Нет'} />
                 </div>
               </div>
             ) : (
               <p className="mt-3 rounded-sct border border-rose-200 bg-rose-50 p-4 text-sm font-bold text-rose-700">
-                Автомобиль не найден. Введите госномер и нажмите «Найти авто по госномеру».
+                Автомобиль не привязан. Введите госномер и нажмите «Найти авто по госномеру».
               </p>
             )}
           </Card>
 
-          {/* История */}
-          <Card className="p-5 md:p-6">
-            <SectionTitle>История обработки</SectionTitle>
-            <ol className="mt-4 space-y-4">
-              {events.map((e, i) => (
-                <li key={i} className="flex gap-3">
-                  <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-brandBlue" />
-                  <div className="min-w-0">
-                    <p className="text-sm font-900 uppercase tracking-tight text-textPrimary">{e.title}</p>
-                    {e.text && <p className="mt-0.5 text-[13px] text-textSecondary">{e.text}</p>}
-                    <p className="mt-0.5 text-[10px] font-bold uppercase tracking-widest text-textSecondary/60">
-                      {formatDateTime(e.at)}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </Card>
+          {/* Подходящие авто клиента */}
+          {candidates.length > 0 && (
+            <Card className="p-5 md:p-6">
+              <SectionTitle>Подходящие автомобили клиента</SectionTitle>
+              <ul className="mt-3 space-y-2">
+                {candidates.map((c) => (
+                  <CandidateRow
+                    key={c.id}
+                    car={c}
+                    bound={car?.id === c.id}
+                    disabled={busy}
+                    onBind={() => bindCar(c.id)}
+                  />
+                ))}
+              </ul>
+            </Card>
+          )}
         </div>
 
         {/* Сайдбар */}
@@ -216,16 +240,21 @@ export default function AdminTelegramRequestDetailPage() {
           <div className="space-y-4 lg:sticky lg:top-24">
             {/* Обработка заявки */}
             <Card className="p-5 md:p-6">
-              <SectionTitle>Обработка заявки</SectionTitle>
+              <SectionTitle>Распознанные данные</SectionTitle>
               <div className="mt-3 space-y-3">
                 <Input label="Госномер" value={plate} onChange={(e) => setPlate(e.target.value.toUpperCase())} placeholder="847ATB02" />
                 <Input label="VIN-код" value={vin} onChange={(e) => setVin(e.target.value.toUpperCase())} placeholder="JTDBR32E720000000" />
-                <Textarea label="Комментарий сотрудника" rows={3} value={comment} onChange={(e) => setComment(e.target.value)} />
               </div>
               <div className="mt-4 space-y-2">
-                <Button variant="primary" fullWidth onClick={saveData}>Сохранить данные</Button>
-                <Button variant="secondary" fullWidth onClick={findCar}>Найти авто по госномеру</Button>
-                <Button variant="primary" fullWidth onClick={assignVin}>Присвоить VIN автомобилю</Button>
+                <Button variant="primary" fullWidth onClick={saveData} loading={patchMut.isPending} disabled={busy}>
+                  Сохранить данные
+                </Button>
+                <Button variant="secondary" fullWidth onClick={findCar} loading={findMut.isPending} disabled={busy}>
+                  Найти авто по госномеру
+                </Button>
+                <Button variant="primary" fullWidth onClick={assign} loading={assignMut.isPending} disabled={busy || !car}>
+                  Присвоить VIN автомобилю
+                </Button>
               </div>
             </Card>
 
@@ -233,27 +262,18 @@ export default function AdminTelegramRequestDetailPage() {
             <Card className="p-5 md:p-6">
               <SectionTitle>Источник заявки</SectionTitle>
               <div className="mt-3 space-y-3">
-                <MiniRow label="Telegram username" value={data.telegram_username} mono />
-                <MiniRow label="Telegram User ID" value={data.telegram_user_id} mono />
-                <MiniRow label="Chat ID" value={data.telegram_chat_id} mono />
+                <MiniRow label="Telegram username" value={`@${data.telegram_username}`} mono />
+                <MiniRow label="Telegram User ID" value={String(data.telegram_user_id ?? '—')} mono />
+                <MiniRow label="Chat ID" value={String(data.telegram_chat_id ?? '—')} mono />
               </div>
             </Card>
 
-            {/* Панель действий */}
+            {/* Опасная зона */}
             <Card className="p-5 md:p-6">
-              <SectionTitle>Панель действий</SectionTitle>
-              <div className="mt-3 space-y-3">
-                <Select label="Статус" value={status} onChange={(e) => changeStatus(e.target.value)}>
-                  {TELEGRAM_STATUS_ORDER.map((s) => (
-                    <option key={s} value={s}>
-                      {TELEGRAM_STATUS_META[s]?.label ?? s}
-                    </option>
-                  ))}
-                </Select>
-                <Button variant="danger" fullWidth onClick={markProblem} disabled={status === 'problem'}>
-                  Отметить проблему
-                </Button>
-              </div>
+              <SectionTitle>Управление</SectionTitle>
+              <Button variant="danger" fullWidth className="mt-3" onClick={remove} loading={deleteMut.isPending}>
+                Удалить заявку
+              </Button>
             </Card>
           </div>
         </aside>
@@ -275,21 +295,67 @@ function MiniRow({ label, value, mono }: { label: string; value: string; mono?: 
   )
 }
 
-function PhotoBox({ label }: { label: string }) {
+function CandidateRow({
+  car,
+  bound,
+  disabled,
+  onBind,
+}: {
+  car: TelegramClientCar
+  bound: boolean
+  disabled: boolean
+  onBind: () => void
+}) {
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-3 rounded-sct border border-borderLight bg-white p-3">
+      <div className="min-w-0">
+        <p className="truncate text-sm font-900 uppercase tracking-tight text-textPrimary">{car.full_car_title}</p>
+        <p className="mt-0.5 text-[11px] font-bold uppercase tracking-widest text-textSecondary">
+          {car.client_name} · <span className="font-mono">{car.license_plate}</span> · {car.client_phone}
+        </p>
+      </div>
+      {bound ? (
+        <span className="rounded-md bg-green-50 px-3 py-1.5 text-[10px] font-900 uppercase tracking-widest text-green-700">
+          Привязано
+        </span>
+      ) : (
+        <Button variant="secondary" size="sm" onClick={onBind} disabled={disabled}>
+          Привязать
+        </Button>
+      )}
+    </li>
+  )
+}
+
+function PhotoBox({ label, url }: { label: string; url: string | null }) {
   return (
     <div className="overflow-hidden rounded-sct border border-borderLight">
       <div className="border-b border-borderLight bg-surfaceLight px-4 py-2">
         <p className="text-[11px] font-900 uppercase tracking-widest text-textPrimary">{label}</p>
       </div>
-      <div className="flex h-40 items-center justify-center bg-gradient-to-br from-surfaceLight to-surfaceMuted">
-        <div className="text-center text-textSecondary/60">
-          <svg className="mx-auto h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h1l1.5-2h9L17 7h2a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-            <circle cx="12" cy="13" r="3" strokeWidth={1.5} />
-          </svg>
-          <p className="mt-2 text-[10px] font-bold uppercase tracking-widest">Фото из Telegram</p>
-        </div>
-      </div>
+      <a
+        href={url ?? undefined}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={cn('block h-48 bg-gradient-to-br from-surfaceLight to-surfaceMuted', !url && 'pointer-events-none')}
+      >
+        <SafeImage
+          src={url ?? undefined}
+          alt={label}
+          className="h-full w-full object-contain"
+          fallback={
+            <div className="flex h-full w-full items-center justify-center text-center text-textSecondary/60">
+              <div>
+                <svg className="mx-auto h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h1l1.5-2h9L17 7h2a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <circle cx="12" cy="13" r="3" strokeWidth={1.5} />
+                </svg>
+                <p className="mt-2 text-[10px] font-bold uppercase tracking-widest">Фото недоступно</p>
+              </div>
+            </div>
+          }
+        />
+      </a>
     </div>
   )
 }
