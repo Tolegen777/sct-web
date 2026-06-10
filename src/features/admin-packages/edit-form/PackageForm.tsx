@@ -35,6 +35,7 @@ import {
   useCreatePackageMutation,
   useUpdatePackageMutation,
 } from './queries'
+import { uploadPackageImage } from './api'
 import { usePackagesListPageData } from '../queries'
 import type {
   StaffPackageItemDetail,
@@ -70,9 +71,20 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
 
   const itemsArray = useFieldArray({ control: form.control, name: 'package_items' })
 
+  // Фото пакета: imageFile — выбранный (ещё не загруженный) файл, imagePreview —
+  // что показываем (object-url выбранного файла ИЛИ текущий image_url с бэка).
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(
+    (initial as { image_url?: string | null })?.image_url ?? null,
+  )
+
   // Если предзаполнение пришло асинхронно (edit-mode), переустанавливаем values.
   useEffect(() => {
-    if (initial) form.reset(mapServerToForm(initial))
+    if (initial) {
+      form.reset(mapServerToForm(initial))
+      setImageFile(null)
+      setImagePreview((initial as { image_url?: string | null }).image_url ?? null)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initial?.id])
 
@@ -108,6 +120,27 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
     })
   }
 
+  const onPickImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // позволяем выбрать тот же файл повторно
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      toast.error('Можно загрузить только изображение.')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Файл больше 5 МБ — выберите поменьше.')
+      return
+    }
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+  }
+
+  const cancelPickedImage = () => {
+    setImageFile(null)
+    setImagePreview((initial as { image_url?: string | null })?.image_url ?? null)
+  }
+
   const onSubmit = async (values: PackageFormValues) => {
     setServerError(null)
     try {
@@ -116,6 +149,14 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
         mode === 'create'
           ? await createMut.mutateAsync(payload as Parameters<typeof createMut.mutateAsync>[0])
           : await updateMut.mutateAsync(payload as Parameters<typeof updateMut.mutateAsync>[0])
+      // Фото — вторым шагом (multipart PATCH), только если выбран новый файл.
+      if (imageFile && typeof result.id === 'number') {
+        try {
+          await uploadPackageImage(result.id, imageFile)
+        } catch {
+          toast.warning('Пакет сохранён, но фото не загрузилось — попробуйте ещё раз.')
+        }
+      }
       toast.success(mode === 'create' ? 'Пакет создан' : 'Изменения сохранены')
       if (typeof result.id === 'number') {
         navigate(`/admin/packages/${result.id}`, { replace: mode === 'create' })
@@ -200,7 +241,7 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
       </Section>
 
       {/* 2. Описание */}
-      <Section title="2. Описание">
+      <Section title="2. Описание и фото">
         <div className="space-y-4">
           <Textarea
             label="Краткое описание"
@@ -217,6 +258,44 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
             hint="Простой текст. Rich text появится в следующей версии."
             error={form.formState.errors.description?.message}
           />
+
+          {/* Фотография пакета */}
+          <div>
+            <p className="mb-2 block text-[11px] font-800 uppercase tracking-widest text-textSecondary">
+              Фотография пакета
+            </p>
+            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+              <div className="h-24 w-32 shrink-0 overflow-hidden rounded-sct border border-borderLight bg-surfaceLight">
+                {imagePreview ? (
+                  <img src={imagePreview} alt="Фото пакета" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-textSecondary/40">
+                    <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="inline-flex cursor-pointer items-center justify-center rounded-sct border border-borderLight bg-white px-4 py-2 text-[11px] font-900 uppercase tracking-widest text-textSecondary transition-colors hover:border-brandBlue hover:text-brandBlue">
+                  {imagePreview ? 'Заменить фото' : 'Загрузить фото'}
+                  <input type="file" accept="image/*" className="hidden" onChange={onPickImage} />
+                </label>
+                {imageFile && (
+                  <button
+                    type="button"
+                    onClick={cancelPickedImage}
+                    className="text-left text-[11px] font-bold uppercase tracking-widest text-textSecondary/70 hover:text-red-600"
+                  >
+                    Отменить выбор
+                  </button>
+                )}
+                <p className="text-[10px] font-medium text-textSecondary/70">
+                  JPG/PNG до 5 МБ. {imageFile ? 'Загрузится после «Сохранить».' : 'Сохранится после нажатия «Сохранить».'}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </Section>
 

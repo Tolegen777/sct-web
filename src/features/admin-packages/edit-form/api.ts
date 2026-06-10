@@ -41,6 +41,25 @@ export async function updatePackage(
   return response.data
 }
 
+/**
+ * Загрузка фото пакета — отдельным multipart-PATCH с единственным полем
+ * `image` (бэк: StaffServicePackageWriteRequest.image, format binary).
+ *
+ * Делаем вторым шагом (после JSON-сохранения состава), чтобы не упаковывать
+ * вложенный package_items[] в multipart. PATCH partial — трогает только фото.
+ * Content-Type перебиваем, т.к. у инстанса дефолт application/json.
+ */
+export async function uploadPackageImage(id: number, image: File) {
+  const fd = new FormData()
+  fd.append('image', image)
+  const response = await staffHttp.patch<StaffServicePackageDetail>(
+    endpoints.staffPackageEdit(id),
+    fd,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  )
+  return response.data
+}
+
 /** Ответ /package-items/search/ — бэк сам нормализует и делает fuzzy-поиск. */
 export interface PackageItemSearchResponse {
   query: string
