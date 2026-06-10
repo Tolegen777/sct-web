@@ -41,10 +41,15 @@
 1. **`GET /api/schema/` → 403** даже со staff-токеном. Откройте — фронт автогенерит
    типы и перестанет угадывать пути. (Пока актуальный `Template.yaml` присылаете
    руками — спасибо, лежит в корне фронта.)
-2. **Сортировка staff-bookings**: фронт шлёт `ordering` (`id, created_at,
-   client_car__license_plate, preferred_date, service_station__name`).
+2. **Сортировка staff-bookings — `ordering` по дате роняет 500** (проверено
+   live 10.06): `?ordering=preferred_date` и `?ordering=preferred_time` →
+   **HTTP 500 «Something went wrong»**. Остальные поля работают: `id`,
+   `created_at`, `status`, `client_car__license_plate`, `service_station__name`.
+   Фронт пока сортирует колонку «Время» на клиенте (список приходит целым
+   массивом). Почините `preferred_date/_time` в OrderingFilter — переключим
+   обратно на сервер. Прим.: `preferred_date_time` (одним полем) в API нет —
+   только раздельные `preferred_date` / `preferred_time`.
    `client__full_name` убрали из сортировки по вашей просьбе (09.06).
-   Подтвердите, что серверный `ordering` на демо активен.
 3. **Пробег записи**: PATCH принимает только `mileage_km`. Полей
    `mileage_recorded_at / mileage_source / mileage_comment` нет (в мокапе v2 есть).
    Добавлять или убрать из дизайна?

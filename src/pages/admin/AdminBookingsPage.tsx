@@ -53,13 +53,22 @@ export default function AdminBookingsPage() {
   const [bucket, setBucket] = useState<Bucket>('all')
   const [search, setSearch] = useState('')
   const [serviceType, setServiceType] = useState<string>('')
-  // Серверная сортировка (ordering) — поля по инструкции бэка.
+  // Серверная сортировка (ordering) — работает для id/госномера/СТО/created_at.
+  // По дате (preferred_date/_time) бэк отдаёт 500, поэтому колонку «Время»
+  // сортируем на клиенте (список и так приходит целым массивом). См. BACKEND_NOTES.
   const [ordering, setOrdering] = useState('')
+  const [timeDir, setTimeDir] = useState<'' | 'asc' | 'desc'>('')
   const { data, isLoading, isError, refetch } = useStaffBookingsQuery({
     ordering: ordering || undefined,
   })
-  const sort = (field: string) =>
+  const sort = (field: string) => {
+    setTimeDir('')
     setOrdering((prev) => (prev === field ? `-${field}` : prev === `-${field}` ? field : field))
+  }
+  const sortTime = () => {
+    setOrdering('')
+    setTimeDir((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+  }
 
   const rows = useMemo(() => data ?? [], [data])
 
@@ -93,6 +102,19 @@ export default function AdminBookingsPage() {
       return true
     })
   }, [rows, bucket, serviceType, search])
+
+  // Клиентская сортировка по времени визита (серверная по дате = 500).
+  const displayed = useMemo(() => {
+    if (!timeDir) return filtered
+    const ms = (r: StaffBookingListRow) => {
+      const iso = rowTimeIso(r)
+      const t = iso ? new Date(iso).getTime() : NaN
+      // записи без времени — всегда в конце
+      if (Number.isNaN(t)) return timeDir === 'asc' ? Infinity : -Infinity
+      return t
+    }
+    return [...filtered].sort((a, b) => (timeDir === 'asc' ? ms(a) - ms(b) : ms(b) - ms(a)))
+  }, [filtered, timeDir])
 
   return (
     <section className="space-y-6">
@@ -165,20 +187,32 @@ export default function AdminBookingsPage() {
                     <SortTh label="Автомобиль" field="client_car__license_plate" ordering={ordering} onSort={sort} />
                     <th className="px-5 py-3">Услуга</th>
                     <th className="px-5 py-3">Цена</th>
-                    <SortTh label="Время" field="preferred_date_time" ordering={ordering} onSort={sort} />
+                    <th className="px-5 py-3">
+                      <button
+                        type="button"
+                        onClick={sortTime}
+                        className={cn(
+                          'inline-flex items-center gap-1 uppercase tracking-widest transition-colors hover:text-brandBlue',
+                          timeDir && 'text-brandBlue',
+                        )}
+                      >
+                        Время
+                        {timeDir && <span>{timeDir === 'asc' ? '↑' : '↓'}</span>}
+                      </button>
+                    </th>
                     <SortTh label="СТО" field="service_station__name" ordering={ordering} onSort={sort} />
                     <SortTh label="Создана" field="created_at" ordering={ordering} onSort={sort} />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-borderLight">
-                  {filtered.map((r) => (
+                  {displayed.map((r) => (
                     <BookingRow key={r.id} r={r} />
                   ))}
                 </tbody>
               </table>
             </div>
             <ul className="divide-y divide-borderLight md:hidden">
-              {filtered.map((r) => (
+              {displayed.map((r) => (
                 <BookingCardMobile key={r.id} r={r} />
               ))}
             </ul>

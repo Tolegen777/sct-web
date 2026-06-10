@@ -13,6 +13,9 @@ import { cn } from '@/shared/lib/cn'
 export interface SearchableSelectOption {
   value: string | number
   label: string
+  /** Доп. строка для поиска (не показывается). Напр. латинское имя марки —
+   *  чтобы ввод «toyo» находил «Тойота». */
+  keywords?: string
 }
 
 interface SearchableSelectProps {
@@ -46,7 +49,9 @@ export function SearchableSelect({
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return options
-    return options.filter((o) => o.label.toLowerCase().includes(q))
+    return options.filter((o) =>
+      `${o.label} ${o.keywords ?? ''}`.toLowerCase().includes(q),
+    )
   }, [options, query])
 
   // Закрытие по клику вне и по Escape.

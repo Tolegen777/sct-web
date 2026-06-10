@@ -173,6 +173,8 @@ export function ModificationPicker({ open, onClose, onSelect }: ModificationPick
           options={marks.map((m: Mark) => ({
             value: m.id,
             label: `${m.display_name || m.name}${m.modifications_count ? ` (${m.modifications_count})` : ''}`,
+            // латиница для поиска: ввод «toyo» находит «Тойота»
+            keywords: [m.name, m.name_ru].filter(Boolean).join(' '),
           }))}
         />
         <SelectCol
@@ -186,6 +188,7 @@ export function ModificationPicker({ open, onClose, onSelect }: ModificationPick
           options={models.map((m: Model) => ({
             value: m.id,
             label: `${m.display_name || m.name}${m.modifications_count ? ` (${m.modifications_count})` : ''}`,
+            keywords: [m.name, m.name_ru].filter(Boolean).join(' '),
           }))}
         />
       </div>
@@ -403,7 +406,7 @@ function SelectCol({
 }: {
   label: string
   value: string
-  options: Array<{ value: string | number; label: string }>
+  options: Array<{ value: string | number; label: string; keywords?: string }>
   onChange: (next: string) => void
   disabled?: boolean
   placeholder?: string
