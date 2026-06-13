@@ -1,10 +1,13 @@
 /**
  * Runtime-типы для дефолтных услуг (DefaultServicePage).
  *
- * Сгенерированный `ClientPackagesPage` (старая schema) не содержал
- * `default_services`, а `ClientDefaultServicePage` в re-export'ах нет вовсе.
- * Восстанавливаем по свежей схеме (Template.yaml → ClientDefaultServicePage)
- * и инструкции бэкендщика. Когда обновим `gen:api` — переедем на Schemas[...].
+ * Свежая схема (Template (3).yaml) уже содержит `ClientDefaultServicePage`
+ * и `ClientPackagesPage.default_services`, НО под-типизированы: `price`
+ * приходит как `object/additionalProperties {}`, а `what_is_included` /
+ * `why_price_depends` — без типа элементов (`unknown`). Поэтому держим
+ * эргономичный runtime-тип здесь (как `service-book/types.ts`) и через
+ * `Omit` подменяем сгенерированный `default_services`, чтобы не конфликтовать
+ * с автогеном. Когда бэк типизирует эти поля — переедем на Schemas[...].
  */
 import type { ClientPackageCategory, ClientPackagesPage } from '@/shared/api/types'
 
@@ -44,6 +47,6 @@ export interface ClientDefaultServicePage {
  * Ответ GET /client_endpoints/packages/ по свежей схеме: к старому
  * `ClientPackagesPage` добавлен массив `default_services`.
  */
-export type PackagesPageData = ClientPackagesPage & {
+export type PackagesPageData = Omit<ClientPackagesPage, 'default_services'> & {
   default_services?: ClientDefaultServicePage[]
 }

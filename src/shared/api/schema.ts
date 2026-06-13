@@ -364,7 +364,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/client_endpoints/service-book/page-data/": {
+    "/api/v1/client_endpoints/packages/default-services/{default_service_id}/": {
         parameters: {
             query?: never;
             header?: never;
@@ -372,41 +372,157 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Данные страницы сервисной книжки клиента
-         * @description Возвращает агрегированные данные для страницы клиентской сервисной книжки.
+         * Детальная информация о дефолтной услуге
+         * @description Возвращает детальную информацию по дефолтной услуге.
          *
-         *     Endpoint нужен для страницы:
-         *
-         *     `web/py_clients/static_mockups/client/service_book/main.html`
-         *
-         *     Что возвращает:
-         *
-         *     - текущего клиента;
-         *     - автомобили клиента;
-         *     - выбранный автомобиль;
-         *     - сводку по сервисной книжке;
-         *     - ближайшую активную запись;
-         *     - историю сервисных записей;
-         *     - фильтры;
-         *     - URL действий;
-         *     - состояние страницы для frontend.
-         *
-         *     Правила доступа:
-         *
-         *     - endpoint доступен только авторизованному пользователю;
-         *     - пользователь должен быть клиентом;
-         *     - клиент видит только свои автомобили;
-         *     - клиент видит только свои сервисные записи;
-         *     - если `car_id` передан, backend проверяет, что машина принадлежит текущему клиенту.
-         *
-         *     Состояния страницы:
-         *
-         *     - `NO_CARS`;
-         *     - `NO_SERVICE_HISTORY`;
-         *     - `HAS_ACTIVE_APPOINTMENTS`;
-         *     - `HAS_SERVICE_HISTORY`.
+         *     Эта страница используется тогда, когда точный ServicePackage
+         *     под автомобиль клиента пока не найден.
          */
+        get: operations["client_endpoints_packages_default_services_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/client_endpoints/service-book/bookings/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Список записей клиента на сервис */
+        get: operations["client_endpoints_service_book_bookings_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/client_endpoints/service-book/bookings/{booking_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Детальный просмотр записи клиента на сервис */
+        get: operations["client_endpoints_service_book_bookings_retrieve"];
+        /** Полное редактирование записи клиента на сервис */
+        put: operations["client_endpoints_service_book_bookings_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Частичное редактирование записи клиента на сервис */
+        patch: operations["client_endpoints_service_book_bookings_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/client_endpoints/service-book/bookings/{booking_id}/cancel/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Отмена записи на сервис клиентом
+         * @description Отменяет запись на сервис текущего клиента.
+         *
+         *     Клиент может отменить только свою запись.
+         *     Отмена разрешена только для записей в статусах DRAFT, CREATED, CONFIRMED.
+         */
+        post: operations["client_endpoints_service_book_bookings_cancel_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/client_endpoints/service-book/create_booking/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Создание записи клиента на сервис */
+        post: operations["client_endpoints_service_book_create_booking_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/client_endpoints/service-book/page-data/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Данные страницы сервисной книжки клиента */
         get: operations["client_endpoints_service_book_page_data_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/client_endpoints/service_stations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Список активных СТО с расписанием на ближайшие дни
+         * @description Возвращает список активных СТО для страницы записи клиента на сервис.
+         *
+         *     Каждая СТО приходит вместе с расписанием на ближайшие дни.
+         *
+         *     Query parameters:
+         *     - `days` — количество дней расписания. По умолчанию `7`, минимум `1`, максимум `31`.
+         *     - `city` — фильтр по городу.
+         */
+        get: operations["client_endpoints_service_stations_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/client_endpoints/service_stations/{service_station_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Детальная информация по СТО с расписанием
+         * @description Возвращает одну активную СТО по `service_station_id`.
+         *
+         *     В ответе также приходит расписание на ближайшие дни.
+         *
+         *     Query parameters:
+         *     - `days` — количество дней расписания. По умолчанию `7`, минимум `1`, максимум `31`.
+         */
+        get: operations["client_endpoints_service_stations_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -519,6 +635,126 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/staff_endpoints/bookings/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Список заявок клиентов для staff-админки
+         * @description Возвращает список заявок клиентов `ClientServiceAppointment` для staff-интерфейса.
+         *
+         *     Эндпоинт поддерживает:
+         *     - фильтрацию по статусу заявки;
+         *     - фильтрацию по типу услуги;
+         *     - фильтрацию по СТО;
+         *     - фильтрацию по диапазону дат визита;
+         *     - поиск по клиенту, телефону, email, госномеру, VIN, названию услуги и авто;
+         *     - сортировку через query-параметр `ordering`.
+         *
+         *     Сортировка по возрастанию:
+         *     `?ordering=created_at`
+         *
+         *     Сортировка по убыванию:
+         *     `?ordering=-created_at`
+         *
+         *     Можно сортировать сразу по нескольким полям:
+         *     `?ordering=status,-created_at`
+         */
+        get: operations["staff_endpoints_bookings_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/staff_endpoints/bookings/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Детальная информация о заявке
+         * @description Возвращает детальную информацию по одной заявке клиента.
+         *
+         *     Используется на странице просмотра и редактирования заявки в staff-админке.
+         */
+        get: operations["staff_endpoints_bookings_retrieve"];
+        /**
+         * Детальная информация о заявке
+         * @description Возвращает детальную информацию по одной заявке клиента.
+         *
+         *     Используется на странице просмотра и редактирования заявки в staff-админке.
+         */
+        put: operations["staff_endpoints_bookings_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Детальная информация о заявке
+         * @description Возвращает детальную информацию по одной заявке клиента.
+         *
+         *     Используется на странице просмотра и редактирования заявки в staff-админке.
+         */
+        patch: operations["staff_endpoints_bookings_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/staff_endpoints/bookings/{id}/cancel/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Отмена заявки сотрудником
+         * @description Отменяет заявку клиента со стороны staff-панели.
+         *
+         *     Тело запроса обрабатывается через `StaffBookingCancelSerializer`. Например, там может передаваться причина отмены, если она предусмотрена сериализатором.
+         *
+         *     После успешной отмены возвращает детальную карточку заявки.
+         */
+        post: operations["staff_endpoints_bookings_cancel_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/staff_endpoints/bookings/options/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Данные для формы редактирования заявки
+         * @description Возвращает справочные данные, необходимые для формы создания/редактирования заявки в staff-админке.
+         *
+         *     В ответе возвращаются:
+         *     - активные СТО;
+         *     - доступные сервисные пакеты;
+         *     - активные дефолтные услуги.
+         */
+        get: operations["staff_endpoints_bookings_options_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/staff_endpoints/cars/{modification_source_id}/detail-page-data/": {
         parameters: {
             query?: never;
@@ -531,39 +767,11 @@ export interface paths {
          * @description Возвращает все данные, необходимые для полного отображения staff/admin страницы
          *     детального просмотра автомобиля / модификации.
          *
-         *     ### Что возвращает endpoint
+         *     Дополнительно возвращает `compatible_parts` — список запчастей, которые подходят
+         *     этому автомобилю через сервисные пакеты.
          *
-         *     - `page` — базовая информация о странице.
-         *     - `breadcrumbs` — хлебные крошки.
-         *     - `hero` — заголовок, фото, логотип, цена, бейджи.
-         *     - `catalog` — иерархия каталога: марка, модель, поколение, конфигурация, модификация.
-         *     - `summary_cards` — короткие карточки сверху страницы.
-         *     - `technical` — сгруппированные технические характеристики.
-         *     - `options` — опции автомобиля, сгруппированные по категориям.
-         *     - `service_packages` — сервисные пакеты, привязанные к модификации.
-         *     - `client_cars` — количество клиентских автомобилей с этой модификацией.
-         *     - `related_modifications` — соседние модификации той же конфигурации.
-         *     - `raw_specification` — сырые данные импорта, если они есть.
-         *     - `meta` — created_at / updated_at.
-         *
-         *     ### Авторизация
-         *
-         *     Доступ разрешён только авторизованным staff-пользователям.
-         *
-         *     Пользователь считается staff, если у него есть хотя бы один из флагов:
-         *
-         *     - `is_staff_member=True`
-         *     - `is_staff_user=True`
-         *     - `is_staff=True`
-         *
-         *     ### Важная особенность связей
-         *
-         *     В проекте `ServicePackage` и `ClientCar` связаны с автомобилем через
-         *     `Modification.source_id`, а не через обычный `Modification.id`.
-         *
-         *     Сам URL при этом принимает обычный внутренний `Modification.id`:
-         *
-         *     `/api/v1/staff_endpoints/cars/<modification_source_id>/detail-page-data/`
+         *     Логика:
+         *     Modification.source_id -> ServicePackage -> PackageItemInServicePackage -> PackageItem
          */
         get: operations["staff_endpoints_cars_detail_page_data_retrieve"];
         put?: never;
@@ -996,6 +1204,167 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/staff_endpoints/packages/package-items/search/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["staff_endpoints_packages_package_items_search_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/staff_endpoints/telegram_vehicle_requests/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Список Telegram-заявок на идентификацию авто
+         * @description Возвращает список заявок, созданных через Telegram-бота.
+         *
+         *     Эндпоинт поддерживает:
+         *     - поиск;
+         *     - фильтрацию по статусу обработки;
+         *     - фильтрацию по наличию привязанного авто;
+         *     - фильтрацию по наличию VIN;
+         *     - фильтрацию по наличию госномера;
+         *     - сортировку через query-параметр `ordering`.
+         *
+         *     Для сортировки по убыванию перед названием поля нужно поставить `-`.
+         *
+         *     Примеры:
+         *     - `?ordering=created_at`
+         *     - `?ordering=-created_at`
+         *     - `?ordering=detected_license_plate`
+         *     - `?ordering=-detected_vin_code`
+         */
+        get: operations["staff_endpoints_telegram_vehicle_requests_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/staff_endpoints/telegram_vehicle_requests/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Детальная информация по Telegram-заявке
+         * @description Возвращает детальную информацию по одной Telegram-заявке.
+         *
+         *     Используется на staff-странице просмотра заявки, где сотрудник видит фото, распознанный госномер, VIN, привязанное авто и клиента.
+         */
+        get: operations["staff_endpoints_telegram_vehicle_requests_retrieve"];
+        /**
+         * Детальная информация по Telegram-заявке
+         * @description Возвращает детальную информацию по одной Telegram-заявке.
+         *
+         *     Используется на staff-странице просмотра заявки, где сотрудник видит фото, распознанный госномер, VIN, привязанное авто и клиента.
+         */
+        put: operations["staff_endpoints_telegram_vehicle_requests_update"];
+        post?: never;
+        /**
+         * Детальная информация по Telegram-заявке
+         * @description Возвращает детальную информацию по одной Telegram-заявке.
+         *
+         *     Используется на staff-странице просмотра заявки, где сотрудник видит фото, распознанный госномер, VIN, привязанное авто и клиента.
+         */
+        delete: operations["staff_endpoints_telegram_vehicle_requests_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * Детальная информация по Telegram-заявке
+         * @description Возвращает детальную информацию по одной Telegram-заявке.
+         *
+         *     Используется на staff-странице просмотра заявки, где сотрудник видит фото, распознанный госномер, VIN, привязанное авто и клиента.
+         */
+        patch: operations["staff_endpoints_telegram_vehicle_requests_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/staff_endpoints/telegram_vehicle_requests/{id}/assign-vin/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Назначить VIN автомобилю клиента
+         * @description Записывает VIN в выбранный `ClientCar` и сохраняет этот VIN в Telegram-заявке.
+         *
+         *     Если в заявке ещё не был указан госномер, backend берёт госномер из выбранного авто.
+         */
+        post: operations["staff_endpoints_telegram_vehicle_requests_assign_vin_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/staff_endpoints/telegram_vehicle_requests/{id}/find-client-car/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Найти автомобиль клиента по госномеру
+         * @description Ищет `ClientCar` по госномеру из тела запроса или по госномеру, который уже сохранён в Telegram-заявке.
+         *
+         *     Если найден ровно один автомобиль, backend автоматически привязывает его к заявке.
+         */
+        post: operations["staff_endpoints_telegram_vehicle_requests_find_client_car_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/staff_endpoints/telegram_vehicle_requests/stats/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Статистика Telegram-заявок
+         * @description Возвращает агрегированную статистику по Telegram-заявкам:
+         *     - всего заявок;
+         *     - новые заявки;
+         *     - заявки с привязанным авто;
+         *     - заявки с VIN;
+         *     - заявки без авто.
+         */
+        get: operations["staff_endpoints_telegram_vehicle_requests_stats_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1007,6 +1376,63 @@ export interface components {
             modification_source_id: string;
             car_title: string;
         };
+        ClientDefaultServicePage: {
+            readonly id: number;
+            readonly category: components["schemas"]["ClientPackageCategory"];
+            /**
+             * Заголовок страницы
+             * @description Например: Замена масла в двигателе
+             */
+            readonly title: string;
+            /** @description URL-идентификатор страницы. Например: zamena-masla-v-dvs */
+            readonly slug: string;
+            /** Статус */
+            readonly status: components["schemas"]["StatusAcbEnum"];
+            readonly status_display: string;
+            /**
+             * Короткое описание
+             * @description Короткий текст для карточек, списков и hero-блока.
+             */
+            readonly short_description: string;
+            /**
+             * Полное описание
+             * @description Основной текст страницы услуги.
+             */
+            readonly description: string;
+            /** Надзаголовок hero-блока */
+            readonly hero_eyebrow: string;
+            /** Заголовок блока доступности */
+            readonly availability_title: string;
+            /** Сообщение блока доступности */
+            readonly availability_message: string;
+            /** Пояснение по цене */
+            readonly price_note: string;
+            /**
+             * Важное примечание
+             * @description Например: точная стоимость зависит от модификации автомобиля, рынка поставки, двигателя и комплектации.
+             */
+            readonly important_note: string;
+            /**
+             * Что входит в услугу
+             * @description Список пунктов для фронтенда. Например: ["Проверка автомобиля", "Подбор расходников", "Работа мастера"]
+             */
+            readonly what_is_included: unknown;
+            /**
+             * Почему цена зависит от автомобиля
+             * @description Список причин, почему нельзя сразу показать точную цену.
+             */
+            readonly why_price_depends: unknown;
+            /** Показывать в популярных */
+            readonly is_featured: boolean;
+            /** Порядок сортировки */
+            readonly sort_order: number;
+            readonly seo_title: string;
+            readonly seo_description: string;
+            readonly service_source_type: string;
+            readonly price: {
+                [key: string]: unknown;
+            };
+        };
         ClientGarageCar: {
             readonly id: number;
             readonly display_name: string;
@@ -1017,7 +1443,7 @@ export interface components {
             /** VIN-код */
             vin_code?: string;
             /** Статус */
-            status?: components["schemas"]["ClientGarageCarStatusEnum"];
+            status?: components["schemas"]["StatusBe2Enum"];
             readonly status_display: string;
             /** Автомобиль по умолчанию */
             is_default?: boolean;
@@ -1034,13 +1460,6 @@ export interface components {
             /** Format: date-time */
             readonly updated_at: string;
         };
-        /**
-         * @description * `ACTIVE` - Активен
-         *     * `INACTIVE` - Неактивен
-         *     * `ARCHIVED` - В архиве
-         * @enum {string}
-         */
-        ClientGarageCarStatusEnum: "ACTIVE" | "INACTIVE" | "ARCHIVED";
         ClientGarageCarWriteRequest: {
             modification_source_id: string;
             license_plate: string;
@@ -1108,6 +1527,7 @@ export interface components {
             active_car: components["schemas"]["ClientActiveCar"] | null;
             regular_packages: components["schemas"]["ClientServicePackage"][];
             promotional_packages: components["schemas"]["ClientServicePackage"][];
+            default_services: components["schemas"]["ClientDefaultServicePage"][];
         };
         ClientProfile: {
             readonly id: number;
@@ -1165,6 +1585,9 @@ export interface components {
             selected_car: {
                 [key: string]: unknown;
             } | null;
+            service_recommendations: {
+                [key: string]: unknown;
+            };
             summary: {
                 [key: string]: unknown;
             };
@@ -1187,8 +1610,96 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        ClientServiceBooking: {
+            readonly id: number;
+            /** Статус */
+            status?: components["schemas"]["Status1f3Enum"];
+            readonly status_label: string;
+            /**
+             * Желаемые дата и время визита
+             * Format: date-time
+             */
+            preferred_datetime: string;
+            /**
+             * Подтвержденные дата и время визита
+             * Format: date-time
+             */
+            scheduled_datetime?: string | null;
+            /** Format: date-time */
+            readonly final_datetime: string;
+            /**
+             * Цена на момент бронирования
+             * Format: decimal
+             */
+            price_snapshot?: string | null;
+            /** Валюта */
+            currency?: string;
+            readonly price: {
+                [key: string]: unknown;
+            };
+            /** Название пакета на момент бронирования */
+            service_package_title_snapshot?: string;
+            /** Название автомобиля на момент бронирования */
+            car_title_snapshot?: string;
+            /** Госномер на момент бронирования */
+            license_plate_snapshot?: string;
+            /** Комментарий клиента */
+            comment?: string;
+            /** Внутренний комментарий сотрудника */
+            staff_comment?: string;
+            /** Причина отмены */
+            cancel_reason?: string;
+            readonly current_mileage_km: number | null;
+            readonly car: {
+                [key: string]: unknown;
+            };
+            readonly service_package_data: {
+                [key: string]: unknown;
+            } | null;
+            readonly default_service_page_data: {
+                [key: string]: unknown;
+            } | null;
+            readonly service_source_type: string;
+            readonly service_data: {
+                [key: string]: unknown;
+            };
+            readonly service_station_data: {
+                [key: string]: unknown;
+            } | null;
+            readonly permissions: {
+                [key: string]: unknown;
+            };
+            readonly actions: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        ClientServiceBookingCancelRequest: {
+            cancel_reason?: string | null;
+        };
+        ClientServiceBookingCreateRequest: {
+            client_car_id: number;
+            service_package_id?: number | null;
+            default_service_page_id?: number | null;
+            /** Format: date-time */
+            preferred_datetime: string;
+            service_station_id?: number | null;
+            client_comment?: string | null;
+            current_mileage_km?: number | null;
+        };
+        ClientServiceBookingUpdateRequest: {
+            /** Format: date-time */
+            preferred_datetime?: string;
+            service_station_id?: number | null;
+            client_comment?: string | null;
+            current_mileage_km?: number | null;
+        };
         ClientServicePackage: {
             readonly id: number;
+            readonly service_source_type: string;
             readonly category: components["schemas"]["ClientPackageCategory"];
             /** Название пакета */
             readonly title: string;
@@ -1253,6 +1764,25 @@ export interface components {
             readonly services_count: number;
             readonly package_items: components["schemas"]["ClientPackageItem"][];
         };
+        ClientServiceStation: {
+            readonly id: number;
+            /** Название СТО */
+            readonly name: string;
+            readonly slug: string;
+            /** Город */
+            readonly city: string;
+            /** Адрес */
+            readonly address: string;
+            readonly latitude: string | null;
+            readonly longitude: string | null;
+            /** Телефон */
+            readonly phone: string;
+            /** Активна */
+            readonly is_active: boolean;
+            readonly schedule: {
+                [key: string]: unknown;
+            }[];
+        };
         ClientTokenResponse: {
             access: string;
             refresh: string;
@@ -1279,6 +1809,43 @@ export interface components {
             /** @default false */
             is_default: boolean;
             mileage_km?: number | null;
+        };
+        PatchedClientServiceBookingUpdateRequest: {
+            /** Format: date-time */
+            preferred_datetime?: string;
+            service_station_id?: number | null;
+            client_comment?: string | null;
+            current_mileage_km?: number | null;
+        };
+        PatchedStaffBookingUpdateRequest: {
+            /** Статус */
+            status?: components["schemas"]["Status1f3Enum"];
+            /**
+             * Желаемые дата и время визита
+             * Format: date-time
+             */
+            preferred_datetime?: string;
+            /**
+             * Подтвержденные дата и время визита
+             * Format: date-time
+             */
+            scheduled_datetime?: string | null;
+            service_station_id?: number | null;
+            service_type?: components["schemas"]["ServiceTypeEnum"];
+            service_package_id?: number | null;
+            default_service_page_id?: number | null;
+            mileage_km?: number | null;
+            /**
+             * Цена на момент бронирования
+             * Format: decimal
+             */
+            price_snapshot?: string | null;
+            /** Валюта */
+            currency?: string;
+            /** Внутренний комментарий сотрудника */
+            staff_comment?: string;
+            /** Причина отмены */
+            cancel_reason?: string;
         };
         PatchedStaffServicePackageWriteRequest: {
             category_id?: number | null;
@@ -1330,12 +1897,131 @@ export interface components {
             sort_order?: number;
             package_items?: components["schemas"]["StaffPackageLineRequest"][];
         };
+        PatchedStaffTelegramVehicleRequestUpdateRequest: {
+            /**
+             * Госномер, введённый сотрудником
+             * @description Сюда сотрудник вручную вводит госномер с фото.
+             */
+            detected_license_plate?: string;
+            /**
+             * VIN-код, введённый сотрудником
+             * @description Сюда сотрудник вручную вводит VIN с фото.
+             */
+            detected_vin_code?: string;
+            client_car_id?: number | null;
+        };
         /**
          * @description * `AUTO` - Автоматический расчёт
          *     * `MANUAL` - Ручная цена
          * @enum {string}
          */
         PriceModeEnum: "AUTO" | "MANUAL";
+        /**
+         * @description * `PACKAGE` - PACKAGE
+         *     * `DEFAULT` - DEFAULT
+         * @enum {string}
+         */
+        ServiceTypeEnum: "PACKAGE" | "DEFAULT";
+        StaffBookingCancelRequest: {
+            cancel_reason: string;
+        };
+        StaffBookingDetail: {
+            readonly id: number;
+            /** Статус */
+            status?: components["schemas"]["Status1f3Enum"];
+            readonly client_name: string;
+            readonly phone: string;
+            readonly email: string;
+            readonly plate: string;
+            readonly car_title: string;
+            readonly car_meta: string;
+            readonly mileage_km: string;
+            readonly service_title: string;
+            readonly service_type: string;
+            /** Format: decimal */
+            readonly price: string;
+            /** Валюта */
+            currency?: string;
+            /** Format: date-time */
+            readonly preferred_datetime: string;
+            /** Format: date-time */
+            readonly scheduled_datetime: string;
+            readonly station: string;
+            readonly station_id: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            readonly client_id: number;
+            readonly client_car_id: number;
+            readonly service_package_id: number;
+            readonly default_service_page_id: number;
+            readonly service_station_id: number;
+            readonly comment: string;
+            readonly staff_comment: string;
+            readonly cancel_reason: string;
+            readonly bitrix_deal_id: string;
+            readonly display_address: string;
+            /** Format: date-time */
+            readonly final_datetime: string;
+            readonly client: string;
+            readonly car: string;
+            readonly service: string;
+        };
+        StaffBookingList: {
+            readonly id: number;
+            /** Статус */
+            status?: components["schemas"]["Status1f3Enum"];
+            readonly client_name: string;
+            readonly phone: string;
+            readonly email: string;
+            readonly plate: string;
+            readonly car_title: string;
+            readonly car_meta: string;
+            readonly mileage_km: string;
+            readonly service_title: string;
+            readonly service_type: string;
+            /** Format: decimal */
+            readonly price: string;
+            /** Валюта */
+            currency?: string;
+            /** Format: date-time */
+            readonly preferred_datetime: string;
+            /** Format: date-time */
+            readonly scheduled_datetime: string;
+            readonly station: string;
+            readonly station_id: number;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        StaffBookingUpdateRequest: {
+            /** Статус */
+            status?: components["schemas"]["Status1f3Enum"];
+            /**
+             * Желаемые дата и время визита
+             * Format: date-time
+             */
+            preferred_datetime: string;
+            /**
+             * Подтвержденные дата и время визита
+             * Format: date-time
+             */
+            scheduled_datetime?: string | null;
+            service_station_id?: number | null;
+            service_type?: components["schemas"]["ServiceTypeEnum"];
+            service_package_id?: number | null;
+            default_service_page_id?: number | null;
+            mileage_km?: number | null;
+            /**
+             * Цена на момент бронирования
+             * Format: decimal
+             */
+            price_snapshot?: string | null;
+            /** Валюта */
+            currency?: string;
+            /** Внутренний комментарий сотрудника */
+            staff_comment?: string;
+            /** Причина отмены */
+            cancel_reason?: string;
+        };
         StaffCarDetailPageDataResponse: {
             readonly page: {
                 [key: string]: unknown;
@@ -1579,7 +2265,7 @@ export interface components {
             /** Валюта */
             readonly currency: string;
             /** Статус */
-            readonly status: components["schemas"]["StaffPackageItemPriceStatusEnum"];
+            readonly status: components["schemas"]["StatusAcbEnum"];
             readonly status_display: string;
             /**
              * Действует с
@@ -1601,13 +2287,6 @@ export interface components {
             /** Format: date-time */
             readonly updated_at: string;
         };
-        /**
-         * @description * `ACTIVE` - Активна
-         *     * `INACTIVE` - Неактивна
-         *     * `ARCHIVED` - Архивирована
-         * @enum {string}
-         */
-        StaffPackageItemPriceStatusEnum: "ACTIVE" | "INACTIVE" | "ARCHIVED";
         StaffPackageItemShort: {
             readonly id: number;
             /**
@@ -1968,6 +2647,93 @@ export interface components {
             sort_order?: number;
             package_items?: components["schemas"]["StaffPackageLineRequest"][];
         };
+        StaffTelegramClientCar: {
+            readonly id: number;
+            readonly client_id: number;
+            readonly client_name: string;
+            readonly client_phone: string;
+            /** Госномер */
+            readonly license_plate: string;
+            /** VIN-код */
+            readonly vin_code: string;
+            readonly full_car_title: string;
+            readonly latest_mileage_km: number;
+            /** Статус */
+            readonly status: components["schemas"]["StatusBe2Enum"];
+            /** Автомобиль по умолчанию */
+            readonly is_default: boolean;
+        };
+        StaffTelegramVehicleRequestAssignVinRequest: {
+            client_car_id?: number | null;
+            detected_vin_code?: string;
+        };
+        StaffTelegramVehicleRequestDetail: {
+            readonly id: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+            readonly telegram_chat_id: number;
+            readonly telegram_user_id: number | null;
+            readonly telegram_username: string;
+            readonly plate_photo_url: string;
+            readonly vin_photo_url: string;
+            /**
+             * Госномер, введённый сотрудником
+             * @description Сюда сотрудник вручную вводит госномер с фото.
+             */
+            readonly detected_license_plate: string;
+            /**
+             * VIN-код, введённый сотрудником
+             * @description Сюда сотрудник вручную вводит VIN с фото.
+             */
+            readonly detected_vin_code: string;
+            readonly client_car: components["schemas"]["StaffTelegramClientCar"];
+            readonly status: string;
+            readonly page: string;
+            readonly actions: string;
+            readonly possible_client_cars: string;
+        };
+        StaffTelegramVehicleRequestFindClientCarRequest: {
+            detected_license_plate?: string;
+        };
+        StaffTelegramVehicleRequestList: {
+            readonly id: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+            readonly telegram_chat_id: number;
+            readonly telegram_user_id: number | null;
+            readonly telegram_username: string;
+            readonly plate_photo_url: string;
+            readonly vin_photo_url: string;
+            /**
+             * Госномер, введённый сотрудником
+             * @description Сюда сотрудник вручную вводит госномер с фото.
+             */
+            readonly detected_license_plate: string;
+            /**
+             * VIN-код, введённый сотрудником
+             * @description Сюда сотрудник вручную вводит VIN с фото.
+             */
+            readonly detected_vin_code: string;
+            readonly client_car: components["schemas"]["StaffTelegramClientCar"];
+            readonly status: string;
+        };
+        StaffTelegramVehicleRequestUpdateRequest: {
+            /**
+             * Госномер, введённый сотрудником
+             * @description Сюда сотрудник вручную вводит госномер с фото.
+             */
+            detected_license_plate?: string;
+            /**
+             * VIN-код, введённый сотрудником
+             * @description Сюда сотрудник вручную вводит VIN с фото.
+             */
+            detected_vin_code?: string;
+            client_car_id?: number | null;
+        };
         /** @description Serializer для обновления access token по refresh token. */
         StaffTokenRefreshRequest: {
             refresh: string;
@@ -2016,6 +2782,32 @@ export interface components {
          * @enum {string}
          */
         Status10eEnum: "DRAFT" | "PUBLISHED" | "UNPUBLISHED" | "ARCHIVED";
+        /**
+         * @description * `DRAFT` - Черновик
+         *     * `CREATED` - Создана
+         *     * `CONFIRMED` - Подтверждена
+         *     * `IN_PROGRESS` - В работе
+         *     * `COMPLETED` - Завершена
+         *     * `CANCELLED_BY_CLIENT` - Отменена клиентом
+         *     * `CANCELLED_BY_STAFF` - Отменена сотрудником
+         *     * `NO_SHOW` - Клиент не приехал
+         * @enum {string}
+         */
+        Status1f3Enum: "DRAFT" | "CREATED" | "CONFIRMED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED_BY_CLIENT" | "CANCELLED_BY_STAFF" | "NO_SHOW";
+        /**
+         * @description * `ACTIVE` - Активна
+         *     * `INACTIVE` - Неактивна
+         *     * `ARCHIVED` - Архивирована
+         * @enum {string}
+         */
+        StatusAcbEnum: "ACTIVE" | "INACTIVE" | "ARCHIVED";
+        /**
+         * @description * `ACTIVE` - Активен
+         *     * `INACTIVE` - Неактивен
+         *     * `ARCHIVED` - В архиве
+         * @enum {string}
+         */
+        StatusBe2Enum: "ACTIVE" | "INACTIVE" | "ARCHIVED";
         /**
          * @description * `ACTIVE` - Активен
          *     * `INACTIVE` - Неактивен
@@ -2546,18 +3338,55 @@ export interface operations {
             };
         };
     };
-    client_endpoints_service_book_page_data_retrieve: {
+    client_endpoints_packages_default_services_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                default_service_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientDefaultServicePage"];
+                };
+            };
+            /** @description Пользователь не авторизован. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Пользователь не является клиентом. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Дефолтная услуга не найдена. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    client_endpoints_service_book_bookings_list: {
         parameters: {
             query?: {
-                /** @description ID автомобиля клиента. Если не передан — выбирается автомобиль по умолчанию. */
                 car_id?: number;
-                /** @description Количество записей истории. */
                 limit?: number;
-                /** @description Смещение для lazy loading. */
                 offset?: number;
-                /** @description Фильтр периода: all, upcoming, past, month, year. */
                 period?: string;
-                /** @description Фильтр статуса: all, active, completed, cancelled. */
                 status?: string;
             };
             header?: never;
@@ -2566,7 +3395,298 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Данные страницы сервисной книжки. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientServiceBooking"][];
+                };
+            };
+            /** @description Пользователь не авторизован. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Пользователь не является клиентом. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    client_endpoints_service_book_bookings_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientServiceBooking"];
+                };
+            };
+            /** @description Пользователь не авторизован. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Пользователь не является клиентом. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Запись не найдена. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    client_endpoints_service_book_bookings_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ClientServiceBookingUpdateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClientServiceBookingUpdateRequest"];
+                "multipart/form-data": components["schemas"]["ClientServiceBookingUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientServiceBooking"];
+                };
+            };
+            /** @description Ошибка валидации. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Пользователь не авторизован. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Редактирование запрещено. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Запись не найдена. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    client_endpoints_service_book_bookings_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedClientServiceBookingUpdateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedClientServiceBookingUpdateRequest"];
+                "multipart/form-data": components["schemas"]["PatchedClientServiceBookingUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientServiceBooking"];
+                };
+            };
+            /** @description Ошибка валидации. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Пользователь не авторизован. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Редактирование запрещено. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Запись не найдена. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    client_endpoints_service_book_bookings_cancel_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ClientServiceBookingCancelRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClientServiceBookingCancelRequest"];
+                "multipart/form-data": components["schemas"]["ClientServiceBookingCancelRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientServiceBooking"];
+                };
+            };
+            /** @description Запись уже нельзя отменить. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Пользователь не авторизован. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Пользователь не является клиентом. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Запись не найдена. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    client_endpoints_service_book_create_booking_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientServiceBookingCreateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClientServiceBookingCreateRequest"];
+                "multipart/form-data": components["schemas"]["ClientServiceBookingCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientServiceBooking"];
+                };
+            };
+            /** @description Ошибка валидации. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Пользователь не авторизован. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Пользователь не является клиентом. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    client_endpoints_service_book_page_data_retrieve: {
+        parameters: {
+            query?: {
+                car_id?: number;
+                limit?: number;
+                offset?: number;
+                period?: string;
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2590,6 +3710,89 @@ export interface operations {
                 content?: never;
             };
             /** @description Автомобиль не найден или не принадлежит клиенту. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    client_endpoints_service_stations_list: {
+        parameters: {
+            query?: {
+                /** @description Фильтр по городу. */
+                city?: string;
+                /** @description Количество ближайших дней расписания. По умолчанию 7. */
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientServiceStation"][];
+                };
+            };
+            /** @description Пользователь не авторизован. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Пользователь не является клиентом. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    client_endpoints_service_stations_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Количество ближайших дней расписания. По умолчанию 7. */
+                days?: number;
+            };
+            header?: never;
+            path: {
+                service_station_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientServiceStation"];
+                };
+            };
+            /** @description Пользователь не авторизован. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Пользователь не является клиентом. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description СТО не найдена. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -2733,12 +3936,334 @@ export interface operations {
             };
         };
     };
+    staff_endpoints_bookings_list: {
+        parameters: {
+            query?: {
+                /** @description Начальная дата визита включительно. Формат: `YYYY-MM-DD`. */
+                date_from?: string;
+                /** @description Конечная дата визита включительно. Формат: `YYYY-MM-DD`. */
+                date_to?: string;
+                /**
+                 * @description Поле сортировки.
+                 *
+                 *     Разрешённые поля:
+                 *     - `id`
+                 *     - `created_at`
+                 *     - `updated_at`
+                 *     - `preferred_date`
+                 *     - `preferred_time`
+                 *     - `status`
+                 *     - `client__full_name`
+                 *     - `client__phone`
+                 *     - `client_car__license_plate`
+                 *     - `client_car__vin_code`
+                 *     - `service_station__name`
+                 *
+                 *     Для сортировки по убыванию добавь `-` перед названием поля.
+                 *
+                 *     Примеры:
+                 *     - `created_at`
+                 *     - `-created_at`
+                 *     - `status,-created_at`
+                 */
+                ordering?: string;
+                /**
+                 * @description Поисковая строка. Ищет по:
+                 *     - имени клиента;
+                 *     - фамилии клиента;
+                 *     - телефону клиента;
+                 *     - email клиента;
+                 *     - госномеру автомобиля;
+                 *     - VIN-коду автомобиля;
+                 *     - названию услуги;
+                 *     - названию автомобиля.
+                 */
+                search?: string;
+                /**
+                 * @description Фильтр по типу услуги.
+                 *
+                 *     `PACKAGE` — заявки по `ServicePackage`.
+                 *     `DEFAULT` — заявки по `DefaultServicePage`.
+                 */
+                service_type?: string;
+                /** @description ID СТО, по которой нужно отфильтровать заявки. */
+                station_id?: number;
+                /** @description Фильтр по статусу заявки. */
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffBookingList"][];
+                };
+            };
+            /** @description Пользователь не авторизован. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description У пользователя нет прав staff-доступа. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_endpoints_bookings_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffBookingDetail"];
+                };
+            };
+            /** @description Пользователь не авторизован. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description У пользователя нет прав staff-доступа. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Заявка не найдена. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_endpoints_bookings_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffBookingUpdateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["StaffBookingUpdateRequest"];
+                "multipart/form-data": components["schemas"]["StaffBookingUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffBookingDetail"];
+                };
+            };
+            /** @description Пользователь не авторизован. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description У пользователя нет прав staff-доступа. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Заявка не найдена. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_endpoints_bookings_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedStaffBookingUpdateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedStaffBookingUpdateRequest"];
+                "multipart/form-data": components["schemas"]["PatchedStaffBookingUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffBookingDetail"];
+                };
+            };
+            /** @description Пользователь не авторизован. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description У пользователя нет прав staff-доступа. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Заявка не найдена. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_endpoints_bookings_cancel_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffBookingCancelRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["StaffBookingCancelRequest"];
+                "multipart/form-data": components["schemas"]["StaffBookingCancelRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffBookingDetail"];
+                };
+            };
+            /** @description Ошибка валидации или заявка не может быть отменена. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Пользователь не авторизован. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description У пользователя нет прав staff-доступа. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Заявка не найдена. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_endpoints_bookings_options_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Справочные данные для формы заявки. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        stations?: {
+                            [key: string]: unknown;
+                        }[];
+                        service_packages?: {
+                            [key: string]: unknown;
+                        }[];
+                        default_services?: {
+                            [key: string]: unknown;
+                        }[];
+                    };
+                };
+            };
+            /** @description Пользователь не авторизован. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description У пользователя нет прав staff-доступа. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     staff_endpoints_cars_detail_page_data_retrieve: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Внешний source_id объекта cars.Modification. Например: 21795128__21795134. */
+                /** @description Внешний source_id объекта cars.Modification. */
                 modification_source_id: string;
             };
             cookie?: never;
@@ -3358,6 +4883,415 @@ export interface operations {
         responses: {
             /** @description No response body */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_endpoints_packages_package_items_search_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_endpoints_telegram_vehicle_requests_list: {
+        parameters: {
+            query?: {
+                /** @description Фильтр по наличию привязанного `ClientCar`. Значения: `true`, `false`, `1`, `0`, `yes`, `no`. */
+                has_car?: string;
+                /** @description Фильтр по наличию распознанного госномера. Значения: `true`, `false`, `1`, `0`, `yes`, `no`. */
+                has_plate?: string;
+                /** @description Фильтр по наличию распознанного VIN. Значения: `true`, `false`, `1`, `0`, `yes`, `no`. */
+                has_vin?: string;
+                /**
+                 * @description Поле сортировки.
+                 *
+                 *     Разрешённые поля:
+                 *     - `id`
+                 *     - `created_at`
+                 *     - `updated_at`
+                 *     - `telegram_username`
+                 *     - `detected_license_plate`
+                 *     - `detected_vin_code`
+                 *     - `client_car__license_plate`
+                 *     - `client_car__vin_code`
+                 *     - `client_car__client__first_name`
+                 *     - `client_car__client__last_name`
+                 *     - `client_car__client__phone`
+                 *
+                 *     Для сортировки по убыванию добавь `-` перед названием поля.
+                 */
+                ordering?: string;
+                /** @description Поиск по ID заявки, Telegram username, найденному госномеру, VIN, госномеру авто клиента, VIN авто клиента, имени клиента, фамилии клиента и телефону. */
+                search?: string;
+                /**
+                 * @description Логический статус обработки заявки.
+                 *
+                 *     `new` — нет госномера, VIN и привязанного авто.
+                 *     `in_progress` — часть данных уже найдена, но заявка не завершена.
+                 *     `car_found` — найден госномер, VIN и авто, но VIN ещё не записан в авто.
+                 *     `done` — VIN найден и записан в авто клиента.
+                 */
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffTelegramVehicleRequestList"][];
+                };
+            };
+            /** @description Пользователь не авторизован. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Нет staff-доступа. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_endpoints_telegram_vehicle_requests_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffTelegramVehicleRequestDetail"];
+                };
+            };
+            /** @description Пользователь не авторизован. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Нет staff-доступа. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Заявка не найдена. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_endpoints_telegram_vehicle_requests_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["StaffTelegramVehicleRequestUpdateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["StaffTelegramVehicleRequestUpdateRequest"];
+                "multipart/form-data": components["schemas"]["StaffTelegramVehicleRequestUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffTelegramVehicleRequestDetail"];
+                };
+            };
+            /** @description Пользователь не авторизован. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Нет staff-доступа. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Заявка не найдена. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_endpoints_telegram_vehicle_requests_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffTelegramVehicleRequestDetail"];
+                };
+            };
+            /** @description Пользователь не авторизован. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Нет staff-доступа. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Заявка не найдена. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_endpoints_telegram_vehicle_requests_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedStaffTelegramVehicleRequestUpdateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedStaffTelegramVehicleRequestUpdateRequest"];
+                "multipart/form-data": components["schemas"]["PatchedStaffTelegramVehicleRequestUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffTelegramVehicleRequestDetail"];
+                };
+            };
+            /** @description Пользователь не авторизован. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Нет staff-доступа. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Заявка не найдена. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_endpoints_telegram_vehicle_requests_assign_vin_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["StaffTelegramVehicleRequestAssignVinRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["StaffTelegramVehicleRequestAssignVinRequest"];
+                "multipart/form-data": components["schemas"]["StaffTelegramVehicleRequestAssignVinRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffTelegramVehicleRequestDetail"];
+                };
+            };
+            /** @description Ошибка валидации или автомобиль клиента не выбран. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Пользователь не авторизован. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Нет staff-доступа. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Заявка не найдена. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_endpoints_telegram_vehicle_requests_find_client_car_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["StaffTelegramVehicleRequestFindClientCarRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["StaffTelegramVehicleRequestFindClientCarRequest"];
+                "multipart/form-data": components["schemas"]["StaffTelegramVehicleRequestFindClientCarRequest"];
+            };
+        };
+        responses: {
+            /** @description Результаты поиска автомобиля клиента. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Госномер не указан или ошибка валидации. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Пользователь не авторизован. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Нет staff-доступа. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Заявка не найдена. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    staff_endpoints_telegram_vehicle_requests_stats_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Статистика Telegram-заявок. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Пользователь не авторизован. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Нет staff-доступа. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -23,7 +23,8 @@ export const packageItemRowSchema = z.object({
   item_type: z.enum(['PRODUCT', 'SERVICE']).optional(),
   price_id: z.number().nullable().optional(),
   quantity: decimal('Кол-во должно быть числом'),
-  discount_type: z.enum(['NONE', 'PERCENT', 'AMOUNT']),
+  // Бэковый DiscountTypeEnum: NONE | PERCENT | FIXED («фиксированная сумма»).
+  discount_type: z.enum(['NONE', 'PERCENT', 'FIXED']),
   discount_percent: decimal(),
   discount_amount: decimal(),
   is_required: z.boolean(),
@@ -52,7 +53,7 @@ export const packageFormSchema = z.object({
   // Цена
   price_mode: z.enum(['AUTO', 'MANUAL']),
   currency: z.string().min(2),
-  discount_type: z.enum(['NONE', 'PERCENT', 'AMOUNT']),
+  discount_type: z.enum(['NONE', 'PERCENT', 'FIXED']),
   discount_percent: decimal(),
   discount_amount: decimal(),
   manual_price: z.string().nullable(),

@@ -109,13 +109,14 @@ export default function EditCarPage() {
   const onSubmit = async (values: EditValues) => {
     setServerError(null)
     try {
-      // PatchedClientGarageCarWriteRequest в OpenAPI требует is_default,
-      // хотя это PATCH (баг бэк-схемы — partial должен быть partial).
-      // Кастуем — на бэке поля действительно опциональные.
+      // openapi-typescript делает is_default обязательным в типе из-за
+      // `default: false` в схеме, хотя PATCH partial. Передаём текущее
+      // значение (поведение не меняется) — так обходимся без каста.
       await updateMut.mutateAsync({
         nickname: values.nickname,
         mileage_km: values.mileage_km,
-      } as Parameters<typeof updateMut.mutateAsync>[0])
+        is_default: car.is_default,
+      })
       setSavedAt(Date.now())
     } catch (err) {
       const parsed = parseApiError(err, 'Не удалось сохранить изменения.')

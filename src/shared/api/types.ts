@@ -19,7 +19,9 @@ export type ClientGarageCar = Schemas['ClientGarageCar']
 export type ClientGarageCarWriteRequest = Schemas['ClientGarageCarWriteRequest']
 export type PatchedClientGarageCarWriteRequest =
   Schemas['PatchedClientGarageCarWriteRequest']
-export type ClientGarageCarStatus = Schemas['ClientGarageCarStatusEnum']
+// drf-spectacular переименовал enum статуса машины в StatusBe2Enum
+// (автогенерируемое имя). Раньше был ClientGarageCarStatusEnum.
+export type ClientGarageCarStatus = Schemas['StatusBe2Enum']
 export type ClientGarageFormPageData = Schemas['ClientGarageFormPageData']
 export type ClientActiveCar = Schemas['ClientActiveCar']
 

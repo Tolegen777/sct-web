@@ -40,6 +40,7 @@ import { usePackagesListPageData } from '../queries'
 import type {
   StaffPackageItemDetail,
   StaffServicePackageDetail,
+  StaffServicePackageWriteRequest,
 } from '@/shared/api/types'
 
 interface PackageFormProps {
@@ -147,8 +148,8 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
       const payload = mapFormToServer(values)
       const result =
         mode === 'create'
-          ? await createMut.mutateAsync(payload as Parameters<typeof createMut.mutateAsync>[0])
-          : await updateMut.mutateAsync(payload as Parameters<typeof updateMut.mutateAsync>[0])
+          ? await createMut.mutateAsync(payload)
+          : await updateMut.mutateAsync(payload)
       // Фото — вторым шагом (multipart PATCH), только если выбран новый файл.
       if (imageFile && typeof result.id === 'number') {
         try {
@@ -406,7 +407,7 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
                         >
                           <option value="NONE">без скидки</option>
                           <option value="PERCENT">процент</option>
-                          <option value="AMOUNT">сумма</option>
+                          <option value="FIXED">сумма</option>
                         </Select>
                         {form.watch(`package_items.${index}.discount_type` as const) === 'PERCENT' && (
                           <Input
@@ -415,7 +416,7 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
                             {...form.register(`package_items.${index}.discount_percent` as const)}
                           />
                         )}
-                        {form.watch(`package_items.${index}.discount_type` as const) === 'AMOUNT' && (
+                        {form.watch(`package_items.${index}.discount_type` as const) === 'FIXED' && (
                           <Input
                             className="!h-10 !text-sm"
                             placeholder="0.00"
@@ -478,7 +479,7 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
           <Select label="Тип скидки" {...form.register('discount_type')}>
             <option value="NONE">Без скидки</option>
             <option value="PERCENT">Процент</option>
-            <option value="AMOUNT">Сумма</option>
+            <option value="FIXED">Сумма</option>
           </Select>
           {watchedDiscountType === 'PERCENT' && (
             <Input
@@ -487,7 +488,7 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
               {...form.register('discount_percent')}
             />
           )}
-          {watchedDiscountType === 'AMOUNT' && (
+          {watchedDiscountType === 'FIXED' && (
             <Input
               label="Скидка, ₸"
               placeholder="1000.00"
@@ -594,7 +595,7 @@ function mapServerToForm(src: StaffServicePackageDetail): PackageFormValues {
           ((line as { discount_type?: string }).discount_type as
             | 'NONE'
             | 'PERCENT'
-            | 'AMOUNT') ?? 'NONE',
+            | 'FIXED') ?? 'NONE',
         discount_percent: (line as { discount_percent?: string }).discount_percent ?? '0.00',
         discount_amount: (line as { discount_amount?: string }).discount_amount ?? '0.00',
         is_required: Boolean((line as { is_required?: boolean }).is_required ?? true),
@@ -610,7 +611,7 @@ function mapServerToForm(src: StaffServicePackageDetail): PackageFormValues {
  * Маппинг значений формы в payload для бэка.
  * Бэк ждёт строковые decimal'ы и массив items.
  */
-function mapFormToServer(values: PackageFormValues) {
+function mapFormToServer(values: PackageFormValues): StaffServicePackageWriteRequest {
   return {
     category_id: values.category_id,
     modification_source_id: values.modification_source_id,
@@ -642,10 +643,11 @@ function mapFormToServer(values: PackageFormValues) {
       sort_order: line.sort_order,
       comment: line.comment,
     })),
-  } as unknown as Record<string, unknown>
-  // ↑ Бэковый StaffServicePackageWriteRequest в schema.yml описывает не все
-  // поля payload (особенно package_items[]). Когда исправят — заменим on
-  // сгенерированный тип. Сейчас отдаём бэку через `unknown → Record`.
+  }
+  // Свежая схема (Template (3).yaml) описывает StaffServicePackageWriteRequest
+  // целиком, включая package_items[] (StaffPackageLineRequest), а форма теперь
+  // использует корректный discount_type FIXED — поэтому типизируем напрямую,
+  // без прежнего `as unknown as` каста.
 }
 
 /** Локальный счётчик позиций — для UI-плашки. Реальный итог считает бэк. */

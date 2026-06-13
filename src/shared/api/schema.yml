@@ -566,48 +566,325 @@ paths:
           description: Пользователь не является клиентом.
         '404':
           description: Пакет не найден или не подходит под активный автомобиль.
+  /api/v1/client_endpoints/packages/default-services/{default_service_id}/:
+    get:
+      operationId: client_endpoints_packages_default_services_retrieve
+      description: "\nВозвращает детальную информацию по дефолтной услуге.\n\nЭта
+        страница используется тогда, когда точный ServicePackage\nпод автомобиль клиента
+        пока не найден.\n        "
+      summary: Детальная информация о дефолтной услуге
+      parameters:
+      - in: path
+        name: default_service_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Client / Packages
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - Authorization: []
+        Language: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientDefaultServicePage'
+          description: ''
+        '401':
+          description: Пользователь не авторизован.
+        '403':
+          description: Пользователь не является клиентом.
+        '404':
+          description: Дефолтная услуга не найдена.
+  /api/v1/client_endpoints/service-book/bookings/:
+    get:
+      operationId: client_endpoints_service_book_bookings_list
+      summary: Список записей клиента на сервис
+      parameters:
+      - in: query
+        name: car_id
+        schema:
+          type: integer
+      - in: query
+        name: limit
+        schema:
+          type: integer
+      - in: query
+        name: offset
+        schema:
+          type: integer
+      - in: query
+        name: period
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+      tags:
+      - Client / Service Book / Bookings
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - Authorization: []
+        Language: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClientServiceBooking'
+          description: ''
+        '401':
+          description: Пользователь не авторизован.
+        '403':
+          description: Пользователь не является клиентом.
+  /api/v1/client_endpoints/service-book/bookings/{booking_id}/:
+    get:
+      operationId: client_endpoints_service_book_bookings_retrieve
+      summary: Детальный просмотр записи клиента на сервис
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Client / Service Book / Bookings
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - Authorization: []
+        Language: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientServiceBooking'
+          description: ''
+        '401':
+          description: Пользователь не авторизован.
+        '403':
+          description: Пользователь не является клиентом.
+        '404':
+          description: Запись не найдена.
+    put:
+      operationId: client_endpoints_service_book_bookings_update
+      summary: Полное редактирование записи клиента на сервис
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Client / Service Book / Bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientServiceBookingUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ClientServiceBookingUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ClientServiceBookingUpdateRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - Authorization: []
+        Language: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientServiceBooking'
+          description: ''
+        '400':
+          description: Ошибка валидации.
+        '401':
+          description: Пользователь не авторизован.
+        '403':
+          description: Редактирование запрещено.
+        '404':
+          description: Запись не найдена.
+    patch:
+      operationId: client_endpoints_service_book_bookings_partial_update
+      summary: Частичное редактирование записи клиента на сервис
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Client / Service Book / Bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedClientServiceBookingUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedClientServiceBookingUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedClientServiceBookingUpdateRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - Authorization: []
+        Language: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientServiceBooking'
+          description: ''
+        '400':
+          description: Ошибка валидации.
+        '401':
+          description: Пользователь не авторизован.
+        '403':
+          description: Редактирование запрещено.
+        '404':
+          description: Запись не найдена.
+  /api/v1/client_endpoints/service-book/bookings/{booking_id}/cancel/:
+    post:
+      operationId: client_endpoints_service_book_bookings_cancel_create
+      description: |-
+        Отменяет запись на сервис текущего клиента.
+
+        Клиент может отменить только свою запись.
+        Отмена разрешена только для записей в статусах DRAFT, CREATED, CONFIRMED.
+      summary: Отмена записи на сервис клиентом
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Client / Service Book / Bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientServiceBookingCancelRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ClientServiceBookingCancelRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ClientServiceBookingCancelRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - Authorization: []
+        Language: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientServiceBooking'
+          description: ''
+        '400':
+          description: Запись уже нельзя отменить.
+        '401':
+          description: Пользователь не авторизован.
+        '403':
+          description: Пользователь не является клиентом.
+        '404':
+          description: Запись не найдена.
+  /api/v1/client_endpoints/service-book/create_booking/:
+    post:
+      operationId: client_endpoints_service_book_create_booking_create
+      summary: Создание записи клиента на сервис
+      tags:
+      - Client / Service Book / Bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientServiceBookingCreateRequest'
+            examples:
+              ПримерСозданияЗаписи:
+                value:
+                  client_car_id: 1
+                  service_package_id: 10
+                  service_station_id: 2
+                  preferred_datetime: '2026-05-25T15:30:00+05:00'
+                  client_comment: Хочу приехать после обеда.
+                summary: Пример создания записи
+              ПримерСозданияЗаписиНаДефолтнуюУслугу:
+                value:
+                  client_car_id: 1
+                  default_service_page_id: 3
+                  service_station_id: 2
+                  preferred_datetime: '2026-05-25T15:30:00+05:00'
+                  client_comment: Точного пакета нет, хочу записаться на дефолтную
+                    услугу.
+                summary: Пример создания записи на дефолтную услугу
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ClientServiceBookingCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ClientServiceBookingCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - Authorization: []
+        Language: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientServiceBooking'
+          description: ''
+        '400':
+          description: Ошибка валидации.
+        '401':
+          description: Пользователь не авторизован.
+        '403':
+          description: Пользователь не является клиентом.
   /api/v1/client_endpoints/service-book/page-data/:
     get:
       operationId: client_endpoints_service_book_page_data_retrieve
-      description: "\nВозвращает агрегированные данные для страницы клиентской сервисной
-        книжки.\n\nEndpoint нужен для страницы:\n\n`web/py_clients/static_mockups/client/service_book/main.html`\n\nЧто
-        возвращает:\n\n- текущего клиента;\n- автомобили клиента;\n- выбранный автомобиль;\n-
-        сводку по сервисной книжке;\n- ближайшую активную запись;\n- историю сервисных
-        записей;\n- фильтры;\n- URL действий;\n- состояние страницы для frontend.\n\nПравила
-        доступа:\n\n- endpoint доступен только авторизованному пользователю;\n- пользователь
-        должен быть клиентом;\n- клиент видит только свои автомобили;\n- клиент видит
-        только свои сервисные записи;\n- если `car_id` передан, backend проверяет,
-        что машина принадлежит текущему клиенту.\n\nСостояния страницы:\n\n- `NO_CARS`;\n-
-        `NO_SERVICE_HISTORY`;\n- `HAS_ACTIVE_APPOINTMENTS`;\n- `HAS_SERVICE_HISTORY`.\n
-        \       "
       summary: Данные страницы сервисной книжки клиента
       parameters:
       - in: query
         name: car_id
         schema:
           type: integer
-        description: ID автомобиля клиента. Если не передан — выбирается автомобиль
-          по умолчанию.
       - in: query
         name: limit
         schema:
           type: integer
-        description: Количество записей истории.
       - in: query
         name: offset
         schema:
           type: integer
-        description: Смещение для lazy loading.
       - in: query
         name: period
         schema:
           type: string
-        description: 'Фильтр периода: all, upcoming, past, month, year.'
       - in: query
         name: status
         schema:
           type: string
-        description: 'Фильтр статуса: all, active, completed, cancelled.'
       tags:
       - Client / Service Book
       security:
@@ -621,44 +898,98 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ClientServiceBookPageData'
-              examples:
-                ПримерУспешногоОтвета:
-                  value:
-                    page_state: HAS_SERVICE_HISTORY
-                    client:
-                      id: 1
-                      full_name: Иван Иванов
-                      phone: '+77001234567'
-                      email: client@example.com
-                      cars_count: 1
-                      has_cars: true
-                    cars: []
-                    selected_car: null
-                    summary:
-                      cars_count: 1
-                      appointments_total: 3
-                      active_appointments_count: 1
-                      completed_appointments_count: 2
-                      cancelled_appointments_count: 0
-                    next_appointment: null
-                    appointments: []
-                    filters:
-                      status: all
-                      period: all
-                    actions: {}
-                    empty_state: null
-                    meta:
-                      limit: 20
-                      offset: 0
-                      has_more: false
-                  summary: Пример успешного ответа
-          description: Данные страницы сервисной книжки.
+          description: ''
         '401':
           description: Пользователь не авторизован.
         '403':
           description: Пользователь не является клиентом.
         '404':
           description: Автомобиль не найден или не принадлежит клиенту.
+  /api/v1/client_endpoints/service_stations/:
+    get:
+      operationId: client_endpoints_service_stations_list
+      description: |
+        Возвращает список активных СТО для страницы записи клиента на сервис.
+
+        Каждая СТО приходит вместе с расписанием на ближайшие дни.
+
+        Query parameters:
+        - `days` — количество дней расписания. По умолчанию `7`, минимум `1`, максимум `31`.
+        - `city` — фильтр по городу.
+      summary: Список активных СТО с расписанием на ближайшие дни
+      parameters:
+      - in: query
+        name: city
+        schema:
+          type: string
+        description: Фильтр по городу.
+      - in: query
+        name: days
+        schema:
+          type: integer
+        description: Количество ближайших дней расписания. По умолчанию 7.
+      tags:
+      - Client / Service Book / Service Stations
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - Authorization: []
+        Language: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClientServiceStation'
+          description: ''
+        '401':
+          description: Пользователь не авторизован.
+        '403':
+          description: Пользователь не является клиентом.
+  /api/v1/client_endpoints/service_stations/{service_station_id}/:
+    get:
+      operationId: client_endpoints_service_stations_retrieve
+      description: |-
+        Возвращает одну активную СТО по `service_station_id`.
+
+        В ответе также приходит расписание на ближайшие дни.
+
+        Query parameters:
+        - `days` — количество дней расписания. По умолчанию `7`, минимум `1`, максимум `31`.
+      summary: Детальная информация по СТО с расписанием
+      parameters:
+      - in: query
+        name: days
+        schema:
+          type: integer
+        description: Количество ближайших дней расписания. По умолчанию 7.
+      - in: path
+        name: service_station_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Client / Service Book / Service Stations
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - Authorization: []
+        Language: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientServiceStation'
+          description: ''
+        '401':
+          description: Пользователь не авторизован.
+        '403':
+          description: Пользователь не является клиентом.
+        '404':
+          description: СТО не найдена.
   /api/v1/staff_endpoints/auth/login/:
     post:
       operationId: staff_endpoints_auth_login_create
@@ -807,34 +1138,406 @@ paths:
           description: New access token issued.
         '400':
           description: Invalid refresh token.
+  /api/v1/staff_endpoints/bookings/:
+    get:
+      operationId: staff_endpoints_bookings_list
+      description: |-
+        Возвращает список заявок клиентов `ClientServiceAppointment` для staff-интерфейса.
+
+        Эндпоинт поддерживает:
+        - фильтрацию по статусу заявки;
+        - фильтрацию по типу услуги;
+        - фильтрацию по СТО;
+        - фильтрацию по диапазону дат визита;
+        - поиск по клиенту, телефону, email, госномеру, VIN, названию услуги и авто;
+        - сортировку через query-параметр `ordering`.
+
+        Сортировка по возрастанию:
+        `?ordering=created_at`
+
+        Сортировка по убыванию:
+        `?ordering=-created_at`
+
+        Можно сортировать сразу по нескольким полям:
+        `?ordering=status,-created_at`
+      summary: Список заявок клиентов для staff-админки
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+        description: 'Начальная дата визита включительно. Формат: `YYYY-MM-DD`.'
+        examples:
+          С1Июня2026:
+            value: '2026-06-01'
+            summary: С 1 июня 2026
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+        description: 'Конечная дата визита включительно. Формат: `YYYY-MM-DD`.'
+        examples:
+          До30Июня2026:
+            value: '2026-06-30'
+            summary: До 30 июня 2026
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: |-
+          Поле сортировки.
+
+          Разрешённые поля:
+          - `id`
+          - `created_at`
+          - `updated_at`
+          - `preferred_date`
+          - `preferred_time`
+          - `status`
+          - `client__full_name`
+          - `client__phone`
+          - `client_car__license_plate`
+          - `client_car__vin_code`
+          - `service_station__name`
+
+          Для сортировки по убыванию добавь `-` перед названием поля.
+
+          Примеры:
+          - `created_at`
+          - `-created_at`
+          - `status,-created_at`
+        examples:
+          ПоIDПоВозрастанию:
+            value: id
+            summary: По ID по возрастанию
+          ПоIDПоУбыванию:
+            value: -id
+            summary: По ID по убыванию
+          НовыеСверху:
+            value: -created_at
+            summary: Новые сверху
+          ГосномерА→Я:
+            value: client_car__license_plate
+            summary: Госномер А → Я
+          Статус,ПотомДата:
+            value: status,-created_at
+            summary: Статус, потом дата
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: |-
+          Поисковая строка. Ищет по:
+          - имени клиента;
+          - фамилии клиента;
+          - телефону клиента;
+          - email клиента;
+          - госномеру автомобиля;
+          - VIN-коду автомобиля;
+          - названию услуги;
+          - названию автомобиля.
+        examples:
+          ПоискПоТелефону:
+            value: '+7701'
+            summary: Поиск по телефону
+          ПоискПоГосномеру:
+            value: 777ABC02
+            summary: Поиск по госномеру
+          ПоискПоVIN:
+            value: JTDBR32E
+            summary: Поиск по VIN
+      - in: query
+        name: service_type
+        schema:
+          type: string
+        description: |-
+          Фильтр по типу услуги.
+
+          `PACKAGE` — заявки по `ServicePackage`.
+          `DEFAULT` — заявки по `DefaultServicePage`.
+        examples:
+          ПакетнаяУслуга:
+            value: PACKAGE
+            summary: Пакетная услуга
+          ДефолтнаяУслуга:
+            value: DEFAULT
+            summary: Дефолтная услуга
+      - in: query
+        name: station_id
+        schema:
+          type: integer
+        description: ID СТО, по которой нужно отфильтровать заявки.
+        examples:
+          СТОID1:
+            value: 1
+            summary: СТО ID 1
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: Фильтр по статусу заявки.
+        examples:
+          Создана:
+            value: CREATED
+          Подтверждена:
+            value: CONFIRMED
+          Отменена:
+            value: CANCELLED
+      tags:
+      - Staff / Bookings
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - Authorization: []
+        Language: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StaffBookingList'
+          description: ''
+        '401':
+          description: Пользователь не авторизован.
+        '403':
+          description: У пользователя нет прав staff-доступа.
+  /api/v1/staff_endpoints/bookings/{id}/:
+    get:
+      operationId: staff_endpoints_bookings_retrieve
+      description: |-
+        Возвращает детальную информацию по одной заявке клиента.
+
+        Используется на странице просмотра и редактирования заявки в staff-админке.
+      summary: Детальная информация о заявке
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Staff / Bookings
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - Authorization: []
+        Language: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffBookingDetail'
+          description: ''
+        '401':
+          description: Пользователь не авторизован.
+        '403':
+          description: У пользователя нет прав staff-доступа.
+        '404':
+          description: Заявка не найдена.
+    put:
+      operationId: staff_endpoints_bookings_update
+      description: |-
+        Возвращает детальную информацию по одной заявке клиента.
+
+        Используется на странице просмотра и редактирования заявки в staff-админке.
+      summary: Детальная информация о заявке
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Staff / Bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffBookingUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StaffBookingUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StaffBookingUpdateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - Authorization: []
+        Language: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffBookingDetail'
+          description: ''
+        '401':
+          description: Пользователь не авторизован.
+        '403':
+          description: У пользователя нет прав staff-доступа.
+        '404':
+          description: Заявка не найдена.
+    patch:
+      operationId: staff_endpoints_bookings_partial_update
+      description: |-
+        Возвращает детальную информацию по одной заявке клиента.
+
+        Используется на странице просмотра и редактирования заявки в staff-админке.
+      summary: Детальная информация о заявке
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Staff / Bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedStaffBookingUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedStaffBookingUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedStaffBookingUpdateRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - Authorization: []
+        Language: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffBookingDetail'
+          description: ''
+        '401':
+          description: Пользователь не авторизован.
+        '403':
+          description: У пользователя нет прав staff-доступа.
+        '404':
+          description: Заявка не найдена.
+  /api/v1/staff_endpoints/bookings/{id}/cancel/:
+    post:
+      operationId: staff_endpoints_bookings_cancel_create
+      description: |-
+        Отменяет заявку клиента со стороны staff-панели.
+
+        Тело запроса обрабатывается через `StaffBookingCancelSerializer`. Например, там может передаваться причина отмены, если она предусмотрена сериализатором.
+
+        После успешной отмены возвращает детальную карточку заявки.
+      summary: Отмена заявки сотрудником
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Staff / Bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffBookingCancelRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StaffBookingCancelRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StaffBookingCancelRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - Authorization: []
+        Language: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffBookingDetail'
+          description: ''
+        '400':
+          description: Ошибка валидации или заявка не может быть отменена.
+        '401':
+          description: Пользователь не авторизован.
+        '403':
+          description: У пользователя нет прав staff-доступа.
+        '404':
+          description: Заявка не найдена.
+  /api/v1/staff_endpoints/bookings/options/:
+    get:
+      operationId: staff_endpoints_bookings_options_retrieve
+      description: |-
+        Возвращает справочные данные, необходимые для формы создания/редактирования заявки в staff-админке.
+
+        В ответе возвращаются:
+        - активные СТО;
+        - доступные сервисные пакеты;
+        - активные дефолтные услуги.
+      summary: Данные для формы редактирования заявки
+      tags:
+      - Staff / Bookings
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - Authorization: []
+        Language: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stations:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: {}
+                  service_packages:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: {}
+                  default_services:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: {}
+          description: Справочные данные для формы заявки.
+        '401':
+          description: Пользователь не авторизован.
+        '403':
+          description: У пользователя нет прав staff-доступа.
   /api/v1/staff_endpoints/cars/{modification_source_id}/detail-page-data/:
     get:
       operationId: staff_endpoints_cars_detail_page_data_retrieve
       description: "\nВозвращает все данные, необходимые для полного отображения staff/admin
-        страницы\nдетального просмотра автомобиля / модификации.\n\n### Что возвращает
-        endpoint\n\n- `page` — базовая информация о странице.\n- `breadcrumbs` — хлебные
-        крошки.\n- `hero` — заголовок, фото, логотип, цена, бейджи.\n- `catalog` —
-        иерархия каталога: марка, модель, поколение, конфигурация, модификация.\n-
-        `summary_cards` — короткие карточки сверху страницы.\n- `technical` — сгруппированные
-        технические характеристики.\n- `options` — опции автомобиля, сгруппированные
-        по категориям.\n- `service_packages` — сервисные пакеты, привязанные к модификации.\n-
-        `client_cars` — количество клиентских автомобилей с этой модификацией.\n-
-        `related_modifications` — соседние модификации той же конфигурации.\n- `raw_specification`
-        — сырые данные импорта, если они есть.\n- `meta` — created_at / updated_at.\n\n###
-        Авторизация\n\nДоступ разрешён только авторизованным staff-пользователям.\n\nПользователь
-        считается staff, если у него есть хотя бы один из флагов:\n\n- `is_staff_member=True`\n-
-        `is_staff_user=True`\n- `is_staff=True`\n\n### Важная особенность связей\n\nВ
-        проекте `ServicePackage` и `ClientCar` связаны с автомобилем через\n`Modification.source_id`,
-        а не через обычный `Modification.id`.\n\nСам URL при этом принимает обычный
-        внутренний `Modification.id`:\n\n`/api/v1/staff_endpoints/cars/<modification_source_id>/detail-page-data/`\n
-        \       "
+        страницы\nдетального просмотра автомобиля / модификации.\n\nДополнительно
+        возвращает `compatible_parts` — список запчастей, которые подходят\nэтому
+        автомобилю через сервисные пакеты.\n\nЛогика:\nModification.source_id -> ServicePackage
+        -> PackageItemInServicePackage -> PackageItem\n        "
       summary: Данные для детальной страницы модификации автомобиля
       parameters:
       - in: path
         name: modification_source_id
         schema:
           type: string
-        description: 'Внешний source_id объекта cars.Modification. Например: 21795128__21795134.'
+        description: Внешний source_id объекта cars.Modification.
         required: true
       tags:
       - Staff / Cars
@@ -849,34 +1552,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StaffCarDetailPageDataResponse'
-              examples:
-                УспешныйОтвет:
-                  value:
-                    page:
-                      title: Audi A4 | V (B9) | Универсал 5 дв. | 2.0d MT (150 л.с.)
-                      subtitle: Карточка модификации автомобиля
-                      entity: cars.modification
-                      endpoint: /api/v1/staff_endpoints/cars/20637615__20674985/detail-page-data/
-                      modification_id: 123
-                      modification_source_id: '20637615__20674985'
-                    hero:
-                      title: Audi A4 V (B9)
-                      subtitle: 2.0d MT (150 л.с.)
-                      full_title: Audi | A4 | V (B9) | Универсал 5 дв. | 2.0d MT (150
-                        л.с.)
-                      status:
-                        is_closed: false
-                        label: Активна
-                        tone: success
-                    technical:
-                      has_specification: true
-                      sections: []
-                      flat: {}
-                    service_packages:
-                      total: 3
-                      has_packages: true
-                      results: []
-                  summary: Успешный ответ
           description: ''
         '401':
           description: Пользователь не авторизован.
@@ -1791,6 +2466,450 @@ paths:
       responses:
         '200':
           description: No response body
+  /api/v1/staff_endpoints/packages/package-items/search/:
+    get:
+      operationId: staff_endpoints_packages_package_items_search_retrieve
+      tags:
+      - staff_endpoints
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - Authorization: []
+        Language: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/staff_endpoints/telegram_vehicle_requests/:
+    get:
+      operationId: staff_endpoints_telegram_vehicle_requests_list
+      description: |-
+        Возвращает список заявок, созданных через Telegram-бота.
+
+        Эндпоинт поддерживает:
+        - поиск;
+        - фильтрацию по статусу обработки;
+        - фильтрацию по наличию привязанного авто;
+        - фильтрацию по наличию VIN;
+        - фильтрацию по наличию госномера;
+        - сортировку через query-параметр `ordering`.
+
+        Для сортировки по убыванию перед названием поля нужно поставить `-`.
+
+        Примеры:
+        - `?ordering=created_at`
+        - `?ordering=-created_at`
+        - `?ordering=detected_license_plate`
+        - `?ordering=-detected_vin_code`
+      summary: Список Telegram-заявок на идентификацию авто
+      parameters:
+      - in: query
+        name: has_car
+        schema:
+          type: string
+        description: 'Фильтр по наличию привязанного `ClientCar`. Значения: `true`,
+          `false`, `1`, `0`, `yes`, `no`.'
+        examples:
+          ЕстьАвто:
+            value: 'true'
+            summary: Есть авто
+          НетАвто:
+            value: 'false'
+            summary: Нет авто
+      - in: query
+        name: has_plate
+        schema:
+          type: string
+        description: 'Фильтр по наличию распознанного госномера. Значения: `true`,
+          `false`, `1`, `0`, `yes`, `no`.'
+        examples:
+          ЕстьГосномер:
+            value: 'true'
+            summary: Есть госномер
+          НетГосномера:
+            value: 'false'
+            summary: Нет госномера
+      - in: query
+        name: has_vin
+        schema:
+          type: string
+        description: 'Фильтр по наличию распознанного VIN. Значения: `true`, `false`,
+          `1`, `0`, `yes`, `no`.'
+        examples:
+          ЕстьVIN:
+            value: 'true'
+            summary: Есть VIN
+          НетVIN:
+            value: 'false'
+            summary: Нет VIN
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: |-
+          Поле сортировки.
+
+          Разрешённые поля:
+          - `id`
+          - `created_at`
+          - `updated_at`
+          - `telegram_username`
+          - `detected_license_plate`
+          - `detected_vin_code`
+          - `client_car__license_plate`
+          - `client_car__vin_code`
+          - `client_car__client__first_name`
+          - `client_car__client__last_name`
+          - `client_car__client__phone`
+
+          Для сортировки по убыванию добавь `-` перед названием поля.
+        examples:
+          IDПоВозрастанию:
+            value: id
+            summary: ID по возрастанию
+          IDПоУбыванию:
+            value: -id
+            summary: ID по убыванию
+          НовыеСверху:
+            value: -created_at
+            summary: Новые сверху
+          ГосномерА→Я:
+            value: detected_license_plate
+            summary: Госномер А → Я
+          VINА→Я:
+            value: detected_vin_code
+            summary: VIN А → Я
+          ТелефонКлиента:
+            value: client_car__client__phone
+            summary: Телефон клиента
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Поиск по ID заявки, Telegram username, найденному госномеру,
+          VIN, госномеру авто клиента, VIN авто клиента, имени клиента, фамилии клиента
+          и телефону.
+        examples:
+          ПоискПоГосномеру:
+            value: 777ABC02
+            summary: Поиск по госномеру
+          ПоискПоVIN:
+            value: JTDBR32E
+            summary: Поиск по VIN
+          ПоискПоТелефону:
+            value: '+7701'
+            summary: Поиск по телефону
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: |-
+          Логический статус обработки заявки.
+
+          `new` — нет госномера, VIN и привязанного авто.
+          `in_progress` — часть данных уже найдена, но заявка не завершена.
+          `car_found` — найден госномер, VIN и авто, но VIN ещё не записан в авто.
+          `done` — VIN найден и записан в авто клиента.
+        examples:
+          Новые:
+            value: new
+          ВРаботе:
+            value: in_progress
+            summary: В работе
+          АвтоНайдено:
+            value: car_found
+            summary: Авто найдено
+          Готово:
+            value: done
+      tags:
+      - Staff / Telegram Vehicle Requests
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - Authorization: []
+        Language: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StaffTelegramVehicleRequestList'
+          description: ''
+        '401':
+          description: Пользователь не авторизован.
+        '403':
+          description: Нет staff-доступа.
+  /api/v1/staff_endpoints/telegram_vehicle_requests/{id}/:
+    get:
+      operationId: staff_endpoints_telegram_vehicle_requests_retrieve
+      description: |-
+        Возвращает детальную информацию по одной Telegram-заявке.
+
+        Используется на staff-странице просмотра заявки, где сотрудник видит фото, распознанный госномер, VIN, привязанное авто и клиента.
+      summary: Детальная информация по Telegram-заявке
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Staff / Telegram Vehicle Requests
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - Authorization: []
+        Language: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffTelegramVehicleRequestDetail'
+          description: ''
+        '401':
+          description: Пользователь не авторизован.
+        '403':
+          description: Нет staff-доступа.
+        '404':
+          description: Заявка не найдена.
+    put:
+      operationId: staff_endpoints_telegram_vehicle_requests_update
+      description: |-
+        Возвращает детальную информацию по одной Telegram-заявке.
+
+        Используется на staff-странице просмотра заявки, где сотрудник видит фото, распознанный госномер, VIN, привязанное авто и клиента.
+      summary: Детальная информация по Telegram-заявке
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Staff / Telegram Vehicle Requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffTelegramVehicleRequestUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StaffTelegramVehicleRequestUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StaffTelegramVehicleRequestUpdateRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - Authorization: []
+        Language: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffTelegramVehicleRequestDetail'
+          description: ''
+        '401':
+          description: Пользователь не авторизован.
+        '403':
+          description: Нет staff-доступа.
+        '404':
+          description: Заявка не найдена.
+    patch:
+      operationId: staff_endpoints_telegram_vehicle_requests_partial_update
+      description: |-
+        Возвращает детальную информацию по одной Telegram-заявке.
+
+        Используется на staff-странице просмотра заявки, где сотрудник видит фото, распознанный госномер, VIN, привязанное авто и клиента.
+      summary: Детальная информация по Telegram-заявке
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Staff / Telegram Vehicle Requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedStaffTelegramVehicleRequestUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedStaffTelegramVehicleRequestUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedStaffTelegramVehicleRequestUpdateRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - Authorization: []
+        Language: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffTelegramVehicleRequestDetail'
+          description: ''
+        '401':
+          description: Пользователь не авторизован.
+        '403':
+          description: Нет staff-доступа.
+        '404':
+          description: Заявка не найдена.
+    delete:
+      operationId: staff_endpoints_telegram_vehicle_requests_destroy
+      description: |-
+        Возвращает детальную информацию по одной Telegram-заявке.
+
+        Используется на staff-странице просмотра заявки, где сотрудник видит фото, распознанный госномер, VIN, привязанное авто и клиента.
+      summary: Детальная информация по Telegram-заявке
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Staff / Telegram Vehicle Requests
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - Authorization: []
+        Language: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffTelegramVehicleRequestDetail'
+          description: ''
+        '401':
+          description: Пользователь не авторизован.
+        '403':
+          description: Нет staff-доступа.
+        '404':
+          description: Заявка не найдена.
+  /api/v1/staff_endpoints/telegram_vehicle_requests/{id}/assign-vin/:
+    post:
+      operationId: staff_endpoints_telegram_vehicle_requests_assign_vin_create
+      description: |-
+        Записывает VIN в выбранный `ClientCar` и сохраняет этот VIN в Telegram-заявке.
+
+        Если в заявке ещё не был указан госномер, backend берёт госномер из выбранного авто.
+      summary: Назначить VIN автомобилю клиента
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Staff / Telegram Vehicle Requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffTelegramVehicleRequestAssignVinRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StaffTelegramVehicleRequestAssignVinRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StaffTelegramVehicleRequestAssignVinRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - Authorization: []
+        Language: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffTelegramVehicleRequestDetail'
+          description: ''
+        '400':
+          description: Ошибка валидации или автомобиль клиента не выбран.
+        '401':
+          description: Пользователь не авторизован.
+        '403':
+          description: Нет staff-доступа.
+        '404':
+          description: Заявка не найдена.
+  /api/v1/staff_endpoints/telegram_vehicle_requests/{id}/find-client-car/:
+    post:
+      operationId: staff_endpoints_telegram_vehicle_requests_find_client_car_create
+      description: |-
+        Ищет `ClientCar` по госномеру из тела запроса или по госномеру, который уже сохранён в Telegram-заявке.
+
+        Если найден ровно один автомобиль, backend автоматически привязывает его к заявке.
+      summary: Найти автомобиль клиента по госномеру
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Staff / Telegram Vehicle Requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffTelegramVehicleRequestFindClientCarRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StaffTelegramVehicleRequestFindClientCarRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StaffTelegramVehicleRequestFindClientCarRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - Authorization: []
+        Language: []
+      responses:
+        '200':
+          description: Результаты поиска автомобиля клиента.
+        '400':
+          description: Госномер не указан или ошибка валидации.
+        '401':
+          description: Пользователь не авторизован.
+        '403':
+          description: Нет staff-доступа.
+        '404':
+          description: Заявка не найдена.
+  /api/v1/staff_endpoints/telegram_vehicle_requests/stats/:
+    get:
+      operationId: staff_endpoints_telegram_vehicle_requests_stats_retrieve
+      description: |-
+        Возвращает агрегированную статистику по Telegram-заявкам:
+        - всего заявок;
+        - новые заявки;
+        - заявки с привязанным авто;
+        - заявки с VIN;
+        - заявки без авто.
+      summary: Статистика Telegram-заявок
+      tags:
+      - Staff / Telegram Vehicle Requests
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - Authorization: []
+        Language: []
+      responses:
+        '200':
+          description: Статистика Telegram-заявок.
+        '401':
+          description: Пользователь не авторизован.
+        '403':
+          description: Нет staff-доступа.
 components:
   schemas:
     ClientActiveCar:
@@ -1812,6 +2931,118 @@ components:
       - id
       - license_plate
       - modification_source_id
+    ClientDefaultServicePage:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/ClientPackageCategory'
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+          title: Заголовок страницы
+          description: 'Например: Замена масла в двигателе'
+        slug:
+          type: string
+          readOnly: true
+          description: 'URL-идентификатор страницы. Например: zamena-masla-v-dvs'
+          pattern: ^[-a-zA-Z0-9_]+$
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusAcbEnum'
+          readOnly: true
+          title: Статус
+        status_display:
+          type: string
+          readOnly: true
+        short_description:
+          type: string
+          readOnly: true
+          title: Короткое описание
+          description: Короткий текст для карточек, списков и hero-блока.
+        description:
+          type: string
+          readOnly: true
+          title: Полное описание
+          description: Основной текст страницы услуги.
+        hero_eyebrow:
+          type: string
+          readOnly: true
+          title: Надзаголовок hero-блока
+        availability_title:
+          type: string
+          readOnly: true
+          title: Заголовок блока доступности
+        availability_message:
+          type: string
+          readOnly: true
+          title: Сообщение блока доступности
+        price_note:
+          type: string
+          readOnly: true
+          title: Пояснение по цене
+        important_note:
+          type: string
+          readOnly: true
+          title: Важное примечание
+          description: 'Например: точная стоимость зависит от модификации автомобиля,
+            рынка поставки, двигателя и комплектации.'
+        what_is_included:
+          readOnly: true
+          title: Что входит в услугу
+          description: 'Список пунктов для фронтенда. Например: ["Проверка автомобиля",
+            "Подбор расходников", "Работа мастера"]'
+        why_price_depends:
+          readOnly: true
+          title: Почему цена зависит от автомобиля
+          description: Список причин, почему нельзя сразу показать точную цену.
+        is_featured:
+          type: boolean
+          readOnly: true
+          title: Показывать в популярных
+        sort_order:
+          type: integer
+          readOnly: true
+          title: Порядок сортировки
+        seo_title:
+          type: string
+          readOnly: true
+        seo_description:
+          type: string
+          readOnly: true
+        service_source_type:
+          type: string
+          readOnly: true
+        price:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+      required:
+      - availability_message
+      - availability_title
+      - category
+      - description
+      - hero_eyebrow
+      - id
+      - important_note
+      - is_featured
+      - price
+      - price_note
+      - seo_description
+      - seo_title
+      - service_source_type
+      - short_description
+      - slug
+      - sort_order
+      - status
+      - status_display
+      - title
+      - what_is_included
+      - why_price_depends
     ClientGarageCar:
       type: object
       properties:
@@ -1837,7 +3068,7 @@ components:
           maxLength: 32
         status:
           allOf:
-          - $ref: '#/components/schemas/ClientGarageCarStatusEnum'
+          - $ref: '#/components/schemas/StatusBe2Enum'
           title: Статус
         status_display:
           type: string
@@ -1878,16 +3109,6 @@ components:
       - status_display
       - updated_at
       - urls
-    ClientGarageCarStatusEnum:
-      enum:
-      - ACTIVE
-      - INACTIVE
-      - ARCHIVED
-      type: string
-      description: |-
-        * `ACTIVE` - Активен
-        * `INACTIVE` - Неактивен
-        * `ARCHIVED` - В архиве
     ClientGarageCarWriteRequest:
       type: object
       properties:
@@ -2054,8 +3275,13 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ClientServicePackage'
+        default_services:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClientDefaultServicePage'
       required:
       - active_car
+      - default_services
       - promotional_packages
       - regular_packages
     ClientProfile:
@@ -2175,6 +3401,9 @@ components:
           type: object
           additionalProperties: {}
           nullable: true
+        service_recommendations:
+          type: object
+          additionalProperties: {}
         summary:
           type: object
           additionalProperties: {}
@@ -2211,12 +3440,190 @@ components:
       - next_appointment
       - page_state
       - selected_car
+      - service_recommendations
       - summary
+    ClientServiceBooking:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/Status1f3Enum'
+          title: Статус
+        status_label:
+          type: string
+          readOnly: true
+        preferred_datetime:
+          type: string
+          format: date-time
+          title: Желаемые дата и время визита
+        scheduled_datetime:
+          type: string
+          format: date-time
+          nullable: true
+          title: Подтвержденные дата и время визита
+        final_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        price_snapshot:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+          title: Цена на момент бронирования
+        currency:
+          type: string
+          title: Валюта
+          maxLength: 8
+        price:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        service_package_title_snapshot:
+          type: string
+          title: Название пакета на момент бронирования
+          maxLength: 255
+        car_title_snapshot:
+          type: string
+          title: Название автомобиля на момент бронирования
+          maxLength: 500
+        license_plate_snapshot:
+          type: string
+          title: Госномер на момент бронирования
+          maxLength: 32
+        comment:
+          type: string
+          title: Комментарий клиента
+        staff_comment:
+          type: string
+          title: Внутренний комментарий сотрудника
+        cancel_reason:
+          type: string
+          title: Причина отмены
+        current_mileage_km:
+          type: integer
+          nullable: true
+          readOnly: true
+        car:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        service_package_data:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          readOnly: true
+        default_service_page_data:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          readOnly: true
+        service_source_type:
+          type: string
+          readOnly: true
+        service_data:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        service_station_data:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          readOnly: true
+        permissions:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        actions:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - actions
+      - car
+      - created_at
+      - current_mileage_km
+      - default_service_page_data
+      - final_datetime
+      - id
+      - permissions
+      - preferred_datetime
+      - price
+      - service_data
+      - service_package_data
+      - service_source_type
+      - service_station_data
+      - status_label
+      - updated_at
+    ClientServiceBookingCancelRequest:
+      type: object
+      properties:
+        cancel_reason:
+          type: string
+          nullable: true
+          maxLength: 1000
+    ClientServiceBookingCreateRequest:
+      type: object
+      properties:
+        client_car_id:
+          type: integer
+        service_package_id:
+          type: integer
+          nullable: true
+        default_service_page_id:
+          type: integer
+          nullable: true
+        preferred_datetime:
+          type: string
+          format: date-time
+        service_station_id:
+          type: integer
+          nullable: true
+        client_comment:
+          type: string
+          nullable: true
+        current_mileage_km:
+          type: integer
+          minimum: 1
+          nullable: true
+      required:
+      - client_car_id
+      - preferred_datetime
+    ClientServiceBookingUpdateRequest:
+      type: object
+      properties:
+        preferred_datetime:
+          type: string
+          format: date-time
+        service_station_id:
+          type: integer
+          nullable: true
+        client_comment:
+          type: string
+          nullable: true
+        current_mileage_km:
+          type: integer
+          minimum: 1
+          nullable: true
     ClientServicePackage:
       type: object
       properties:
         id:
           type: integer
+          readOnly: true
+        service_source_type:
+          type: string
           readOnly: true
         category:
           allOf:
@@ -2359,6 +3766,7 @@ components:
       - products_total
       - promotion_terms
       - promotion_title
+      - service_source_type
       - services_count
       - services_total
       - short_description
@@ -2367,6 +3775,61 @@ components:
       - status
       - status_display
       - title
+    ClientServiceStation:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+          title: Название СТО
+        slug:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        city:
+          type: string
+          readOnly: true
+          title: Город
+        address:
+          type: string
+          readOnly: true
+          title: Адрес
+        latitude:
+          type: string
+          nullable: true
+          readOnly: true
+        longitude:
+          type: string
+          nullable: true
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+          title: Телефон
+        is_active:
+          type: boolean
+          readOnly: true
+          title: Активна
+        schedule:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+      required:
+      - address
+      - city
+      - id
+      - is_active
+      - latitude
+      - longitude
+      - name
+      - phone
+      - schedule
+      - slug
     ClientTokenResponse:
       type: object
       properties:
@@ -2421,6 +3884,76 @@ components:
           type: integer
           minimum: 1
           nullable: true
+    PatchedClientServiceBookingUpdateRequest:
+      type: object
+      properties:
+        preferred_datetime:
+          type: string
+          format: date-time
+        service_station_id:
+          type: integer
+          nullable: true
+        client_comment:
+          type: string
+          nullable: true
+        current_mileage_km:
+          type: integer
+          minimum: 1
+          nullable: true
+    PatchedStaffBookingUpdateRequest:
+      type: object
+      properties:
+        status:
+          allOf:
+          - $ref: '#/components/schemas/Status1f3Enum'
+          title: Статус
+        preferred_datetime:
+          type: string
+          format: date-time
+          title: Желаемые дата и время визита
+        scheduled_datetime:
+          type: string
+          format: date-time
+          nullable: true
+          title: Подтвержденные дата и время визита
+        service_station_id:
+          type: integer
+          writeOnly: true
+          nullable: true
+        service_type:
+          allOf:
+          - $ref: '#/components/schemas/ServiceTypeEnum'
+          writeOnly: true
+        service_package_id:
+          type: integer
+          writeOnly: true
+          nullable: true
+        default_service_page_id:
+          type: integer
+          writeOnly: true
+          nullable: true
+        mileage_km:
+          type: integer
+          minimum: 0
+          writeOnly: true
+          nullable: true
+        price_snapshot:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+          title: Цена на момент бронирования
+        currency:
+          type: string
+          minLength: 1
+          title: Валюта
+          maxLength: 8
+        staff_comment:
+          type: string
+          title: Внутренний комментарий сотрудника
+        cancel_reason:
+          type: string
+          title: Причина отмены
     PatchedStaffServicePackageWriteRequest:
       type: object
       properties:
@@ -2508,6 +4041,23 @@ components:
           items:
             $ref: '#/components/schemas/StaffPackageLineRequest'
           writeOnly: true
+    PatchedStaffTelegramVehicleRequestUpdateRequest:
+      type: object
+      properties:
+        detected_license_plate:
+          type: string
+          title: Госномер, введённый сотрудником
+          description: Сюда сотрудник вручную вводит госномер с фото.
+          maxLength: 32
+        detected_vin_code:
+          type: string
+          title: VIN-код, введённый сотрудником
+          description: Сюда сотрудник вручную вводит VIN с фото.
+          maxLength: 32
+        client_car_id:
+          type: integer
+          writeOnly: true
+          nullable: true
     PriceModeEnum:
       enum:
       - AUTO
@@ -2516,6 +4066,297 @@ components:
       description: |-
         * `AUTO` - Автоматический расчёт
         * `MANUAL` - Ручная цена
+    ServiceTypeEnum:
+      enum:
+      - PACKAGE
+      - DEFAULT
+      type: string
+      description: |-
+        * `PACKAGE` - PACKAGE
+        * `DEFAULT` - DEFAULT
+    StaffBookingCancelRequest:
+      type: object
+      properties:
+        cancel_reason:
+          type: string
+          minLength: 1
+      required:
+      - cancel_reason
+    StaffBookingDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/Status1f3Enum'
+          title: Статус
+        client_name:
+          type: string
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          readOnly: true
+        plate:
+          type: string
+          readOnly: true
+        car_title:
+          type: string
+          readOnly: true
+        car_meta:
+          type: string
+          readOnly: true
+        mileage_km:
+          type: string
+          readOnly: true
+        service_title:
+          type: string
+          readOnly: true
+        service_type:
+          type: string
+          readOnly: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        currency:
+          type: string
+          title: Валюта
+          maxLength: 8
+        preferred_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        scheduled_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        station:
+          type: string
+          readOnly: true
+        station_id:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        client_id:
+          type: integer
+          readOnly: true
+        client_car_id:
+          type: integer
+          readOnly: true
+        service_package_id:
+          type: integer
+          readOnly: true
+        default_service_page_id:
+          type: integer
+          readOnly: true
+        service_station_id:
+          type: integer
+          readOnly: true
+        comment:
+          type: string
+          readOnly: true
+        staff_comment:
+          type: string
+          readOnly: true
+        cancel_reason:
+          type: string
+          readOnly: true
+        bitrix_deal_id:
+          type: string
+          readOnly: true
+        display_address:
+          type: string
+          readOnly: true
+        final_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        client:
+          type: string
+          readOnly: true
+        car:
+          type: string
+          readOnly: true
+        service:
+          type: string
+          readOnly: true
+      required:
+      - bitrix_deal_id
+      - cancel_reason
+      - car
+      - car_meta
+      - car_title
+      - client
+      - client_car_id
+      - client_id
+      - client_name
+      - comment
+      - created_at
+      - default_service_page_id
+      - display_address
+      - email
+      - final_datetime
+      - id
+      - mileage_km
+      - phone
+      - plate
+      - preferred_datetime
+      - price
+      - scheduled_datetime
+      - service
+      - service_package_id
+      - service_station_id
+      - service_title
+      - service_type
+      - staff_comment
+      - station
+      - station_id
+    StaffBookingList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/Status1f3Enum'
+          title: Статус
+        client_name:
+          type: string
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          readOnly: true
+        plate:
+          type: string
+          readOnly: true
+        car_title:
+          type: string
+          readOnly: true
+        car_meta:
+          type: string
+          readOnly: true
+        mileage_km:
+          type: string
+          readOnly: true
+        service_title:
+          type: string
+          readOnly: true
+        service_type:
+          type: string
+          readOnly: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        currency:
+          type: string
+          title: Валюта
+          maxLength: 8
+        preferred_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        scheduled_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        station:
+          type: string
+          readOnly: true
+        station_id:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - car_meta
+      - car_title
+      - client_name
+      - created_at
+      - email
+      - id
+      - mileage_km
+      - phone
+      - plate
+      - preferred_datetime
+      - price
+      - scheduled_datetime
+      - service_title
+      - service_type
+      - station
+      - station_id
+    StaffBookingUpdateRequest:
+      type: object
+      properties:
+        status:
+          allOf:
+          - $ref: '#/components/schemas/Status1f3Enum'
+          title: Статус
+        preferred_datetime:
+          type: string
+          format: date-time
+          title: Желаемые дата и время визита
+        scheduled_datetime:
+          type: string
+          format: date-time
+          nullable: true
+          title: Подтвержденные дата и время визита
+        service_station_id:
+          type: integer
+          writeOnly: true
+          nullable: true
+        service_type:
+          allOf:
+          - $ref: '#/components/schemas/ServiceTypeEnum'
+          writeOnly: true
+        service_package_id:
+          type: integer
+          writeOnly: true
+          nullable: true
+        default_service_page_id:
+          type: integer
+          writeOnly: true
+          nullable: true
+        mileage_km:
+          type: integer
+          minimum: 0
+          writeOnly: true
+          nullable: true
+        price_snapshot:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+          title: Цена на момент бронирования
+        currency:
+          type: string
+          minLength: 1
+          title: Валюта
+          maxLength: 8
+        staff_comment:
+          type: string
+          title: Внутренний комментарий сотрудника
+        cancel_reason:
+          type: string
+          title: Причина отмены
+      required:
+      - preferred_datetime
     StaffCarDetailPageDataResponse:
       type: object
       properties:
@@ -3053,7 +4894,7 @@ components:
           title: Валюта
         status:
           allOf:
-          - $ref: '#/components/schemas/StaffPackageItemPriceStatusEnum'
+          - $ref: '#/components/schemas/StatusAcbEnum'
           readOnly: true
           title: Статус
         status_display:
@@ -3102,16 +4943,6 @@ components:
       - updated_at
       - valid_from
       - valid_to
-    StaffPackageItemPriceStatusEnum:
-      enum:
-      - ACTIVE
-      - INACTIVE
-      - ARCHIVED
-      type: string
-      description: |-
-        * `ACTIVE` - Активна
-        * `INACTIVE` - Неактивна
-        * `ARCHIVED` - Архивирована
     StaffPackageItemShort:
       type: object
       properties:
@@ -3836,6 +5667,217 @@ components:
       required:
       - modification_source_id
       - title
+    StaffTelegramClientCar:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        client_id:
+          type: integer
+          readOnly: true
+        client_name:
+          type: string
+          readOnly: true
+        client_phone:
+          type: string
+          readOnly: true
+        license_plate:
+          type: string
+          readOnly: true
+          title: Госномер
+        vin_code:
+          type: string
+          readOnly: true
+          title: VIN-код
+        full_car_title:
+          type: string
+          readOnly: true
+        latest_mileage_km:
+          type: integer
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusBe2Enum'
+          readOnly: true
+          title: Статус
+        is_default:
+          type: boolean
+          readOnly: true
+          title: Автомобиль по умолчанию
+      required:
+      - client_id
+      - client_name
+      - client_phone
+      - full_car_title
+      - id
+      - is_default
+      - latest_mileage_km
+      - license_plate
+      - status
+      - vin_code
+    StaffTelegramVehicleRequestAssignVinRequest:
+      type: object
+      properties:
+        client_car_id:
+          type: integer
+          nullable: true
+        detected_vin_code:
+          type: string
+    StaffTelegramVehicleRequestDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        telegram_chat_id:
+          type: integer
+          readOnly: true
+        telegram_user_id:
+          type: integer
+          readOnly: true
+          nullable: true
+        telegram_username:
+          type: string
+          readOnly: true
+        plate_photo_url:
+          type: string
+          readOnly: true
+        vin_photo_url:
+          type: string
+          readOnly: true
+        detected_license_plate:
+          type: string
+          readOnly: true
+          title: Госномер, введённый сотрудником
+          description: Сюда сотрудник вручную вводит госномер с фото.
+        detected_vin_code:
+          type: string
+          readOnly: true
+          title: VIN-код, введённый сотрудником
+          description: Сюда сотрудник вручную вводит VIN с фото.
+        client_car:
+          allOf:
+          - $ref: '#/components/schemas/StaffTelegramClientCar'
+          readOnly: true
+        status:
+          type: string
+          readOnly: true
+        page:
+          type: string
+          readOnly: true
+        actions:
+          type: string
+          readOnly: true
+        possible_client_cars:
+          type: string
+          readOnly: true
+      required:
+      - actions
+      - client_car
+      - created_at
+      - detected_license_plate
+      - detected_vin_code
+      - id
+      - page
+      - plate_photo_url
+      - possible_client_cars
+      - status
+      - telegram_chat_id
+      - telegram_user_id
+      - telegram_username
+      - updated_at
+      - vin_photo_url
+    StaffTelegramVehicleRequestFindClientCarRequest:
+      type: object
+      properties:
+        detected_license_plate:
+          type: string
+    StaffTelegramVehicleRequestList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        telegram_chat_id:
+          type: integer
+          readOnly: true
+        telegram_user_id:
+          type: integer
+          readOnly: true
+          nullable: true
+        telegram_username:
+          type: string
+          readOnly: true
+        plate_photo_url:
+          type: string
+          readOnly: true
+        vin_photo_url:
+          type: string
+          readOnly: true
+        detected_license_plate:
+          type: string
+          readOnly: true
+          title: Госномер, введённый сотрудником
+          description: Сюда сотрудник вручную вводит госномер с фото.
+        detected_vin_code:
+          type: string
+          readOnly: true
+          title: VIN-код, введённый сотрудником
+          description: Сюда сотрудник вручную вводит VIN с фото.
+        client_car:
+          allOf:
+          - $ref: '#/components/schemas/StaffTelegramClientCar'
+          readOnly: true
+        status:
+          type: string
+          readOnly: true
+      required:
+      - client_car
+      - created_at
+      - detected_license_plate
+      - detected_vin_code
+      - id
+      - plate_photo_url
+      - status
+      - telegram_chat_id
+      - telegram_user_id
+      - telegram_username
+      - updated_at
+      - vin_photo_url
+    StaffTelegramVehicleRequestUpdateRequest:
+      type: object
+      properties:
+        detected_license_plate:
+          type: string
+          title: Госномер, введённый сотрудником
+          description: Сюда сотрудник вручную вводит госномер с фото.
+          maxLength: 32
+        detected_vin_code:
+          type: string
+          title: VIN-код, введённый сотрудником
+          description: Сюда сотрудник вручную вводит VIN с фото.
+          maxLength: 32
+        client_car_id:
+          type: integer
+          writeOnly: true
+          nullable: true
     StaffTokenRefreshRequest:
       type: object
       description: Serializer для обновления access token по refresh token.
@@ -3919,6 +5961,46 @@ components:
         * `PUBLISHED` - Опубликован
         * `UNPUBLISHED` - Снят с публикации
         * `ARCHIVED` - Архивирован
+    Status1f3Enum:
+      enum:
+      - DRAFT
+      - CREATED
+      - CONFIRMED
+      - IN_PROGRESS
+      - COMPLETED
+      - CANCELLED_BY_CLIENT
+      - CANCELLED_BY_STAFF
+      - NO_SHOW
+      type: string
+      description: |-
+        * `DRAFT` - Черновик
+        * `CREATED` - Создана
+        * `CONFIRMED` - Подтверждена
+        * `IN_PROGRESS` - В работе
+        * `COMPLETED` - Завершена
+        * `CANCELLED_BY_CLIENT` - Отменена клиентом
+        * `CANCELLED_BY_STAFF` - Отменена сотрудником
+        * `NO_SHOW` - Клиент не приехал
+    StatusAcbEnum:
+      enum:
+      - ACTIVE
+      - INACTIVE
+      - ARCHIVED
+      type: string
+      description: |-
+        * `ACTIVE` - Активна
+        * `INACTIVE` - Неактивна
+        * `ARCHIVED` - Архивирована
+    StatusBe2Enum:
+      enum:
+      - ACTIVE
+      - INACTIVE
+      - ARCHIVED
+      type: string
+      description: |-
+        * `ACTIVE` - Активен
+        * `INACTIVE` - Неактивен
+        * `ARCHIVED` - В архиве
     StatusC5bEnum:
       enum:
       - ACTIVE
