@@ -221,7 +221,9 @@ export function AddCarWizard() {
           </Card>
         </div>
 
-        <aside className="lg:col-span-4">
+        {/* Сайдбар «Конфигурация» — только desktop. В мобильном макете
+            (screens/add-car) его нет: после карточки шага идёт сразу футер. */}
+        <aside className="hidden lg:col-span-4 lg:block">
           <ConfigSidebar
             mark={mark}
             model={model}

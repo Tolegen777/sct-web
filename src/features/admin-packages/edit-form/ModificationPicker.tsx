@@ -172,9 +172,10 @@ export function ModificationPicker({ open, onClose, onSelect }: ModificationPick
           disabled={marksLoading}
           options={marks.map((m: Mark) => ({
             value: m.id,
-            label: `${m.display_name || m.name}${m.modifications_count ? ` (${m.modifications_count})` : ''}`,
-            // латиница для поиска: ввод «toyo» находит «Тойота»
-            keywords: [m.name, m.name_ru].filter(Boolean).join(' '),
+            // Только латиница в названии марки (по требованию): m.name = латинское.
+            label: `${m.name || m.display_name}${m.modifications_count ? ` (${m.modifications_count})` : ''}`,
+            // в поиске оставляем и кириллицу: ввод «тойо» тоже найдёт.
+            keywords: [m.name, m.name_ru, m.display_name].filter(Boolean).join(' '),
           }))}
         />
         <SelectCol

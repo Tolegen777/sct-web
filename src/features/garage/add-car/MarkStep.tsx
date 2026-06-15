@@ -113,7 +113,7 @@ function MarkCard({
       type="button"
       onClick={() => onSelect(mark)}
       className={cn(
-        'flex flex-col items-center justify-center gap-3 rounded-sct border bg-white p-5 transition-all',
+        'flex flex-col items-center justify-center gap-2 rounded-sct border bg-white p-3 transition-all',
         active
           ? 'border-brandBlue shadow-soft-blue'
           : 'border-borderLight hover:-translate-y-0.5 hover:border-brandBlue/40 hover:shadow-sct-soft',
@@ -122,9 +122,9 @@ function MarkCard({
       <SafeImage
         src={mark.logo_url}
         alt={mark.name}
-        className="h-12 w-12 object-contain"
+        className="h-10 w-10 object-contain"
         fallback={
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surfaceLight text-[11px] font-900 uppercase text-textSecondary">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surfaceLight text-[11px] font-900 uppercase text-textSecondary">
             {mark.name.slice(0, 2)}
           </div>
         }

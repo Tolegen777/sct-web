@@ -218,7 +218,7 @@ function ChipGroup({
               type="button"
               onClick={() => onToggle(active ? undefined : o.value)}
               className={cn(
-                'min-w-[104px] rounded-sct border px-5 py-3 text-center text-sm font-bold transition-all',
+                'min-w-[84px] rounded-sct border px-4 py-2.5 text-center text-[13px] font-bold transition-all',
                 active
                   ? 'border-brandBlue bg-blue-50/50 text-brandBlue shadow-soft-blue'
                   : 'border-borderLight bg-white text-textPrimary hover:border-brandBlue/40',

@@ -14,6 +14,7 @@
  */
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@/features/auth/store'
+import { SafeImage } from '@/shared/ui/SafeImage'
 
 interface HomeHeroProps {
   hasCars: boolean
@@ -30,7 +31,7 @@ export function HomeHero({ hasCars }: HomeHeroProps) {
   if (!isAuthed) {
     return (
       <section className="relative overflow-hidden rounded-sct-lg bg-navy text-white">
-        <HeroPhoto />
+        <HeroBackdrop variant="guest" />
 
         <div className="relative z-10 p-6 sm:p-8 md:p-10 lg:p-12">
           <div className="md:max-w-[58%]">
@@ -78,7 +79,7 @@ export function HomeHero({ hasCars }: HomeHeroProps) {
 
   return (
     <section className="relative overflow-hidden rounded-sct-lg bg-navy text-white">
-      <BackdropPhoto />
+      <HeroBackdrop variant="authed" />
 
       <div className="relative z-10 p-6 sm:p-8 md:p-10 lg:p-12">
         <div className="md:max-w-[60%]">
@@ -129,41 +130,89 @@ export function HomeHero({ hasCars }: HomeHeroProps) {
 }
 
 /**
- * Правая часть гостевого hero — фото обслуживаемого автомобиля.
+ * Фон Hero — фото на весь блок (видно и на мобилке, и на десктопе).
  *
- * Пока реального ассета нет (см. PROJECT_STATUS §4.1). Чтобы вставить фото:
- *   1. положи файл в `public/` (например `public/hero-service.jpg`);
- *   2. раскомментируй <img> ниже и удали градиент-заглушку.
- * Градиент слева->направо растворяет фото в navy, чтобы текст читался.
+ * Реальные брендовые фото кладём в `public/`:
+ *   - гость:        `public/hero-guest.jpg`   (обслуживаемый автомобиль)
+ *   - авторизован.: `public/hero-advisor.jpg` (мастер в форме SCT)
+ * Пока файла нет — `SafeImage` показывает декоративный фолбэк (градиент +
+ * водяной знак SCT), как только файл появится — подхватится автоматически,
+ * код менять не нужно.
+ *
+ * Поверх фото — затемнение для читаемости заголовка:
+ *   - мобилка: общий navy-слой (текст идёт поверх всего фото);
+ *   - десктоп: градиент слева→направо (текст слева на тёмном, фото справа).
  */
-function HeroPhoto() {
+function HeroBackdrop({ variant }: { variant: 'guest' | 'authed' }) {
+  const src = variant === 'guest' ? '/hero-guest.jpg' : '/hero-advisor.jpg'
+
+  // Авторизованный: на фото мастер по центру кадра. Full-bleed «утапливает»
+  // его в текстовый градиент слева, поэтому:
+  //   - desktop: фото правой панелью (мастер виден справа, текст слева на navy);
+  //   - mobile:  фон на всю карточку, но кадр сдвинут влево (object-left) —
+  //     мастер уходит вправо, текст слева не налезает на лицо.
+  if (variant === 'authed') {
+    return (
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {/* Desktop — правая фото-панель */}
+        <div className="absolute inset-y-0 right-0 hidden w-[54%] md:block">
+          <SafeImage
+            src={src}
+            alt=""
+            aria-hidden
+            className="h-full w-full object-cover object-center"
+            fallback={<HeroBackdropFallback />}
+          />
+          {/* Растворение левого края панели в navy под текст */}
+          <div className="absolute inset-0 bg-gradient-to-r from-navy via-navy/30 to-transparent" />
+        </div>
+
+        {/* Mobile — фон на всю карточку, кадр сдвинут влево (мастер вправо) */}
+        <div className="absolute inset-0 md:hidden">
+          <SafeImage
+            src={src}
+            alt=""
+            aria-hidden
+            className="h-full w-full object-cover object-left"
+            fallback={<HeroBackdropFallback />}
+          />
+          {/* Затемнение слева под текст, мастер справа остаётся светлее */}
+          <div className="absolute inset-0 bg-gradient-to-r from-navy via-navy/80 to-navy/40" />
+        </div>
+
+        <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-brandBlue/20 blur-3xl" />
+      </div>
+    )
+  }
+
+  // Гость: фото авто (субъект справа кадра) — full-bleed работает отлично.
   return (
-    <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[48%] md:block">
-      {/* Заглушка: фотографический тёмный градиент. Заменить на <img>. */}
-      <div className="h-full w-full bg-gradient-to-br from-[#10254f] via-navy to-navyDeep" />
-      {/* <img src="/hero-service.jpg" alt="" className="h-full w-full object-cover" /> */}
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      <SafeImage
+        src={src}
+        alt=""
+        aria-hidden
+        className="absolute inset-0 h-full w-full object-cover object-center"
+        fallback={<HeroBackdropFallback />}
+      />
 
-      {/* Лёгкое голубое свечение справа сверху для глубины */}
+      {/* Затемнение под текст */}
+      <div className="absolute inset-0 bg-navy/70 md:hidden" />
+      <div className="absolute inset-0 hidden bg-gradient-to-r from-navy via-navy/85 to-navy/20 md:block" />
+
+      {/* Лёгкое свечение для глубины */}
       <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-brandBlue/20 blur-3xl" />
-
-      {/* Растворение в navy слева, чтобы заголовок читался поверх стыка */}
-      <div className="absolute inset-0 bg-gradient-to-r from-navy via-navy/40 to-transparent" />
     </div>
   )
 }
 
-/**
- * Декоративный фон Hero. В оригинальном макете — фото мастера в форме SCT
- * с большим логотипом SCT за спиной. Здесь — лёгкий пейзаж шиномонтажа из
- * градиента + большой полупрозрачный SCT-логотип за «человеком».
- */
-function BackdropPhoto() {
+/** Декоративная заглушка, пока нет реального фото в public/. */
+function HeroBackdropFallback() {
   return (
     <>
-      {/* Лёгкий градиент справа */}
-      <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 bg-gradient-to-l from-navyDeep via-navy/60 to-navy md:block" />
-      {/* Большое лого-водянка справа */}
-      <div className="pointer-events-none absolute right-8 top-6 hidden text-white/[0.04] md:block">
+      <div className="absolute inset-0 bg-gradient-to-br from-[#10254f] via-navy to-navyDeep" />
+      {/* Водяной знак SCT справа */}
+      <div className="absolute right-6 top-6 text-white/[0.05]">
         <svg className="h-40 w-40 lg:h-52 lg:w-52" viewBox="0 0 100 100" fill="currentColor">
           <circle cx="50" cy="50" r="48" stroke="currentColor" strokeWidth="2" fill="none" />
           <text
@@ -179,20 +228,6 @@ function BackdropPhoto() {
           </text>
         </svg>
       </div>
-      {/* Силуэт мастера (плейсхолдер до брендовой фотографии) */}
-      <div className="pointer-events-none absolute bottom-0 right-6 hidden md:right-10 md:flex md:items-end lg:right-20">
-        <svg
-          className="h-56 w-44 text-white/[0.10] lg:h-72 lg:w-56"
-          viewBox="0 0 120 200"
-          fill="currentColor"
-          aria-hidden
-        >
-          <circle cx="60" cy="40" r="22" />
-          <path d="M20 200 C 20 130, 100 130, 100 200 Z" />
-        </svg>
-      </div>
-      {/* Светлый круг сверху-слева для глубины */}
-      <div className="pointer-events-none absolute -left-32 -top-32 h-72 w-72 rounded-full bg-brandBlue/10 blur-3xl" />
     </>
   )
 }

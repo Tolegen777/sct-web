@@ -35,9 +35,14 @@ export function formatMileage(km: number | null | undefined): string {
  * без округления до десятых (иначе 1984/1986/1994 сливаются в "2.0 L") и
  * убираем хвостовые нули: 1984 → "1.984 L", 2000 → "2 L".
  */
-export function formatEngineVolume(cc: number | null | undefined): string | null {
-  if (cc === null || cc === undefined) return null
-  return `${parseFloat((cc / 1000).toFixed(3))} L`
+export function formatEngineVolume(value: number | string | null | undefined): string | null {
+  if (value === null || value === undefined || value === '') return null
+  // Бэк отдаёт объём либо строкой-литрами ('1.4'), либо числом в куб.см (1498),
+  // либо уже числом-литрами (1.5). Нормализуем к числу и приводим к литрам.
+  const n = typeof value === 'string' ? parseFloat(value) : value
+  if (!Number.isFinite(n)) return null
+  const liters = n >= 100 ? n / 1000 : n
+  return `${liters.toFixed(1)} L`
 }
 
 /**

@@ -43,7 +43,7 @@ const SERVICES: ServiceItem[] = [
 export function MainServicesSection() {
   return (
     <section>
-      <header className="mb-5 flex items-end justify-between gap-3">
+      <header className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
         <div>
           <p className="text-[11px] font-900 uppercase tracking-widest text-brandBlue">
             Направления

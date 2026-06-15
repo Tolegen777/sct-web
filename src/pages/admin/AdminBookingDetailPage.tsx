@@ -22,6 +22,7 @@ import { Card } from '@/shared/ui/Card'
 import { Button } from '@/shared/ui/Button'
 import { Input } from '@/shared/ui/Input'
 import { Select } from '@/shared/ui/Select'
+import { SearchableSelect } from '@/shared/ui/SearchableSelect'
 import { Textarea } from '@/shared/ui/Textarea'
 import { Spinner } from '@/shared/ui/Spinner'
 import { toast } from '@/shared/ui/Toast'
@@ -168,7 +169,6 @@ export default function AdminBookingDetailPage() {
   const cancelMut = useCancelStaffBookingMutation(id ?? 0)
 
   const [form, setForm] = useState<FormState | null>(null)
-  const [pkgSearch, setPkgSearch] = useState('')
   const [cancelReason, setCancelReason] = useState('')
   const initedRef = useRef<number | null>(null)
   const initialRef = useRef<FormState | null>(null)
@@ -182,12 +182,18 @@ export default function AdminBookingDetailPage() {
     }
   }, [data])
 
-  const filteredPackages = useMemo(() => {
-    const all = options?.service_packages ?? []
-    const q = pkgSearch.trim().toLowerCase()
-    if (!q) return all.slice(0, 50)
-    return all.filter((p) => p.label.toLowerCase().includes(q)).slice(0, 50)
-  }, [options, pkgSearch])
+  const packageOptions = useMemo(
+    () =>
+      (options?.service_packages ?? []).map((p) => ({
+        value: String(p.id),
+        label:
+          p.price != null
+            ? `${p.label} · ${formatMoney(String(p.price), p.currency ?? 'KZT')}`
+            : p.label,
+        keywords: p.label,
+      })),
+    [options],
+  )
 
   if (isLoading || !form) {
     return (
@@ -214,8 +220,6 @@ export default function AdminBookingDetailPage() {
   const meta = STATUS_META[form.status]
   const terminal = form.status === 'COMPLETED' || form.status.startsWith('CANCELLED') || form.status === 'NO_SHOW'
 
-  const selectedPkgLabel =
-    options?.service_packages.find((p) => String(p.id) === form.service_package_id)?.label ?? null
 
   const save = () => {
     const patch = buildPatch(form, initialRef.current ?? form)
@@ -355,35 +359,13 @@ export default function AdminBookingDetailPage() {
 
             {form.service_type === 'PACKAGE' ? (
               <div className="mt-3">
-                {selectedPkgLabel && (
-                  <p className="mb-2 text-[12px] font-bold text-textPrimary">
-                    Выбрано: <span className="text-brandBlue">{selectedPkgLabel}</span>
-                  </p>
-                )}
-                <Input label="Поиск пакета" placeholder="Название, авто…" value={pkgSearch} onChange={(e) => setPkgSearch(e.target.value)} />
-                <div className="mt-2 max-h-[220px] overflow-y-auto rounded-sct border border-borderLight">
-                  <ul className="divide-y divide-borderLight">
-                    {filteredPackages.map((p) => (
-                      <li key={p.id}>
-                        <button
-                          type="button"
-                          onClick={() => set({ service_package_id: String(p.id) })}
-                          className={cn(
-                            'flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm transition-colors hover:bg-surfaceLight',
-                            form.service_package_id === String(p.id) && 'bg-blue-50',
-                          )}
-                        >
-                          <span className="min-w-0 truncate font-bold text-textPrimary">{p.label}</span>
-                          {p.price != null && (
-                            <span className="shrink-0 font-mono text-[12px] font-bold text-brandBlue">
-                              {formatMoney(String(p.price), p.currency ?? 'KZT')}
-                            </span>
-                          )}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <SearchableSelect
+                  label="Пакет услуги"
+                  placeholder="— Выберите пакет —"
+                  value={form.service_package_id}
+                  onChange={(v) => set({ service_package_id: v })}
+                  options={packageOptions}
+                />
               </div>
             ) : (
               <div className="mt-3">

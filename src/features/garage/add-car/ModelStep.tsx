@@ -53,8 +53,8 @@ export function ModelStep({ mark, selectedModelId, onSelect }: ModelStepProps) {
   return (
     <div>
       <Input
-        label="Поиск модели"
-        placeholder="Например X5…"
+        label="Выбор модели"
+        placeholder="Начните вводить модель…"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />

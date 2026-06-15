@@ -127,7 +127,7 @@ export function SpecsStep({ markId, modelId, values, onChange, onBodyLabel, onNe
                   type="button"
                   onClick={() => selectYear(y)}
                   className={cn(
-                    'rounded-sct border py-3.5 text-base font-900 tracking-tight transition-all',
+                    'rounded-sct border py-2.5 text-sm font-900 tracking-tight transition-all',
                     values.year === y
                       ? 'border-brandBlue bg-blue-50/50 text-brandBlue shadow-soft-blue'
                       : 'border-borderLight bg-white text-textPrimary hover:border-brandBlue/40',
@@ -163,7 +163,7 @@ export function SpecsStep({ markId, modelId, values, onChange, onBodyLabel, onNe
                 type="button"
                 onClick={() => selectBody(b.id)}
                 className={cn(
-                  'flex flex-col items-center justify-center gap-3 rounded-sct border bg-white px-4 py-6 transition-all',
+                  'flex flex-col items-center justify-center gap-2 rounded-sct border bg-white px-3 py-4 transition-all',
                   values.body_type === b.id
                     ? 'border-brandBlue shadow-soft-blue'
                     : 'border-borderLight hover:border-brandBlue/40 hover:shadow-sct-soft',
