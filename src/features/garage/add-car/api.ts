@@ -6,6 +6,8 @@ import type {
   MarksResponse,
   ModelsResponse,
   ModificationsResponse,
+  Trim,
+  TrimsResponse,
 } from './types'
 
 /**
@@ -63,6 +65,22 @@ export async function fetchModifications(q: CarsQuery): Promise<ModificationsRes
     params: buildParams(q),
   })
   return response.data
+}
+
+/**
+ * Комплектации выбранной модификации. Параметр `modification` — числовой id
+ * модификации (не source_uuid: с uuid бэк отдаёт 500). Ответ нормализуем:
+ * приходит `{results}` либо голый массив.
+ */
+export async function fetchTrims(modificationId: number): Promise<Trim[]> {
+  const response = await noAuth<TrimsResponse | Trim[]>({
+    url: endpoints.carsTrims,
+    method: 'GET',
+    params: { modification: modificationId },
+  })
+  const data = response.data
+  if (Array.isArray(data)) return data
+  return data.results ?? []
 }
 
 /**

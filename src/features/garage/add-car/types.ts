@@ -133,12 +133,16 @@ export interface CarsQuery {
 
 export interface Modification {
   id: number
-  source_id: string
+  /** Новый внешний идентификатор модификации (бэк перешёл с source_id). */
+  source_uuid: string
+  /** Сколько комплектаций (trims) у модификации. 1 → шаг выбора пропускаем. */
+  trims_count?: number
+  /** Legacy: раньше был source_id, теперь приходит null. Не использовать. */
+  source_id?: string | null
   display_name?: string
   name?: string
   title?: string
   full_title?: string
-  group_name?: string
   configuration_name?: string
   /** Фото конфигурации (S3, открыт). Поле называется именно photo_url. */
   photo_url?: string | null
@@ -163,4 +167,28 @@ export interface ModificationsResponse {
   results?: Modification[]
   next?: string | null
   previous?: string | null
+}
+
+/**
+ * Комплектация модификации (GET /cars/trims/?modification={id}).
+ * `source_id` — составной «модификация__комплектация» (напр. "9360098__20463555"),
+ * именно он уходит в create как `modification_trim_source_id`.
+ */
+export interface Trim {
+  id: number
+  source_id: string
+  name?: string
+  display_name?: string
+  full_title?: string
+  modification_id?: number
+  modification_source_uuid?: string
+  modification_name?: string
+  is_closed?: boolean
+  price_from?: number | string | null
+  price_to?: number | string | null
+}
+
+export interface TrimsResponse {
+  count?: number
+  results?: Trim[]
 }

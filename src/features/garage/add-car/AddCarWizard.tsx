@@ -21,19 +21,21 @@ import { MarkStep } from './MarkStep'
 import { ModelStep } from './ModelStep'
 import { SpecsStep, type SpecsValues } from './SpecsStep'
 import { ModificationStep } from './ModificationStep'
+import { TrimStep } from './TrimStep'
 import { FinalFormStep } from './FinalFormStep'
 import { Card } from '@/shared/ui/Card'
 import { Modal } from '@/shared/ui/Modal'
 import { Input } from '@/shared/ui/Input'
 import { useCreateCarMutation } from '@/features/garage/queries'
 import { parseApiError } from '@/features/auth/errors'
-import type { Mark, Model, Modification } from './types'
+import type { Mark, Model, Modification, Trim } from './types'
 
 const STEPS: StepDef[] = [
   { id: 'mark', title: 'Марка' },
   { id: 'model', title: 'Модель' },
   { id: 'specs', title: 'Поколение' },
   { id: 'modification', title: 'Характеристики' },
+  { id: 'trim', title: 'Комплектация' },
   { id: 'final', title: 'Номер' },
 ]
 
@@ -46,6 +48,7 @@ export function AddCarWizard() {
   const [model, setModel] = useState<Model | null>(null)
   const [specs, setSpecs] = useState<SpecsValues>({})
   const [modification, setModification] = useState<Modification | null>(null)
+  const [trim, setTrim] = useState<Trim | null>(null)
   const [bodyLabel, setBodyLabel] = useState<string | null>(null)
   const [modPage, setModPage] = useState(1)
   const [serverError, setServerError] = useState<string | null>(null)
@@ -56,13 +59,23 @@ export function AddCarWizard() {
   const [vinOpen, setVinOpen] = useState(false)
 
   // Самый правый открытый шаг — определяется наличием данных.
-  const maxUnlocked = !mark ? 0 : !model ? 1 : !modification ? 3 : 4
+  // 0 марка · 1 модель · 2 поколение · 3 характеристики · 4 комплектация · 5 номер.
+  const maxUnlocked = !mark ? 0 : !model ? 1 : !modification ? 3 : !trim ? 4 : 5
+
+  // Если у модификации одна комплектация — шаг «Комплектация» проскакивается
+  // (TrimStep сам выбирает её). Чтобы «назад» не залипало на этом шаге.
+  const singleTrim = modification?.trims_count === 1
 
   const goTo = (index: number) => {
     if (index <= maxUnlocked) setActiveIndex(index)
   }
 
   const onBack = () => {
+    // С «Номера» при единственной комплектации прыгаем сразу на «Характеристики».
+    if (activeIndex === 5 && singleTrim) {
+      setActiveIndex(3)
+      return
+    }
     if (activeIndex > 0) setActiveIndex((i) => Math.max(0, i - 1))
     else navigate('/garage')
   }
@@ -73,6 +86,7 @@ export function AddCarWizard() {
       setModel(null)
       setSpecs({})
       setModification(null)
+      setTrim(null)
       setBodyLabel(null)
       setModPage(1)
     }
@@ -84,6 +98,7 @@ export function AddCarWizard() {
     if (model?.id !== m.id) {
       setSpecs({})
       setModification(null)
+      setTrim(null)
       setBodyLabel(null)
       setModPage(1)
     }
@@ -96,17 +111,25 @@ export function AddCarWizard() {
     // не подходить под новые фильтры.
     setSpecs(next)
     setModification(null)
+    setTrim(null)
     setModPage(1)
   }
 
-  // Выбор модификации только подсвечивает её; переход на шаг 5 — по кнопке
-  // «Выбрать авто» (confirmModification).
+  // Выбор модификации только подсвечивает её; переход на шаг «Комплектация» —
+  // по кнопке «Далее» (confirmModification).
   const onModificationSelected = (mod: Modification) => {
+    if (modification?.id !== mod.id) setTrim(null)
     setModification(mod)
   }
 
   const confirmModification = () => {
     if (modification) setActiveIndex(4)
+  }
+
+  // Выбор комплектации (или авто-выбор единственной) → финальный шаг «Номер».
+  const onTrimSelected = (t: Trim) => {
+    setTrim(t)
+    setActiveIndex(5)
   }
 
   const submit = async (values: {
@@ -116,11 +139,11 @@ export function AddCarWizard() {
     mileage_km: number | null
     is_default: boolean
   }) => {
-    if (!modification) return
+    if (!trim) return
     setServerError(null)
     try {
       await createCar.mutateAsync({
-        modification_source_id: modification.source_id,
+        modification_trim_source_id: trim.source_id,
         license_plate: values.license_plate,
         nickname: values.nickname,
         vin_code: values.vin_code,
@@ -198,7 +221,7 @@ export function AddCarWizard() {
                 modelId={model.id}
                 specs={specs}
                 onSpecsChange={onSpecsChange}
-                selectedSourceId={modification?.source_id ?? null}
+                selectedModId={modification?.id ?? null}
                 onSelect={onModificationSelected}
                 onConfirm={confirmModification}
                 page={modPage}
@@ -206,7 +229,15 @@ export function AddCarWizard() {
               />
             )}
 
-            {activeIndex === 4 && mark && model && modification && (
+            {activeIndex === 4 && modification && (
+              <TrimStep
+                modificationId={modification.id}
+                selectedTrimSourceId={trim?.source_id ?? null}
+                onSelect={onTrimSelected}
+              />
+            )}
+
+            {activeIndex === 5 && mark && model && modification && trim && (
               <FinalFormStep
                 mark={mark}
                 model={model}

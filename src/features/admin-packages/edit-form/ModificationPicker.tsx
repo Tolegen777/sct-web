@@ -319,9 +319,9 @@ export function ModificationPicker({ open, onClose, onSelect }: ModificationPick
                     />
                   </div>
                   <div className="min-w-0 flex-1">
-                    {m.group_name && (
+                    {m.configuration_name && (
                       <p className="truncate text-[10px] font-900 uppercase tracking-widest text-brandBlue">
-                        {m.group_name}
+                        {m.configuration_name}
                       </p>
                     )}
                     <p className="truncate text-sm font-900 uppercase tracking-tight text-textPrimary">

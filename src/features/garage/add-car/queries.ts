@@ -6,7 +6,7 @@
  * от выбранных значений и подгружаются часто.
  */
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
-import { fetchFilters, fetchMarks, fetchModels, fetchModifications } from './api'
+import { fetchFilters, fetchMarks, fetchModels, fetchModifications, fetchTrims } from './api'
 import type { CarsQuery } from './types'
 
 const dayMs = 24 * 60 * 60 * 1000
@@ -17,6 +17,7 @@ export const carsKeys = {
   models: (markId: number) => [...carsKeys.all, 'models', markId] as const,
   filters: (q: CarsQuery) => [...carsKeys.all, 'filters', q] as const,
   modifications: (q: CarsQuery) => [...carsKeys.all, 'modifications', q] as const,
+  trims: (modificationId: number) => [...carsKeys.all, 'trims', modificationId] as const,
 }
 
 export function useMarksQuery() {
@@ -53,5 +54,14 @@ export function useModificationsQuery(q: CarsQuery | null) {
     queryFn: () => fetchModifications(q!),
     enabled: Boolean(q),
     placeholderData: keepPreviousData,
+  })
+}
+
+export function useTrimsQuery(modificationId: number | null) {
+  return useQuery({
+    queryKey: modificationId ? carsKeys.trims(modificationId) : [...carsKeys.all, 'trims', 'none'],
+    queryFn: () => fetchTrims(modificationId!),
+    enabled: typeof modificationId === 'number' && modificationId > 0,
+    staleTime: dayMs,
   })
 }

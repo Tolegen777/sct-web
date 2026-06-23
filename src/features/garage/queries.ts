@@ -11,11 +11,8 @@ import {
   fetchGarageFormPageData,
   setDefaultCar,
   updateCar,
+  type CarWritePayload,
 } from './api'
-import type {
-  ClientGarageCarWriteRequest,
-  PatchedClientGarageCarWriteRequest,
-} from '@/shared/api/types'
 import { useAuthStore } from '@/features/auth/store'
 
 export const garageKeys = {
@@ -82,7 +79,7 @@ export function useDeleteCarMutation() {
 export function useCreateCarMutation() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (payload: ClientGarageCarWriteRequest) => createCar(payload),
+    mutationFn: (payload: CarWritePayload) => createCar(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: garageKeys.cars() })
       qc.invalidateQueries({ queryKey: ['packages'] })
@@ -94,8 +91,7 @@ export function useCreateCarMutation() {
 export function useUpdateCarMutation(id: number) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (payload: PatchedClientGarageCarWriteRequest) =>
-      updateCar(id, payload),
+    mutationFn: (payload: Partial<CarWritePayload>) => updateCar(id, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: garageKeys.cars() })
       qc.invalidateQueries({ queryKey: garageKeys.car(id) })

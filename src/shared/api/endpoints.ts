@@ -48,6 +48,7 @@ export const endpoints = {
   carsModels: '/api/v1/cars/models/',
   carsFilters: '/api/v1/cars/filters/',
   carsModifications: '/api/v1/cars/modifications/',
+  carsTrims: '/api/v1/cars/trims/',
 
   // --- Staff (для админки пакетов) ---
   staffLogin: '/api/v1/staff_endpoints/auth/login/',

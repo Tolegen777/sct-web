@@ -50,10 +50,9 @@ export function ConfigSidebar({ mark, model, specs, modification, bodyLabel }: C
     { n: 4, label: 'КПП и привод', value: drivetrain },
   ]
 
-  // Выбранное авто: приоритетно «group_name · name» (комплектация + модификация),
-  // fallback на full_title без pipe-разделителей.
+  // Выбранное авто: «конфигурация · модификация», fallback на full_title.
   const selectedCar = modification
-    ? [modification.group_name, modification.name].filter(Boolean).join(' · ') ||
+    ? [modification.configuration_name, modification.name].filter(Boolean).join(' · ') ||
       modification.full_title?.replace(/\s*\|\s*/g, ' ') ||
       modification.name ||
       markModel

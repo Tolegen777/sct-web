@@ -24,7 +24,7 @@ interface ModificationStepProps {
   modelId: number
   specs: SpecsValues
   onSpecsChange: (next: SpecsValues) => void
-  selectedSourceId: string | null
+  selectedModId: number | null
   onSelect: (modification: Modification) => void
   onConfirm: () => void
   page: number
@@ -43,7 +43,7 @@ export function ModificationStep({
   modelId,
   specs,
   onSpecsChange,
-  selectedSourceId,
+  selectedModId,
   onSelect,
   onConfirm,
   page,
@@ -148,7 +148,7 @@ export function ModificationStep({
               <ModCard
                 key={m.id}
                 mod={m}
-                active={m.source_id === selectedSourceId}
+                active={m.id === selectedModId}
                 onSelect={() => onSelect(m)}
               />
             ))}
@@ -182,11 +182,11 @@ export function ModificationStep({
 
       <button
         type="button"
-        disabled={!selectedSourceId}
+        disabled={selectedModId == null}
         onClick={onConfirm}
         className="w-full rounded-sct bg-brandBlue py-4 text-sm font-900 uppercase tracking-[0.15em] text-white shadow-soft-blue transition-all hover:bg-brandBlueDark disabled:cursor-not-allowed disabled:opacity-50"
       >
-        Выбрать авто
+        Далее
       </button>
     </div>
   )
@@ -251,8 +251,7 @@ function ModCard({
       ? `${mod.year_from ?? ''}${mod.year_to ? `–${mod.year_to}` : ''}`
       : null
   const sub =
-    [mod.configuration_name, yearRange, mod.drive_type_label].filter(Boolean).join(' · ') ||
-    `MOD ${mod.id}`
+    [yearRange, mod.drive_type_label].filter(Boolean).join(' · ') || `MOD ${mod.id}`
   const image = mod.photo_url ?? undefined
 
   return (
@@ -279,9 +278,9 @@ function ModCard({
         />
       </div>
       <div className="p-3">
-        {mod.group_name && (
+        {mod.configuration_name && (
           <p className="truncate text-[10px] font-900 uppercase tracking-widest text-brandBlue">
-            {mod.group_name}
+            {mod.configuration_name}
           </p>
         )}
         <p className="truncate text-sm font-900 uppercase tracking-tight text-textPrimary">

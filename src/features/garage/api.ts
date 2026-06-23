@@ -3,12 +3,22 @@
  */
 import { http } from '@/shared/api/http'
 import { endpoints } from '@/shared/api/endpoints'
-import type {
-  ClientGarageCar,
-  ClientGarageCarWriteRequest,
-  ClientGarageFormPageData,
-  PatchedClientGarageCarWriteRequest,
-} from '@/shared/api/types'
+import type { ClientGarageCar, ClientGarageFormPageData } from '@/shared/api/types'
+
+/**
+ * Тело создания/обновления авто. Локальный тип, т.к. бэк перешёл на
+ * `modification_trim_source_id` (составной «модификация__комплектация»),
+ * а autogen-схема ещё старая (см. Template (4).yaml). Когда обновим
+ * schema.yml — переедем на сгенерированный тип.
+ */
+export interface CarWritePayload {
+  modification_trim_source_id: string
+  license_plate: string
+  nickname?: string
+  vin_code?: string
+  is_default?: boolean
+  mileage_km?: number | null
+}
 
 /**
  * GET /garage/cars/.
@@ -34,12 +44,12 @@ export async function fetchCar(id: number) {
   return response.data
 }
 
-export async function createCar(payload: ClientGarageCarWriteRequest) {
+export async function createCar(payload: CarWritePayload) {
   const response = await http.post<ClientGarageCar>(endpoints.garageCars, payload)
   return response.data
 }
 
-export async function updateCar(id: number, payload: PatchedClientGarageCarWriteRequest) {
+export async function updateCar(id: number, payload: Partial<CarWritePayload>) {
   const response = await http.patch<ClientGarageCar>(endpoints.garageCar(id), payload)
   return response.data
 }
