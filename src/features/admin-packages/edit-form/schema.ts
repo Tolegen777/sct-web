@@ -42,10 +42,9 @@ export const packageFormSchema = z.object({
     .number({ message: 'Выберите категорию' })
     .int()
     .positive('Выберите категорию'),
-  modification_source_id: z
+  modification_id: z
     .string()
-    .min(1, 'Укажите модификацию (source_id)')
-    .max(255),
+    .min(1, 'Укажите модификацию'),
 
   short_description: z.string().max(1000),
   description: z.string().max(10_000),
@@ -80,7 +79,7 @@ export const PACKAGE_FORM_DEFAULTS: PackageFormValues = {
   slug: '',
   status: 'DRAFT',
   category_id: 0 as unknown as number, // вынуждены так — RHF не любит undefined у number
-  modification_source_id: '',
+  modification_id: '',
   short_description: '',
   description: '',
   price_mode: 'AUTO',

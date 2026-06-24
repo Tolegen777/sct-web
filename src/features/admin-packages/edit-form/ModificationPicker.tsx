@@ -11,11 +11,8 @@
  *
  * Каскад: Марка → Модель → уточняющие фильтры (Год / Кузов / Поколение /
  * Топливо / Объём / Мощность / КПП / Привод / Руль) → список модификаций.
- * Клик по модификации отдаёт её `source_id` — это и есть
- * `modification_source_id` формы пакета.
- *
- * Интерфейс (open / onClose / onSelect) НЕ менялся — `PackageForm` править
- * не нужно.
+ * Клик по модификации отдаёт её числовой `id` — это и есть `modification_id`
+ * формы пакета (бэк перешёл с source_id на id, см. Template (4).yaml).
  */
 import { useMemo, useState } from 'react'
 import {
@@ -36,7 +33,7 @@ import { formatEngineVolume } from '@/shared/lib/format'
 interface ModificationPickerProps {
   open: boolean
   onClose: () => void
-  onSelect: (sourceId: string, label: string) => void
+  onSelect: (modificationId: number, label: string) => void
 }
 
 const PAGE_SIZE = 20
@@ -119,9 +116,9 @@ export function ModificationPicker({ open, onClose, onSelect }: ModificationPick
     // уже содержит марку, поэтому это только фолбэк).
     const markName = selectedMark?.display_name || selectedMark?.name || ''
     const modelName = selectedModel?.display_name || selectedModel?.name || ''
-    const group = mod.group_name ? ` (${mod.group_name})` : ''
+    const group = mod.configuration_name ? ` (${mod.configuration_name})` : ''
     const label = mod.full_title || `${markName} ${modelName} — ${modTitle(mod)}${group}`.trim()
-    onSelect(mod.source_id, label)
+    onSelect(mod.id, label)
     onClose()
   }
 
@@ -331,7 +328,7 @@ export function ModificationPicker({ open, onClose, onSelect }: ModificationPick
                       {modSub(m)}
                     </p>
                     <p className="mt-1 font-mono text-[10px] text-textSecondary/70">
-                      source_id: {m.source_id}
+                      id: {m.id}
                     </p>
                   </div>
                 </button>

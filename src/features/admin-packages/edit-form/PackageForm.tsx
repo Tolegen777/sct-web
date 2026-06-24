@@ -93,7 +93,7 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
   const watchedPriceMode = form.watch('price_mode')
   const watchedDiscountType = form.watch('discount_type')
   const watchedPromotion = form.watch('has_promotion')
-  const watchedModificationId = form.watch('modification_source_id')
+  const watchedModificationId = form.watch('modification_id')
 
   // Локальная метка вида «Toyota Camry — 2.5 AT (181 л.с.)», которую
   // показываем под полем после выбора через ModificationPicker. Хранится
@@ -314,7 +314,7 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
                     {modificationLabel || 'Модификация выбрана'}
                   </p>
                   <p className="mt-1 truncate font-mono text-[10px] text-textSecondary/70">
-                    source_id: {watchedModificationId}
+                    id: {watchedModificationId}
                   </p>
                 </>
               ) : (
@@ -331,20 +331,20 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
               {watchedModificationId ? 'Сменить' : 'Выбрать модификацию'}
             </Button>
           </div>
-          {form.formState.errors.modification_source_id?.message && (
+          {form.formState.errors.modification_id?.message && (
             <p className="mt-1.5 text-[11px] font-semibold text-red-600">
-              {form.formState.errors.modification_source_id.message}
+              {form.formState.errors.modification_id.message}
             </p>
           )}
           {/* hidden input — RHF регистрирует значение, чтобы submit нёс его в payload */}
-          <input type="hidden" {...form.register('modification_source_id')} />
+          <input type="hidden" {...form.register('modification_id')} />
         </div>
 
         <ModificationPicker
           open={pickerOpen}
           onClose={() => setPickerOpen(false)}
-          onSelect={(sourceId, label) => {
-            form.setValue('modification_source_id', sourceId, {
+          onSelect={(modificationId, label) => {
+            form.setValue('modification_id', String(modificationId), {
               shouldValidate: true,
               shouldDirty: true,
             })
@@ -568,7 +568,10 @@ function mapServerToForm(src: StaffServicePackageDetail): PackageFormValues {
     slug: src.slug ?? '',
     status: (src.status ?? 'DRAFT') as PackageFormValues['status'],
     category_id: src.category?.id ?? (0 as unknown as number),
-    modification_source_id: (src as { modification_source_id?: string }).modification_source_id ?? '',
+    modification_id: (() => {
+      const mid = (src as { modification_id?: number | null }).modification_id
+      return mid != null ? String(mid) : ''
+    })(),
     short_description: src.short_description ?? '',
     description: src.description ?? '',
     price_mode: (src.price_mode ?? 'AUTO') as PackageFormValues['price_mode'],
@@ -612,9 +615,11 @@ function mapServerToForm(src: StaffServicePackageDetail): PackageFormValues {
  * Бэк ждёт строковые decimal'ы и массив items.
  */
 function mapFormToServer(values: PackageFormValues): StaffServicePackageWriteRequest {
-  return {
+  const payload = {
     category_id: values.category_id,
-    modification_source_id: values.modification_source_id,
+    // Бэк перешёл на числовой modification_id (Template (4).yaml); autogen-схема
+    // ещё знает только старый modification_source_id, поэтому каст ниже.
+    modification_id: Number(values.modification_id),
     title: values.title,
     slug: values.slug || undefined,
     status: values.status,
@@ -644,10 +649,9 @@ function mapFormToServer(values: PackageFormValues): StaffServicePackageWriteReq
       comment: line.comment,
     })),
   }
-  // Свежая схема (Template (3).yaml) описывает StaffServicePackageWriteRequest
-  // целиком, включая package_items[] (StaffPackageLineRequest), а форма теперь
-  // использует корректный discount_type FIXED — поэтому типизируем напрямую,
-  // без прежнего `as unknown as` каста.
+  // Каст: autogen-схема знает только старый modification_source_id, а бэк ждёт
+  // числовой modification_id (Template (4).yaml). Остальные поля валидны.
+  return payload as unknown as StaffServicePackageWriteRequest
 }
 
 /** Локальный счётчик позиций — для UI-плашки. Реальный итог считает бэк. */
