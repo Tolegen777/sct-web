@@ -91,7 +91,7 @@ function VisitRow({
           </span>
         )}
         <p className="truncate text-sm font-900 uppercase tracking-tight text-textPrimary md:text-base">
-          {appointment.service_package.title}
+          {appointment.service?.title ?? appointment.service_package?.title ?? 'Услуга'}
         </p>
         <p className="mt-1 text-[11px] font-bold uppercase tracking-widest text-textSecondary">
           {datetime ? formatDateTime(datetime) : '—'}

@@ -13,6 +13,7 @@ import axios, {
 } from 'axios'
 import { env } from '@/shared/config/env'
 import { staffTokens } from './token-storage'
+import { unwrapEnvelope } from './unwrap'
 
 type RetryableConfig = InternalAxiosRequestConfig & {
   _retry?: boolean
@@ -30,7 +31,8 @@ async function refreshStaffAccess(): Promise<string | null> {
       { refresh },
       { headers: { 'Content-Type': 'application/json' } },
     )
-    const newAccess = response.data?.access
+    const refreshData = unwrapEnvelope(response.data) as { access?: string } | undefined
+    const newAccess = refreshData?.access
     if (typeof newAccess === 'string' && newAccess) {
       staffTokens.setAccess(newAccess)
       return newAccess
@@ -58,7 +60,10 @@ staffHttp.interceptors.request.use((config) => {
 })
 
 staffHttp.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    response.data = unwrapEnvelope(response.data)
+    return response
+  },
   async (error: AxiosError) => {
     const original = error.config as RetryableConfig | undefined
     const status = error.response?.status

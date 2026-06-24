@@ -75,14 +75,14 @@ export function HistoryTable() {
                         to={`/bookings/${visit.id}`}
                         className="font-900 uppercase tracking-tight text-textPrimary hover:text-brandBlue"
                       >
-                        {visit.service_package.title}
+                        {visit.service?.title ?? visit.service_package?.title ?? 'Услуга'}
                       </Link>
                     </td>
                     <td className="px-4 py-3 text-textSecondary md:px-6">
                       {visit.car.title || '—'}
                     </td>
                     <td className="px-4 py-3 text-right font-900 text-brandBlue md:px-6">
-                      {visit.service_package.display_price || '—'}
+                      {visit.service?.display_price ?? visit.service_package?.display_price ?? '—'}
                     </td>
                     <td className="px-4 py-3 text-center md:px-6">
                       <StatusChip status={visit.status} label={visit.status_label} />

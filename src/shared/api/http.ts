@@ -22,6 +22,7 @@ import axios, {
 } from 'axios'
 import { env } from '@/shared/config/env'
 import { tokenStorage } from './token-storage'
+import { unwrapEnvelope } from './unwrap'
 import type { TokenRefresh } from './types'
 
 // Кастомное поле в config — пометить запрос, чтобы не пытаться его рефрешить
@@ -45,7 +46,8 @@ async function refreshAccessToken(): Promise<string | null> {
       { refresh },
       { headers: { 'Content-Type': 'application/json' } },
     )
-    const newAccess = response.data?.access
+    const refreshData = unwrapEnvelope(response.data) as TokenRefresh | undefined
+    const newAccess = refreshData?.access
     if (typeof newAccess === 'string' && newAccess) {
       tokenStorage.setAccess(newAccess)
       return newAccess
@@ -73,7 +75,11 @@ http.interceptors.request.use((config) => {
 })
 
 http.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Разворачиваем единый конверт бэка { success, data } → data.
+    response.data = unwrapEnvelope(response.data)
+    return response
+  },
   async (error: AxiosError) => {
     const original = error.config as RetryableConfig | undefined
     const status = error.response?.status
