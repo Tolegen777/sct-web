@@ -28,6 +28,7 @@ import { parseApiError } from '@/features/auth/errors'
 import { formatDateTime, formatMileage } from '@/shared/lib/format'
 import { cn } from '@/shared/lib/cn'
 import type { BookingStatus } from '@/features/bookings/types'
+import { isBookingCancelled } from '@/features/bookings/lib'
 
 export default function BookingDetailPage() {
   const params = useParams<{ id: string }>()
@@ -220,7 +221,7 @@ export default function BookingDetailPage() {
         <div className="mt-4 flex flex-col gap-3 md:flex-row md:flex-wrap">
           <Button
             variant="secondary"
-            disabled={!data.permissions.can_edit || data.status === 'CANCELLED'}
+            disabled={!data.permissions.can_edit || isBookingCancelled(data.status)}
             title={
               data.permissions.can_edit
                 ? 'Изменить филиал, дату или комментарий'
@@ -232,7 +233,7 @@ export default function BookingDetailPage() {
           </Button>
           <Button
             variant="danger"
-            disabled={!data.permissions.can_cancel || data.status === 'CANCELLED'}
+            disabled={!data.permissions.can_cancel || isBookingCancelled(data.status)}
             title={
               data.permissions.can_cancel
                 ? 'Отменить визит'
@@ -361,7 +362,7 @@ function StatusBadge({ status, label }: { status: BookingStatus; label: string }
       ? 'bg-amber-50 text-amber-700 border-amber-100'
       : status === 'COMPLETED'
       ? 'bg-surfaceMuted text-textSecondary border-borderLight'
-      : status === 'CANCELLED'
+      : isBookingCancelled(status)
       ? 'bg-red-50 text-red-700 border-red-100'
       : 'bg-surfaceLight text-textSecondary border-borderLight'
   return (

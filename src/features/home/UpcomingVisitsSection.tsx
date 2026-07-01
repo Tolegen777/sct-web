@@ -1,29 +1,26 @@
 /**
  * Секция «Предстоящие визиты» на главной.
  *
- * Берёт данные из `service-book/page-data` (общий запрос с ActiveCarBlock).
- * Показывает: ближайший визит + до 2 запланированных. Каждая карточка с
- * кнопками «Перенести» (=открыть EditBookingModal) и «Детали».
- *
- * Если активных визитов нет — не рендерим (на главной не нужна пустая
- * секция «История пуста», она будет ниже).
+ * Список визитов берём из `/service-book/bookings/` (а не из
+ * `service-book/page-data`, где поле `appointments` сейчас всегда приходит
+ * пустым) и делим на «ближайший»/«остальные» через `splitBookings` —
+ * с учётом того, что бэк не переводит просроченные активные записи в
+ * терминальный статус автоматически.
  */
 import { Link } from 'react-router-dom'
-import { useServiceBookQuery } from '@/features/service-book/queries'
+import { useBookingsQuery } from '@/features/bookings/queries'
+import { splitBookings } from '@/features/bookings/lib'
+import type { Booking } from '@/features/bookings/types'
 import { Card } from '@/shared/ui/Card'
 import { cn } from '@/shared/lib/cn'
 import { formatDateTime } from '@/shared/lib/format'
-import type { Appointment } from '@/features/service-book/types'
 
 export function UpcomingVisitsSection() {
-  const { data } = useServiceBookQuery({ status: 'active', period: 'upcoming', limit: 5, offset: 0 })
+  const { data } = useBookingsQuery({ status: 'all', period: 'all', limit: 20, offset: 0 })
   if (!data) return null
 
-  const upcoming = data.appointments.filter((a) => a.is_active && !a.is_cancelled)
-  const all = data.next_appointment
-    ? [data.next_appointment, ...upcoming.filter((a) => a.id !== data.next_appointment?.id)]
-    : upcoming
-  const items = all.slice(0, 3)
+  const { next, upcoming } = splitBookings(data)
+  const items = (next ? [next, ...upcoming] : upcoming).slice(0, 3)
 
   if (items.length === 0) return null
 
@@ -47,8 +44,8 @@ export function UpcomingVisitsSection() {
       </header>
 
       <div className="space-y-3">
-        {items.map((a, idx) => (
-          <VisitRow key={a.id} appointment={a} highlighted={idx === 0} />
+        {items.map((booking, idx) => (
+          <VisitRow key={booking.id} booking={booking} highlighted={idx === 0} />
         ))}
       </div>
     </section>
@@ -56,14 +53,18 @@ export function UpcomingVisitsSection() {
 }
 
 function VisitRow({
-  appointment,
+  booking,
   highlighted,
 }: {
-  appointment: Appointment
+  booking: Booking
   highlighted: boolean
 }) {
-  const datetime =
-    appointment.final_datetime ?? appointment.scheduled_datetime ?? appointment.preferred_datetime
+  const datetime = booking.final_datetime ?? booking.scheduled_datetime ?? booking.preferred_datetime
+  const title =
+    booking.service_data?.title ||
+    booking.service_package_data?.title ||
+    booking.default_service_page_data?.title ||
+    'Услуга'
 
   return (
     <Card
@@ -91,23 +92,23 @@ function VisitRow({
           </span>
         )}
         <p className="truncate text-sm font-900 uppercase tracking-tight text-textPrimary md:text-base">
-          {appointment.service?.title ?? appointment.service_package?.title ?? 'Услуга'}
+          {title}
         </p>
         <p className="mt-1 text-[11px] font-bold uppercase tracking-widest text-textSecondary">
           {datetime ? formatDateTime(datetime) : '—'}
-          {appointment.car.title && <> · {appointment.car.title}</>}
+          {booking.car.title && <> · {booking.car.title}</>}
         </p>
       </div>
 
       <div className="flex gap-2">
         <Link
-          to={`/bookings/${appointment.id}`}
+          to={`/bookings/${booking.id}`}
           className="flex-1 rounded-md border border-borderLight bg-white px-3 py-2 text-center text-[10px] font-900 uppercase tracking-widest text-textSecondary transition-all hover:border-brandBlue hover:text-brandBlue md:flex-none"
         >
           Перенести
         </Link>
         <Link
-          to={`/bookings/${appointment.id}`}
+          to={`/bookings/${booking.id}`}
           className="flex-1 rounded-md bg-textPrimary px-3 py-2 text-center text-[10px] font-900 uppercase tracking-widest text-white transition-all hover:bg-brandBlue md:flex-none"
         >
           Детали

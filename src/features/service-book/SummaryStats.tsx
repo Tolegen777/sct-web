@@ -25,8 +25,8 @@ export function SummaryStats({ summary }: SummaryStatsProps) {
       accent: 'border-l-brandYellow',
     },
     {
-      label: 'Сумма обслуживания',
-      value: summary.total_spent?.display ?? '—',
+      label: 'Отменённые',
+      value: summary.cancelled_appointments_count,
       accent: 'border-l-slate-400',
     },
   ] as const

@@ -6,11 +6,11 @@
  */
 import { Link } from 'react-router-dom'
 import { Card } from '@/shared/ui/Card'
-import type { Appointment } from './types'
+import type { Booking } from '@/features/bookings/types'
 import { formatDate } from '@/shared/lib/format'
 
 interface HistorySectionProps {
-  history: Appointment[]
+  history: Booking[]
 }
 
 export function HistorySection({ history }: HistorySectionProps) {
@@ -56,7 +56,7 @@ export function HistorySection({ history }: HistorySectionProps) {
           const d = iso ? new Date(iso) : null
           const day = d ? d.toLocaleDateString('ru-RU', { day: '2-digit' }) : '--'
           const month = d ? d.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '') : ''
-          const station = visit.address?.trim()
+          const station = visit.service_station_data?.address?.trim()
           return (
             <li key={visit.id}>
               <Link
@@ -72,7 +72,10 @@ export function HistorySection({ history }: HistorySectionProps) {
                   </div>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-900 uppercase tracking-tight text-textPrimary md:text-base">
-                      {visit.service?.title || visit.service_package?.title || 'Услуга'}
+                      {visit.service_data?.title ||
+                        visit.service_package_data?.title ||
+                        visit.default_service_page_data?.title ||
+                        'Услуга'}
                     </p>
                     <p className="mt-0.5 truncate text-[11px] font-bold uppercase tracking-widest text-textSecondary">
                       {station || formatDate(iso)}

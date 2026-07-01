@@ -1,17 +1,19 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { cancelBooking, createBooking, fetchBooking, fetchBookings, updateBooking } from './api'
-import type { UpdateBookingPayload } from './types'
+import type { BookingsListQuery, UpdateBookingPayload } from './types'
 
 export const bookingsKeys = {
   all: ['bookings'] as const,
-  list: () => [...bookingsKeys.all, 'list'] as const,
+  list: (params?: BookingsListQuery) => [...bookingsKeys.all, 'list', params ?? {}] as const,
   detail: (id: number) => [...bookingsKeys.all, 'detail', id] as const,
 }
 
-export function useBookingsQuery() {
+export function useBookingsQuery(params?: BookingsListQuery, enabled = true) {
   return useQuery({
-    queryKey: bookingsKeys.list(),
-    queryFn: fetchBookings,
+    queryKey: bookingsKeys.list(params),
+    queryFn: () => fetchBookings(params),
+    enabled,
+    placeholderData: keepPreviousData,
   })
 }
 

@@ -2,6 +2,7 @@ import { http } from '@/shared/api/http'
 import { endpoints } from '@/shared/api/endpoints'
 import type {
   Booking,
+  BookingsListQuery,
   BookingsListResponse,
   CreateBookingPayload,
   UpdateBookingPayload,
@@ -17,8 +18,10 @@ interface CreateBookingResponse {
   booking: Booking
 }
 
-export async function fetchBookings() {
-  const response = await http.get<BookingsListResponse | Booking[]>(endpoints.bookings)
+export async function fetchBookings(params?: BookingsListQuery) {
+  const response = await http.get<BookingsListResponse | Booking[]>(endpoints.bookings, {
+    params,
+  })
   const data = response.data
   if (Array.isArray(data)) return data
   return data.results ?? []

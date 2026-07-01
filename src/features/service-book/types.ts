@@ -164,9 +164,13 @@ export interface ServiceBookSummary {
   active_appointments_count: number
   completed_appointments_count: number
   cancelled_appointments_count: number
-  total_spent: MoneyValue
-  last_service_date: string | null
-  next_service_date: string | null
+  /**
+   * Бэк убрал total_spent/last_service_date/next_service_date и заменил их
+   * этими флагами (сверено на dev 2026-07-01, ждём подтверждения, что формат
+   * финальный).
+   */
+  has_active_appointments: boolean
+  has_service_history: boolean
 }
 
 export interface FilterOption {
@@ -198,24 +202,29 @@ export interface ServiceBookMeta {
 }
 
 /**
- * Рекомендация сервиса (бэк добавил 10.06). Сейчас единственная —
- * замена масла в ДВС: пробег последней замены + interval_km.
- * Блок приходит как service_recommendations.engine_oil в page-data.
+ * Один элемент service_recommendations.recommendations[].
+ *
+ * Форма пока НЕ подтверждена бэком — на dev (2026-07-01) массив приходит
+ * пустым. Поля опциональные, чтобы ничего не сломать; уточняется у бэкенда.
  */
-export interface EngineOilRecommendation {
-  type: string
-  title: string
-  /** Готовый текст: «Следующая замена масла в ДВС на 14000 км». */
-  message: string
-  category_id: number | null
-  interval_km: number | null
-  last_appointment_id: number | null
-  last_service_mileage_km: number | null
-  next_service_mileage_km: number | null
+export interface ServiceRecommendationItem {
+  type?: string
+  title?: string
+  message?: string
+  [key: string]: unknown
 }
 
+/**
+ * Новый формат service_recommendations (сверено на dev 2026-07-01).
+ *
+ * Бэк убрал объект engine_oil: теперь рекомендация по маслу — это целевой
+ * пробег next_oil_change_mileage_km (не дата!), а recommendations[] — общий
+ * список рекомендаций (пока приходит пустым).
+ */
 export interface ServiceRecommendations {
-  engine_oil?: EngineOilRecommendation | null
+  latest_mileage_km: number | null
+  next_oil_change_mileage_km: number | null
+  recommendations: ServiceRecommendationItem[]
 }
 
 export interface ServiceBookPageData {

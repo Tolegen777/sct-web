@@ -6,11 +6,14 @@
  */
 
 export type BookingStatus =
+  | 'DRAFT'
   | 'CREATED'
   | 'CONFIRMED'
   | 'IN_PROGRESS'
   | 'COMPLETED'
-  | 'CANCELLED'
+  | 'CANCELLED_BY_CLIENT'
+  | 'CANCELLED_BY_STAFF'
+  | 'NO_SHOW'
   | string
 
 export interface MoneyValue {
@@ -59,6 +62,17 @@ export interface BookingDefaultServiceData {
   price?: MoneyValue | null
 }
 
+export interface BookingServiceStationData {
+  id: number
+  title: string
+  name: string
+  city: string
+  address: string
+  phone: string
+  latitude: string
+  longitude: string
+}
+
 export interface BookingPermissions {
   can_edit: boolean
   can_cancel: boolean
@@ -95,7 +109,7 @@ export interface Booking {
   service_data?: BookingServiceData | null
   service_package_data?: BookingPackageData | null
   default_service_page_data?: BookingDefaultServiceData | null
-  service_station_data?: unknown
+  service_station_data?: BookingServiceStationData | null
   permissions: BookingPermissions
   actions: BookingActions
   created_at: string
@@ -107,6 +121,15 @@ export interface BookingsListResponse {
   next?: string | null
   previous?: string | null
   results: Booking[]
+}
+
+/** Query-параметры GET /service-book/bookings/ — все опциональные. */
+export interface BookingsListQuery {
+  car_id?: number
+  status?: string
+  period?: string
+  limit?: number
+  offset?: number
 }
 
 /**

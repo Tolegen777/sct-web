@@ -13,12 +13,23 @@
  *   HAS_ACTIVE_APPOINTMENTS     — есть активные визиты
  *   HAS_SERVICE_HISTORY         — есть история
  *
- * Бэк отдаёт `appointments[]` единым массивом; разделяем по
- * `is_active`/`is_cancelled` для секций «Запланированные» и «Журнал».
+ * `page-data` больше не отдаёт рабочий список визитов (`appointments`
+ * всегда приходит пустым `[]` независимо от реального состояния — похоже
+ * на баг бэка после разделения ручек) и не поддерживает `status`/`period`
+ * (в актуальной schema у него остался только `car_id`). Поэтому карточку
+ * авто/summary/рекомендации берём из `page-data`, а сам список визитов —
+ * из отдельной, полностью рабочей `GET /service-book/bookings/`, которая
+ * `status`/`period` уже честно фильтрует.
+ *
+ * Разделение на «ближайший визит» / «запланированные» / «журнал» считаем
+ * на фронте через `splitBookings` — по статусу И дате визита, а не только
+ * по статусу: бэк не переводит просроченные активные записи в терминальный
+ * статус автоматически, иначе они зависали бы в «ближайших» навсегда.
  */
-import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useServiceBookQuery } from '@/features/service-book/queries'
+import { useBookingsQuery } from '@/features/bookings/queries'
+import { splitBookings } from '@/features/bookings/lib'
 import { CarHeroCompact } from '@/features/service-book/CarHeroCompact'
 import { RecommendationStrip } from '@/features/service-book/RecommendationStrip'
 import { BookServiceCTA } from '@/features/service-book/BookServiceCTA'
@@ -36,12 +47,13 @@ export default function ServiceBookPage() {
   const status = searchParams.get('status') ?? 'all'
   const period = searchParams.get('period') ?? 'all'
 
-  const query = useMemo(
-    () => ({ status, period, limit: DEFAULT_LIMIT, offset: 0 }),
-    [status, period],
-  )
+  const { data, isLoading, isError, refetch } = useServiceBookQuery({})
 
-  const { data, isLoading, isError, refetch } = useServiceBookQuery(query)
+  const carId = data?.selected_car?.id
+  const bookingsQuery = useBookingsQuery(
+    { car_id: carId, status, period, limit: DEFAULT_LIMIT, offset: 0 },
+    Boolean(carId),
+  )
 
   if (isLoading) {
     return (
@@ -84,10 +96,7 @@ export default function ServiceBookPage() {
     )
   }
 
-  // Разделяем appointments на активные и завершённые
-  const upcoming = data.appointments
-    .filter((a) => a.is_active && !a.is_cancelled && a.id !== data.next_appointment?.id)
-  const history = data.appointments.filter((a) => !a.is_active || a.is_cancelled)
+  const { next, upcoming, history } = splitBookings(bookingsQuery.data ?? [])
 
   return (
     <section className="container-sct py-6 md:py-8">
@@ -96,7 +105,7 @@ export default function ServiceBookPage() {
         <div className="space-y-5 lg:col-span-8 lg:space-y-6">
           <CarHeroCompact car={data.selected_car} />
 
-          <RecommendationStrip recommendation={data.service_recommendations?.engine_oil} />
+          <RecommendationStrip recommendations={data.service_recommendations} />
 
           <BookServiceCTA />
 
@@ -106,12 +115,12 @@ export default function ServiceBookPage() {
           </div>
 
           {/* Ближайший визит — выделенный */}
-          {data.next_appointment && (
+          {next && (
             <section>
               <h3 className="mb-3 text-[11px] font-900 uppercase tracking-[0.2em] text-textSecondary">
                 Ближайшие визиты
               </h3>
-              <AppointmentRow appointment={data.next_appointment} highlighted />
+              <AppointmentRow appointment={next} highlighted />
             </section>
           )}
 

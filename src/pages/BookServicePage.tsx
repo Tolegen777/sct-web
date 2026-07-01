@@ -128,6 +128,15 @@ export default function BookServicePage() {
   const onSubmit = async () => {
     if (!packageId || !selectedCar || !selectedBranch || !selectedSlot) return
     setServerError(null)
+    // Слот мог «протухнуть» между выбором и отправкой (cutoff в пикере
+    // фиксируется при монтировании) — не отправляем прошедшее время, иначе
+    // бэк вернёт «Дата и время записи не могут быть в прошлом.» (400).
+    if (new Date(selectedSlot).getTime() <= Date.now()) {
+      setServerError('Выбранное время уже прошло. Пожалуйста, выберите слот заново.')
+      setSelectedSlot(null)
+      setStep('datetime')
+      return
+    }
     try {
       await createMut.mutateAsync({
         client_car_id: selectedCar.id,

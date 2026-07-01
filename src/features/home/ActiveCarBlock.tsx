@@ -12,7 +12,7 @@
  * Данные подгружаем из `service-book/page-data/`:
  *   - selected_car          → название, фото, пробег
  *   - next_appointment      → ближайший визит
- *   - summary.next_service_date → дата рекомендации замены масла
+ *   - service_recommendations.next_oil_change_mileage_km → рекомендация по маслу
  *
  * Если активного авто нет — компонент возвращает CTA-карточку «Добавьте авто».
  */
@@ -22,10 +22,11 @@ import { Card } from '@/shared/ui/Card'
 import { Button } from '@/shared/ui/Button'
 import { SafeImage } from '@/shared/ui/SafeImage'
 import { Skeleton } from '@/shared/ui/Skeleton'
-import { formatMileage, formatDate, formatDateTime } from '@/shared/lib/format'
+import { formatMileage, formatDateTime } from '@/shared/lib/format'
 
 export function ActiveCarBlock() {
-  const { data, isLoading } = useServiceBookQuery({ status: 'all', period: 'upcoming', limit: 1, offset: 0 })
+  // page-data больше не принимает status/period/limit/offset — только car_id.
+  const { data, isLoading } = useServiceBookQuery({})
 
   if (isLoading) {
     return (
@@ -68,7 +69,7 @@ export function ActiveCarBlock() {
   }
 
   const car = data.selected_car
-  const oilRec = data.service_recommendations?.engine_oil
+  const rec = data.service_recommendations
   const nextVisitDt =
     data.next_appointment?.final_datetime ??
     data.next_appointment?.scheduled_datetime ??
@@ -153,11 +154,9 @@ export function ActiveCarBlock() {
             <SpecChip
               label="Замена масла в ДВС"
               value={
-                oilRec?.next_service_mileage_km != null
-                  ? formatMileage(oilRec.next_service_mileage_km)
-                  : data.summary.next_service_date
-                    ? formatDate(data.summary.next_service_date)
-                    : '—'
+                rec?.next_oil_change_mileage_km != null
+                  ? formatMileage(rec.next_oil_change_mileage_km)
+                  : '—'
               }
             />
             <SpecChip
@@ -168,11 +167,9 @@ export function ActiveCarBlock() {
           </div>
 
           {/* Рекомендация-плашка */}
-          {oilRec?.message ? (
-            <RecommendationStrip message={oilRec.message} />
-          ) : data.summary.next_service_date ? (
+          {rec?.next_oil_change_mileage_km != null ? (
             <RecommendationStrip
-              message={`К ${formatDate(data.summary.next_service_date)} желательно заменить масло в двигателе`}
+              message={`Следующая замена масла в двигателе — ${formatMileage(rec.next_oil_change_mileage_km)}`}
             />
           ) : null}
         </div>

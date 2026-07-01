@@ -7,16 +7,16 @@
  * обычный (запланированный): светлая карточка — статус-бейдж, время + синяя
  *   дата, услуга, филиал, кнопка «Детали».
  *
- * Филиал берём из appointment.address (отдельного поля станции у бэка нет).
  * Кнопка отмены (×) в дизайне есть, но cancel-эндпоинт отсутствует
  * (BACKEND_NOTES §4.2) — поэтому не выводим, пока бэк не подключит.
  */
 import { Link } from 'react-router-dom'
-import type { Appointment } from './types'
+import type { Booking } from '@/features/bookings/types'
+import { isBookingCancelled } from '@/features/bookings/lib'
 import { cn } from '@/shared/lib/cn'
 
 interface AppointmentRowProps {
-  appointment: Appointment
+  appointment: Booking
   highlighted?: boolean
 }
 
@@ -36,13 +36,17 @@ export function AppointmentRow({ appointment, highlighted }: AppointmentRowProps
     appointment.scheduled_datetime ??
     appointment.preferred_datetime
   const { time, date } = splitDateTime(datetime)
-  const svc = appointment.service
-  const isDefault = svc?.source_type === 'default_service_page'
-  const title = svc?.title || appointment.service_package?.title || 'Услуга'
+  const svc = appointment.service_data
+  const isDefault = appointment.service_source_type === 'default_service_page'
+  const title =
+    svc?.title ||
+    appointment.service_package_data?.title ||
+    appointment.default_service_page_data?.title ||
+    'Услуга'
   const typeLabel = isDefault ? 'Дефолтная услуга' : 'Точный пакет'
-  const priceLabel = svc?.display_price || appointment.service_package?.display_price || ''
-  const station = appointment.address?.trim()
-  const isHighlighted = highlighted || appointment.is_active
+  const priceLabel = appointment.service_package_data?.price?.display || svc?.price?.display || ''
+  const station = appointment.service_station_data?.address?.trim()
+  const isHighlighted = highlighted
 
   if (isHighlighted) {
     return (
@@ -82,7 +86,7 @@ export function AppointmentRow({ appointment, highlighted }: AppointmentRowProps
     )
   }
 
-  const isCancelled = appointment.is_cancelled
+  const isCancelled = isBookingCancelled(appointment.status)
 
   return (
     <article

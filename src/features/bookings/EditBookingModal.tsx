@@ -95,11 +95,7 @@ export function EditBookingModal({ open, onClose, booking }: EditBookingModalPro
     })
   })()
 
-  const currentStation = (() => {
-    const s = booking.service_station_data as { name?: string; address?: string } | null
-    if (s?.name) return s.name
-    return '—'
-  })()
+  const currentStation = booking.service_station_data?.name || '—'
 
   return (
     <Modal open={open} onClose={onClose} title="Изменить запись" size="lg">
