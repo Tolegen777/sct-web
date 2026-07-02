@@ -1,6 +1,10 @@
 import { staffHttp } from '@/shared/api/staff-http'
 import { endpoints } from '@/shared/api/endpoints'
-import type { PackagesListPageData, PackagesListQuery } from './types'
+import type {
+  PackagesListPageData,
+  PackagesListQuery,
+  StaffPackagesListResponse,
+} from './types'
 import type { PackageDetailPageData } from './detail-types'
 import type { StaffServicePackageDetail } from '@/shared/api/types'
 
@@ -10,6 +14,28 @@ export async function fetchPackagesListPageData(q: PackagesListQuery): Promise<P
     endpoints.staffPackagesListPageData,
     { params },
   )
+  return response.data
+}
+
+/**
+ * Сам список пакетов — GET /packages/ (бэк вынес его из list-page-data).
+ * Внимание: параметр категории тут называется `category_id` (не `category`).
+ */
+export async function fetchStaffPackages(
+  q: PackagesListQuery,
+): Promise<StaffPackagesListResponse> {
+  const params = clean({
+    search: q.search,
+    category_id: q.category,
+    status: q.status,
+    has_promotion: q.has_promotion,
+    ordering: q.ordering,
+    page: q.page,
+    page_size: q.page_size,
+  })
+  const response = await staffHttp.get<StaffPackagesListResponse>(endpoints.staffPackages, {
+    params,
+  })
   return response.data
 }
 

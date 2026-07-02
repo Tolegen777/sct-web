@@ -1,18 +1,24 @@
 /**
- * Список пакетов в админке. Источник — staff_endpoints/packages/list-page-data/.
+ * Список пакетов в админке.
  *
- * Контролы:
- *  - вкладки сверху (all / published / draft / promotional) — задают status / has_promotion
- *  - поиск (?search=...)
- *  - селект категории (?category=)
- *  - сортировка
- *  - пагинация (page_size: 10 / 20 / 50 / 100)
+ * Бэк (сверено на dev 2026-07-02) разделил данные на два источника:
+ *  - GET /packages/list-page-data/ — оболочка: page{title,description},
+ *    stats.summary, filters (справочники). Список пакетов НЕ возвращает.
+ *  - GET /packages/ — сам список: results[] + pagination.
  *
- * Состояние фильтров живёт в URL — можно ссылку скинуть коллеге.
+ * Поэтому тянем оба: list-page-data для шапки/статистики/справочников,
+ * /packages/ — для строк таблицы и пагинации. Состояние фильтров живёт в URL.
+ *
+ * Вкладки (all/published/draft/promotional) бэк больше не отдаёт — держим их
+ * на фронте (маппятся на status / has_promotion). Панель «фильтры по авто»
+ * убрана: бэк перестал присылать справочники марок/моделей.
  */
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { usePackagesListPageData } from '@/features/admin-packages/queries'
+import {
+  usePackagesListPageData,
+  useStaffPackagesList,
+} from '@/features/admin-packages/queries'
 import { Spinner } from '@/shared/ui/Spinner'
 import { Button } from '@/shared/ui/Button'
 import { Select } from '@/shared/ui/Select'
@@ -23,11 +29,24 @@ import { cn } from '@/shared/lib/cn'
 import type {
   PackageListItem,
   PackagesListQuery,
-  TabDef,
+  StatsSummary,
 } from '@/features/admin-packages/types'
 
 const ALLOWED_PAGE_SIZES = [10, 20, 50, 100] as const
 type PageSize = (typeof ALLOWED_PAGE_SIZES)[number]
+
+interface TabDef {
+  key: string
+  label: string
+  filter: { status?: string; has_promotion?: boolean }
+}
+
+const TABS: TabDef[] = [
+  { key: 'all', label: 'Все', filter: {} },
+  { key: 'published', label: 'Опубликованные', filter: { status: 'PUBLISHED' } },
+  { key: 'draft', label: 'Черновики', filter: { status: 'DRAFT' } },
+  { key: 'promotional', label: 'Акционные', filter: { has_promotion: true } },
+]
 
 function parsePageSize(raw: string | null): PageSize {
   const n = Number(raw)
@@ -43,38 +62,21 @@ export default function AdminPackagesPage() {
       category: numberOrUndefined(searchParams.get('category')),
       status: searchParams.get('status') ?? undefined,
       has_promotion: booleanOrUndefined(searchParams.get('has_promotion')),
-      // Авто-фильтры (Марка/Модель/Поколение/Кузов/КПП/Привод/Тип двигателя):
-      mark: numberOrUndefined(searchParams.get('mark')),
-      model: numberOrUndefined(searchParams.get('model')),
-      generation: numberOrUndefined(searchParams.get('generation')),
-      body_type: numberOrUndefined(searchParams.get('body_type')),
-      powertrain_type: searchParams.get('powertrain_type') ?? undefined,
-      drive_type: searchParams.get('drive_type') ?? undefined,
-      transmission_type: searchParams.get('transmission_type') ?? undefined,
-      ordering: searchParams.get('ordering') ?? 'id',
+      ordering: searchParams.get('ordering') ?? undefined,
       page: Number(searchParams.get('page')) || 1,
       page_size: parsePageSize(searchParams.get('page_size')),
     }),
     [searchParams],
   )
 
-  const [autoOpen, setAutoOpen] = useState(false)
-  const autoKeys = [
-    'mark',
-    'model',
-    'generation',
-    'body_type',
-    'powertrain_type',
-    'drive_type',
-    'transmission_type',
-    'has_promotion',
-  ] as const
-  const autoFiltersActive = autoKeys.filter((k) => searchParams.get(k)).length
-  const anyFiltersActive =
-    autoFiltersActive +
-    ['search', 'category', 'status'].filter((k) => searchParams.get(k)).length
+  const anyFiltersActive = ['search', 'category', 'status', 'has_promotion'].filter((k) =>
+    searchParams.get(k),
+  ).length
 
-  const { data, isLoading, isFetching, isError, refetch } = usePackagesListPageData(query)
+  // Оболочка страницы (статистика + справочники) — глобальная, без фильтров.
+  const { data, isLoading, isError, refetch } = usePackagesListPageData({})
+  // Сам список — с учётом фильтров из URL.
+  const listQuery = useStaffPackagesList(query)
 
   const updateParam = (patch: Record<string, string | undefined | null>) => {
     const next = new URLSearchParams(searchParams)
@@ -108,42 +110,44 @@ export default function AdminPackagesPage() {
     )
   }
 
-  const currentTabKey = guessActiveTab(query, data.page.tabs)
+  const currentTabKey = guessActiveTab(query, TABS)
+  const packages = listQuery.data
 
   return (
     <section className="container-admin space-y-6 py-8 md:space-y-8 md:py-10">
       <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-[10px] font-900 uppercase tracking-[0.3em] text-brandBlue">
-            {data.page.breadcrumbs.map((b) => b.label).join(' / ')}
+            Каталог / Пакеты услуг
           </p>
           <h1 className="mt-2 text-3xl font-900 uppercase tracking-tight text-textPrimary md:text-4xl">
             {data.page.title}
           </h1>
-          <p className="mt-1 text-sm font-medium text-textSecondary">
-            {data.page.subtitle}
-          </p>
+          {data.page.description && (
+            <p className="mt-1 text-sm font-medium text-textSecondary">
+              {data.page.description}
+            </p>
+          )}
         </div>
         <Link to="/admin/packages/new">
           <Button variant="primary" size="md">
-            + {data.page.actions?.primary?.label ?? 'Создать пакет'}
+            + Создать пакет
           </Button>
         </Link>
       </header>
 
-      <StatsRow stats={data.stats} />
+      <StatsRow summary={data.stats.summary} />
 
-      {/* Вкладки */}
+      {/* Вкладки (клиентские — бэк их больше не отдаёт) */}
       <div className="flex flex-wrap gap-2 border-b border-borderLight pb-2">
-        {data.page.tabs.map((tab) => (
+        {TABS.map((tab) => (
           <TabButton
             key={tab.key}
             tab={tab}
             isActive={tab.key === currentTabKey}
             onClick={() =>
               updateParam({
-                status:
-                  typeof tab.filter.status === 'string' ? (tab.filter.status as string) : null,
+                status: tab.filter.status ?? null,
                 has_promotion:
                   typeof tab.filter.has_promotion === 'boolean'
                     ? String(tab.filter.has_promotion)
@@ -171,21 +175,31 @@ export default function AdminPackagesPage() {
               onChange={(e) => updateParam({ category: e.target.value || null })}
             >
               <option value="">Все категории</option>
-              {data.filters.package_categories.map((opt) => (
-                <option key={opt.value} value={String(opt.value)}>
-                  {opt.label} ({opt.count})
+              {data.filters.categories.map((opt) => (
+                <option key={opt.id} value={String(opt.id)}>
+                  {opt.name}
                 </option>
               ))}
+            </Select>
+          </div>
+          <div className="md:col-span-2">
+            <Select
+              label="Акции"
+              value={searchParams.get('has_promotion') ?? ''}
+              onChange={(e) => updateParam({ has_promotion: e.target.value || null })}
+            >
+              <option value="">Все</option>
+              <option value="true">Только акции</option>
+              <option value="false">Без акции</option>
             </Select>
           </div>
           <div className="md:col-span-3">
             <Select
               label="Сортировка"
-              value={searchParams.get('ordering') ?? 'id'}
-              onChange={(e) => updateParam({ ordering: e.target.value })}
+              value={searchParams.get('ordering') ?? ''}
+              onChange={(e) => updateParam({ ordering: e.target.value || null })}
             >
-              <option value="id">ID ↑</option>
-              <option value="-id">ID ↓</option>
+              <option value="">По умолчанию</option>
               <option value="title">Название ↑</option>
               <option value="-title">Название ↓</option>
               <option value="final_price">Цена ↑</option>
@@ -194,7 +208,10 @@ export default function AdminPackagesPage() {
               <option value="-updated_at">Обновлено ↓</option>
             </Select>
           </div>
-          <div className="md:col-span-2">
+        </div>
+
+        <div className="flex flex-wrap items-end justify-between gap-3 border-t border-borderLight pt-4">
+          <div className="w-40">
             <Select
               label="На странице"
               value={String(query.page_size)}
@@ -207,30 +224,6 @@ export default function AdminPackagesPage() {
               ))}
             </Select>
           </div>
-        </div>
-
-        {/* Тогглер дополнительной панели «Авто-фильтры» */}
-        <div className="flex items-center justify-between gap-3 border-t border-borderLight pt-4">
-          <button
-            type="button"
-            onClick={() => setAutoOpen((v) => !v)}
-            className="inline-flex items-center gap-2 text-[11px] font-900 uppercase tracking-widest text-textSecondary hover:text-brandBlue"
-          >
-            <svg
-              className={cn('h-3 w-3 transition-transform', autoOpen && 'rotate-180')}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
-            </svg>
-            Фильтры по авто
-            {autoFiltersActive > 0 && (
-              <span className="rounded-full bg-brandBlue/10 px-2 py-0.5 text-[10px] font-900 text-brandBlue">
-                {autoFiltersActive}
-              </span>
-            )}
-          </button>
           {anyFiltersActive > 0 && (
             <button
               type="button"
@@ -241,156 +234,72 @@ export default function AdminPackagesPage() {
             </button>
           )}
         </div>
-
-        {autoOpen && (
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
-            <SelectCol
-              label="Марка"
-              value={searchParams.get('mark')}
-              onChange={(v) => updateParam({ mark: v, model: null, generation: null })}
-              options={data.filters.marks ?? []}
-              col="md:col-span-3"
-            />
-            <SelectCol
-              label="Модель"
-              value={searchParams.get('model')}
-              onChange={(v) => updateParam({ model: v, generation: null })}
-              options={data.filters.models ?? []}
-              col="md:col-span-3"
-            />
-            <SelectCol
-              label="Поколение"
-              value={searchParams.get('generation')}
-              onChange={(v) => updateParam({ generation: v })}
-              options={data.filters.generations ?? []}
-              col="md:col-span-3"
-            />
-            <SelectCol
-              label="Кузов"
-              value={searchParams.get('body_type')}
-              onChange={(v) => updateParam({ body_type: v })}
-              options={data.filters.body_types ?? []}
-              col="md:col-span-3"
-            />
-            <SelectCol
-              label="Тип двигателя"
-              value={searchParams.get('powertrain_type')}
-              onChange={(v) => updateParam({ powertrain_type: v })}
-              options={data.filters.powertrain_types ?? []}
-              col="md:col-span-3"
-            />
-            <SelectCol
-              label="КПП"
-              value={searchParams.get('transmission_type')}
-              onChange={(v) => updateParam({ transmission_type: v })}
-              options={data.filters.transmission_types ?? []}
-              col="md:col-span-3"
-            />
-            <SelectCol
-              label="Привод"
-              value={searchParams.get('drive_type')}
-              onChange={(v) => updateParam({ drive_type: v })}
-              options={data.filters.drive_types ?? []}
-              col="md:col-span-3"
-            />
-            <div className="md:col-span-3">
-              <Select
-                label="Акции"
-                value={searchParams.get('has_promotion') ?? ''}
-                onChange={(e) => updateParam({ has_promotion: e.target.value || null })}
-              >
-                <option value="">Все варианты</option>
-                <option value="true">Только акционные</option>
-                <option value="false">Без акции</option>
-              </Select>
-            </div>
-          </div>
-        )}
       </Card>
 
       <Card className="overflow-hidden p-0">
-        <ResultsTable items={data.results} loading={isFetching && !isLoading} />
+        {listQuery.isError ? (
+          <div className="p-10 text-center">
+            <p className="font-bold text-red-700">Не удалось загрузить список пакетов.</p>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="mt-4"
+              onClick={() => listQuery.refetch()}
+            >
+              Повторить
+            </Button>
+          </div>
+        ) : (
+          <ResultsTable items={packages?.results ?? []} loading={listQuery.isFetching} />
+        )}
       </Card>
 
-      <PaginationBar
-        page={data.pagination.page}
-        totalPages={data.pagination.total_pages}
-        count={data.pagination.count}
-        pageSize={data.pagination.page_size}
-        onChange={(p) => updateParam({ page: String(p) })}
-      />
+      {packages?.pagination && (
+        <PaginationBar
+          page={packages.pagination.page}
+          totalPages={packages.pagination.total_pages}
+          count={packages.pagination.count}
+          pageSize={packages.pagination.page_size}
+          onChange={(p) => updateParam({ page: String(p) })}
+        />
+      )}
     </section>
   )
 }
 
-/** Универсальный select для авто-фильтра: показывает label + count. */
-function SelectCol({
-  label,
-  value,
-  options,
-  onChange,
-  col,
-}: {
-  label: string
-  value: string | null
-  options: Array<{ value: string | number; label: string; count?: number }>
-  onChange: (next: string | null) => void
-  col: string
-}) {
-  return (
-    <div className={col}>
-      <Select
-        label={label}
-        value={value ?? ''}
-        onChange={(e) => onChange(e.target.value || null)}
-      >
-        <option value="">Все</option>
-        {options.map((o) => (
-          <option key={o.value} value={String(o.value)}>
-            {o.label}
-            {typeof o.count === 'number' ? ` (${o.count})` : ''}
-          </option>
-        ))}
-      </Select>
-    </div>
-  )
-}
-
 function guessActiveTab(q: PackagesListQuery, tabs: TabDef[]): string {
-  // Сопоставление выбранных фильтров с предустановленными вкладками.
   for (const tab of tabs) {
-    const matches = Object.entries(tab.filter).every(([k, v]) => {
+    const keys = Object.keys(tab.filter)
+    if (keys.length === 0) continue // вкладка 'all' — по умолчанию
+    const matches = keys.every((k) => {
       const actual = (q as Record<string, unknown>)[k] ?? null
-      const expected = v ?? null
+      const expected = (tab.filter as Record<string, unknown>)[k] ?? null
       return actual === expected
     })
-    // У вкладки 'all' filter = {} — она матчится всегда; пропускаем её,
-    // если что-то реально выбрано.
-    const isAll = Object.keys(tab.filter).length === 0
-    if (matches && !isAll) return tab.key
+    if (matches) return tab.key
   }
   return 'all'
 }
 
-function StatsRow({ stats }: { stats: import('@/features/admin-packages/types').ListStats }) {
+function StatsRow({ summary }: { summary: StatsSummary }) {
   const cards = [
-    { item: stats.total, accent: 'border-l-brandBlue' },
-    { item: stats.published, accent: 'border-l-green-500' },
-    { item: stats.promotional, accent: 'border-l-brandYellow' },
-    { item: stats.draft, accent: 'border-l-slate-400' },
+    { label: 'Всего', value: summary.total, accent: 'border-l-brandBlue' },
+    { label: 'Опубликовано', value: summary.published, accent: 'border-l-green-500' },
+    { label: 'Акционные', value: summary.with_promotion, accent: 'border-l-brandYellow' },
+    { label: 'Черновики', value: summary.draft, accent: 'border-l-slate-400' },
   ]
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
-      {cards.map(({ item, accent }) => (
+      {cards.map((c) => (
         <div
-          key={item.label}
-          className={`rounded-sct border border-borderLight bg-white p-4 shadow-sct-soft border-l-4 ${accent}`}
+          key={c.label}
+          className={`rounded-sct border border-borderLight bg-white p-4 shadow-sct-soft border-l-4 ${c.accent}`}
         >
           <p className="text-[10px] font-900 uppercase tracking-widest text-textSecondary">
-            {item.label}
+            {c.label}
           </p>
           <p className="mt-1.5 text-3xl font-900 tracking-tighter text-textPrimary">
-            {item.value.toLocaleString('ru-RU')}
+            {c.value.toLocaleString('ru-RU')}
           </p>
         </div>
       ))}
@@ -423,13 +332,7 @@ function TabButton({
   )
 }
 
-function ResultsTable({
-  items,
-  loading,
-}: {
-  items: PackageListItem[]
-  loading: boolean
-}) {
+function ResultsTable({ items, loading }: { items: PackageListItem[]; loading: boolean }) {
   if (items.length === 0) {
     return (
       <div className="p-10 text-center">
@@ -463,14 +366,9 @@ function ResultsTable({
               <td className="px-6 py-4">
                 <div className="font-bold text-textPrimary">{pkg.title}</div>
               </td>
-              <td className="px-6 py-4 text-textSecondary">{pkg.category.name}</td>
+              <td className="px-6 py-4 text-textSecondary">{pkg.category?.name ?? '—'}</td>
               <td className="px-6 py-4">
-                <div className="font-bold text-textPrimary">
-                  {pkg.car.mark.name} {pkg.car.model.name}
-                </div>
-                <div className="mt-0.5 text-[11px] font-medium text-textSecondary">
-                  {pkg.car.modification_name}
-                </div>
+                <div className="font-bold text-textPrimary">{pkg.car_title || '—'}</div>
               </td>
               <td className="px-6 py-4 text-center">
                 {pkg.has_promotion ? (
@@ -482,10 +380,10 @@ function ResultsTable({
                 )}
               </td>
               <td className="px-6 py-4">
-                <StatusBadge value={pkg.status.value} label={pkg.status.label} />
+                <StatusBadge value={pkg.status} label={pkg.status_display} />
               </td>
               <td className="px-6 py-4 text-right font-900 text-brandBlue">
-                {formatMoney(pkg.price.final_price, pkg.price.currency)}
+                {formatMoney(pkg.final_price, pkg.currency)}
               </td>
               <td className="px-6 py-4 text-right">
                 <Link
@@ -535,7 +433,7 @@ function PaginationBar({
   if (totalPages <= 1) {
     return (
       <p className="text-center text-[11px] font-bold uppercase tracking-widest text-textSecondary">
-        Всего пакетов: {count}
+        Всего пакетов: {count.toLocaleString('ru-RU')}
       </p>
     )
   }
@@ -547,12 +445,7 @@ function PaginationBar({
         Показано {start}–{end} из {count.toLocaleString('ru-RU')}
       </p>
       <div className="flex items-center gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={page <= 1}
-          onClick={() => onChange(page - 1)}
-        >
+        <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => onChange(page - 1)}>
           ← Назад
         </Button>
         <span className="text-xs font-bold uppercase tracking-widest text-textSecondary">

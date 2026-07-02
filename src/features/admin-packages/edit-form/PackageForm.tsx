@@ -54,10 +54,10 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
   const navigate = useNavigate()
   const [serverError, setServerError] = useState<string | null>(null)
 
-  // Категории берём из list-page-data (там есть { value, label, count }) —
+  // Категории берём из list-page-data (там filters.categories = { id, name, slug }) —
   // отдельного endpoint'а у бэка нет. Запрашиваем минимально.
   const { data: listData } = usePackagesListPageData({ page: 1, page_size: 10 })
-  const categories = listData?.filters?.package_categories ?? []
+  const categories = listData?.filters?.categories ?? []
 
   const createMut = useCreatePackageMutation()
   const updateMut = useUpdatePackageMutation(packageId ?? 0)
@@ -214,8 +214,8 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
           >
             <option value={0}>— выберите —</option>
             {categories.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
+              <option key={c.id} value={c.id}>
+                {c.name}
               </option>
             ))}
           </Select>

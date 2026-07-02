@@ -4,6 +4,7 @@ import {
   duplicatePackage,
   fetchPackageDetailPageData,
   fetchPackagesListPageData,
+  fetchStaffPackages,
 } from './api'
 import type { PackagesListQuery } from './types'
 
@@ -17,6 +18,15 @@ export function usePackagesListPageData(q: PackagesListQuery) {
   return useQuery({
     queryKey: adminPackagesKeys.list(q),
     queryFn: () => fetchPackagesListPageData(q),
+    placeholderData: keepPreviousData,
+  })
+}
+
+/** Сам список пакетов (GET /packages/) — с учётом фильтров из URL. */
+export function useStaffPackagesList(q: PackagesListQuery) {
+  return useQuery({
+    queryKey: [...adminPackagesKeys.all, 'staff-list', q] as const,
+    queryFn: () => fetchStaffPackages(q),
     placeholderData: keepPreviousData,
   })
 }
