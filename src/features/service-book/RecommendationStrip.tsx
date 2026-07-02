@@ -1,56 +1,68 @@
 /**
- * Горизонтальная плашка рекомендации сервиса (по дизайну).
+ * Список рекомендаций сервиса (по дизайну — стопка компактных плашек).
  *
- * Лёгкая, single-line: иконка слева → подпись «Рекомендация сервиса /
- * следующая замена масла в ДВС» → справа крупно пробег следующей замены
- * («14 000 км»).
- *
- * Бэк (сверено на dev 2026-07-01) отдаёт целевой пробег в
- * service_recommendations.next_oil_change_mileage_km. Если его нет
- * (не было прошлой замены / нет данных о пробеге) — не рендерим.
+ * Бэк (сверено на dev 2026-07-02) отдаёт набор в
+ * service_recommendations.recommendations[] — по объекту на вид обслуживания
+ * (масло ДВС/АКПП, тормозная жидкость, антифриз…). Показываем по срочности:
+ * сначала «уже пора» (is_due), затем по остатку пробега. Цвет и подпись берём
+ * из category. Если рекомендаций нет (клиент без истории) — не рендерим.
  */
-import { Card } from '@/shared/ui/Card'
 import { formatMileage } from '@/shared/lib/format'
 import type { ServiceRecommendations } from './types'
+import { sortRecommendationsByUrgency } from './recommendations'
 
 interface RecommendationStripProps {
   recommendations: ServiceRecommendations | null | undefined
 }
 
 export function RecommendationStrip({ recommendations }: RecommendationStripProps) {
-  const nextKm = recommendations?.next_oil_change_mileage_km
-  if (nextKm == null) return null
-  const latestKm = recommendations?.latest_mileage_km
+  const items = sortRecommendationsByUrgency(recommendations?.recommendations ?? [])
+  if (items.length === 0) return null
+
   return (
-    <Card className="flex items-center justify-between gap-4 border-blue-100 bg-blue-50/40 px-5 py-4 md:px-6">
-      <div className="flex items-center gap-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brandBlue/10 text-brandBlue">
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2.5}
-              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-        </div>
-        <div>
-          <p className="text-[10px] font-900 uppercase tracking-widest text-brandBlue">
-            Рекомендация сервиса
-          </p>
-          <p className="mt-0.5 text-[12px] font-bold uppercase tracking-tight text-textSecondary">
-            Следующая замена масла в ДВС
-          </p>
-          {latestKm != null && (
-            <p className="mt-0.5 text-[10px] text-textSecondary/70">
-              текущий пробег — {formatMileage(latestKm)}
-            </p>
-          )}
-        </div>
-      </div>
-      <p className="text-right text-xl font-900 leading-none tracking-tighter text-brandBlue md:text-2xl">
-        {formatMileage(nextKm)}
-      </p>
-    </Card>
+    <div className="space-y-3">
+      {items.map((rec) => {
+        const color = rec.category?.color || '#1F5FAF'
+        return (
+          <div
+            key={rec.code}
+            className="flex items-center justify-between gap-4 rounded-sct border border-borderLight border-l-4 bg-white px-5 py-4 shadow-sct-soft md:px-6"
+            style={{ borderLeftColor: color }}
+          >
+            <div className="min-w-0">
+              <p
+                className="text-[10px] font-900 uppercase tracking-widest"
+                style={{ color }}
+              >
+                {rec.is_due ? 'Пора обслужить' : 'Рекомендация сервиса'}
+              </p>
+              <p className="mt-0.5 truncate text-[13px] font-bold uppercase tracking-tight text-textPrimary">
+                {rec.category?.name || rec.title}
+              </p>
+              {rec.last_service?.mileage_km != null && (
+                <p className="mt-0.5 text-[10px] text-textSecondary/70">
+                  последняя замена — {formatMileage(rec.last_service.mileage_km)}
+                </p>
+              )}
+            </div>
+            <div className="shrink-0 text-right">
+              {rec.next_service_mileage_km != null && (
+                <p
+                  className="text-lg font-900 leading-none tracking-tighter md:text-xl"
+                  style={{ color }}
+                >
+                  {formatMileage(rec.next_service_mileage_km)}
+                </p>
+              )}
+              {!rec.is_due && rec.remaining_mileage_km != null && (
+                <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-textSecondary">
+                  осталось ~{formatMileage(rec.remaining_mileage_km)}
+                </p>
+              )}
+            </div>
+          </div>
+        )
+      })}
+    </div>
   )
 }

@@ -18,6 +18,7 @@
  */
 import { Link } from 'react-router-dom'
 import { useServiceBookQuery } from '@/features/service-book/queries'
+import { findRecommendation, sortRecommendationsByUrgency } from '@/features/service-book/recommendations'
 import { Card } from '@/shared/ui/Card'
 import { Button } from '@/shared/ui/Button'
 import { SafeImage } from '@/shared/ui/SafeImage'
@@ -70,6 +71,8 @@ export function ActiveCarBlock() {
 
   const car = data.selected_car
   const rec = data.service_recommendations
+  const engineOil = findRecommendation(rec?.recommendations, 'engine_oil')
+  const topRec = sortRecommendationsByUrgency(rec?.recommendations ?? [])[0]
   const nextVisitDt =
     data.next_appointment?.final_datetime ??
     data.next_appointment?.scheduled_datetime ??
@@ -154,8 +157,8 @@ export function ActiveCarBlock() {
             <SpecChip
               label="Замена масла в ДВС"
               value={
-                rec?.next_oil_change_mileage_km != null
-                  ? formatMileage(rec.next_oil_change_mileage_km)
+                engineOil?.next_service_mileage_km != null
+                  ? formatMileage(engineOil.next_service_mileage_km)
                   : '—'
               }
             />
@@ -166,10 +169,16 @@ export function ActiveCarBlock() {
             />
           </div>
 
-          {/* Рекомендация-плашка */}
-          {rec?.next_oil_change_mileage_km != null ? (
+          {/* Рекомендация-плашка — самое срочное обслуживание */}
+          {topRec ? (
             <RecommendationStrip
-              message={`Следующая замена масла в двигателе — ${formatMileage(rec.next_oil_change_mileage_km)}`}
+              message={
+                topRec.is_due
+                  ? `${topRec.title} — уже пора`
+                  : topRec.remaining_mileage_km != null
+                    ? `${topRec.title} — примерно через ${formatMileage(topRec.remaining_mileage_km)}`
+                    : topRec.title
+              }
             />
           ) : null}
         </div>

@@ -201,29 +201,57 @@ export interface ServiceBookMeta {
   has_more: boolean
 }
 
-/**
- * Один элемент service_recommendations.recommendations[].
- *
- * Форма пока НЕ подтверждена бэком — на dev (2026-07-01) массив приходит
- * пустым. Поля опциональные, чтобы ничего не сломать; уточняется у бэкенда.
- */
-export interface ServiceRecommendationItem {
-  type?: string
-  title?: string
-  message?: string
-  [key: string]: unknown
+export interface ServiceRecommendationCategory {
+  id: number
+  code: string
+  name: string
+  slug: string
+  icon: string
+  color: string
+}
+
+export interface ServiceRecommendationLastService {
+  appointment_id: number | null
+  status: string
+  service_title: string
+  service_date: string | null
+  mileage_km: number | null
+}
+
+export interface ServiceRecommendationInterval {
+  km: number | null
+  days: number | null
 }
 
 /**
- * Новый формат service_recommendations (сверено на dev 2026-07-01).
+ * Элемент service_recommendations.recommendations[] (сверено на dev 2026-07-02).
  *
- * Бэк убрал объект engine_oil: теперь рекомендация по маслу — это целевой
- * пробег next_oil_change_mileage_km (не дата!), а recommendations[] — общий
- * список рекомендаций (пока приходит пустым).
+ * По одному объекту на вид обслуживания: engine_oil, automatic_transmission_oil,
+ * brake_fluid, antifreeze_change и т.д. `is_due=true` — обслуживание уже пора
+ * делать; `remaining_mileage_km` — сколько ещё осталось до следующего.
+ */
+export interface ServiceRecommendationItem {
+  code: string
+  title: string
+  description: string
+  category: ServiceRecommendationCategory | null
+  last_service: ServiceRecommendationLastService | null
+  interval: ServiceRecommendationInterval | null
+  next_service_mileage_km: number | null
+  current_mileage_km: number | null
+  remaining_mileage_km: number | null
+  is_due: boolean
+}
+
+/**
+ * Формат service_recommendations (сверено на dev 2026-07-02).
+ *
+ * Бэк убрал next_oil_change_mileage_km: теперь весь набор рекомендаций
+ * приходит списком в recommendations[] (масло ДВС/АКПП, тормозная, антифриз…).
+ * Для клиента без истории обслуживания список пустой.
  */
 export interface ServiceRecommendations {
   latest_mileage_km: number | null
-  next_oil_change_mileage_km: number | null
   recommendations: ServiceRecommendationItem[]
 }
 
