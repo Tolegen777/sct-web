@@ -36,9 +36,9 @@ import {
   useUpdatePackageMutation,
 } from './queries'
 import { uploadPackageImage } from './api'
+import type { StaffPackageItemSearchResult } from './api'
 import { usePackagesListPageData } from '../queries'
 import type {
-  StaffPackageItemDetail,
   StaffServicePackageDetail,
   StaffServicePackageWriteRequest,
 } from '@/shared/api/types'
@@ -103,14 +103,21 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
 
   const computedSummary = computeLocalSummary(watchedItems)
 
-  const onAddItem = (item: StaffPackageItemDetail) => {
+  const onAddItem = (item: StaffPackageItemSearchResult) => {
+    // Бэк требует price_id у каждой позиции состава (иначе — "Ошибка валидации
+    // данных пакета услуг"). Берём id активной цены из результата поиска.
+    const priceId = item.price_id ?? item.active_price?.id ?? null
+    if (priceId == null) {
+      toast.error('У позиции нет активной цены — добавить в пакет нельзя.')
+      return
+    }
     itemsArray.append({
       id: null,
       item_id: item.id,
       item_name: item.name,
-      item_type: item.item_type as 'PRODUCT' | 'SERVICE',
-      price_id: null,
-      quantity: '1.000',
+      item_type: item.item_type,
+      price_id: priceId,
+      quantity: '1',
       discount_type: 'NONE',
       discount_percent: '0.00',
       discount_amount: '0.00',
@@ -144,6 +151,17 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
 
   const onSubmit = async (values: PackageFormValues) => {
     setServerError(null)
+    // Страховка: бэк требует price_id у каждой позиции. В норме он
+    // проставляется при добавлении из поиска и при загрузке пакета на
+    // редактирование; если всё же пусто — не шлём заведомо провальный
+    // запрос, а подсказываем, как починить.
+    const noPrice = values.package_items.find((l) => l.price_id == null)
+    if (noPrice) {
+      setServerError(
+        `У позиции «${noPrice.item_name}» не определена цена — удалите её и добавьте заново из поиска.`,
+      )
+      return
+    }
     try {
       const payload = mapFormToServer(values)
       const result =
@@ -592,8 +610,14 @@ function mapServerToForm(src: StaffServicePackageDetail): PackageFormValues {
         item_id: (line as { item_id?: number }).item_id ?? itemObj?.id ?? 0,
         item_name: itemObj?.name ?? (line as { item_name?: string }).item_name ?? '',
         item_type: (itemObj?.item_type ?? 'PRODUCT') as 'PRODUCT' | 'SERVICE',
-        price_id: (line as { price_id?: number | null }).price_id ?? null,
-        quantity: (line as { quantity?: string }).quantity ?? '1.000',
+        // Read-сторона отдаёт id цены в поле `price` (integer), НЕ `price_id`.
+        // Раньше читали `price_id` → всегда null → при пересохранении пакета
+        // падала валидация "price_id: This field is required".
+        price_id:
+          (line as { price?: number | null }).price ??
+          (line as { price_id?: number | null }).price_id ??
+          null,
+        quantity: stripTrailingZeros((line as { quantity?: string }).quantity ?? '1'),
         discount_type:
           ((line as { discount_type?: string }).discount_type as
             | 'NONE'
@@ -657,4 +681,17 @@ function mapFormToServer(values: PackageFormValues): StaffServicePackageWriteReq
 /** Локальный счётчик позиций — для UI-плашки. Реальный итог считает бэк. */
 function computeLocalSummary(rows: PackageFormValues['package_items']) {
   return { count: rows.length }
+}
+
+/**
+ * Убирает лишние нули в дробной части для показа в поле «Кол-во».
+ * Бэк всегда отдаёт количество с тремя знаками ("1.000", "4.000"), а в
+ * форме показываем по-человечески: "1.000" → "1", "1.500" → "1.5",
+ * "0.350" → "0.35". Целые числа без точки не трогаем ("100" → "100").
+ * Бэк принимает и "1", и "1.5" — паттерн decimal допускает оба.
+ */
+function stripTrailingZeros(value: string): string {
+  const v = value.trim()
+  if (!v.includes('.')) return v
+  return v.replace(/\.?0+$/, '') || '0'
 }

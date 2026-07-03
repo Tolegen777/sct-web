@@ -7,13 +7,13 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { usePackageItemSearch } from './queries'
-import type { StaffPackageItemDetail } from '@/shared/api/types'
+import type { StaffPackageItemSearchResult } from './api'
 import { Input } from '@/shared/ui/Input'
 import { Spinner } from '@/shared/ui/Spinner'
 import { cn } from '@/shared/lib/cn'
 
 interface Props {
-  onSelect: (item: StaffPackageItemDetail) => void
+  onSelect: (item: StaffPackageItemSearchResult) => void
 }
 
 export function PackageItemAutocomplete({ onSelect }: Props) {
@@ -38,7 +38,7 @@ export function PackageItemAutocomplete({ onSelect }: Props) {
 
   const { data, isFetching } = usePackageItemSearch(debounced)
 
-  const handleSelect = (item: StaffPackageItemDetail) => {
+  const handleSelect = (item: StaffPackageItemSearchResult) => {
     onSelect(item)
     setInput('')
     setDebounced('')

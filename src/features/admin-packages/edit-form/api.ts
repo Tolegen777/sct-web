@@ -14,8 +14,35 @@ import type {
   StaffServicePackageDetail,
   StaffServicePackageWriteRequest,
   PatchedStaffServicePackageWriteRequest,
-  StaffPackageItemDetail,
 } from '@/shared/api/types'
+
+/**
+ * Реальный ответ /package-items/search/ (сверено live на dev, 03.07).
+ *
+ * Это НЕ `StaffPackageItemDetail` из OpenAPI: поиск отдаёт плоский
+ * search-сериализатор. Главное — тут есть `price_id` (id активной цены),
+ * который бэк требует в составе пакета (`package_items[].price_id`).
+ * В OpenAPI-схеме этого поля нет, поэтому держим тип локально.
+ */
+export interface StaffPackageItemSearchResult {
+  id: number
+  name: string
+  article: string | null
+  external_code: string | null
+  display_code: string | null
+  item_type: 'PRODUCT' | 'SERVICE'
+  status: string
+  unit_name: string
+  /** id активной цены — идёт в package_items[].price_id при сохранении. */
+  price_id: number | null
+  /** Объект активной цены (в схеме указан строкой — расхождение). */
+  active_price: {
+    id: number
+    price: string
+    currency: string
+    status: string
+  } | null
+}
 
 export async function fetchPackageForEdit(id: number) {
   const response = await staffHttp.get<StaffServicePackageDetail>(endpoints.staffPackage(id))
@@ -65,7 +92,7 @@ export interface PackageItemSearchResponse {
   query: string
   normalized_query: string
   count: number
-  results: StaffPackageItemDetail[]
+  results: StaffPackageItemSearchResult[]
 }
 
 /**
