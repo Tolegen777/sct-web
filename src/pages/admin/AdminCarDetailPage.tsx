@@ -386,13 +386,13 @@ export default function AdminCarDetailPage() {
           </header>
           <div className="grid grid-cols-1 gap-3 p-6 md:grid-cols-2">
             {related.results.map((r: {
-              id: number; source_id: string; name: string;
+              id: number; trim_source_id: string; name: string;
               power_hp?: number; transmission?: string; drive?: string;
               is_current?: boolean;
             }) => (
               <Link
                 key={r.id}
-                to={`/admin/cars/${encodeURIComponent(r.source_id)}`}
+                to={`/admin/cars/${encodeURIComponent(r.trim_source_id)}`}
                 className={cn(
                   'flex items-center justify-between rounded-sct border bg-white p-4 transition-all hover:border-brandBlue',
                   r.is_current && 'border-brandBlue shadow-soft-blue',

@@ -91,8 +91,13 @@ export interface AdminCarsPagination {
 }
 
 export interface CarRow {
-  /** source_id модификации, например "20465475__20465527". URL detail-эндпоинта. */
-  id: string
+  /** Числовой id строки (бэк сменил на int). Используем как React key. */
+  id: number
+  /**
+   * Составной trim_source_id, например "23981827__24988834" — идёт в URL
+   * detail-эндпоинта (бэк переименовал: раньше это лежало в `id`).
+   */
+  trim_source_id: string
   modification_id: number
   car: {
     title: string

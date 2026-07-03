@@ -366,7 +366,7 @@ function ResultsTable({ items, loading }: { items: CarRow[]; loading: boolean })
             <tr
               key={row.id}
               className="cursor-pointer transition-colors hover:bg-surfaceLight/60"
-              onClick={() => navigate(`/admin/cars/${encodeURIComponent(row.id)}`)}
+              onClick={() => navigate(`/admin/cars/${encodeURIComponent(row.trim_source_id)}`)}
             >
               <td className="px-6 py-4 font-mono text-[10px] font-bold text-textSecondary">
                 #{row.modification_id}
