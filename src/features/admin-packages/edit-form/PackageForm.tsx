@@ -24,6 +24,7 @@ import { Toggle } from '@/shared/ui/Toggle'
 import { Button } from '@/shared/ui/Button'
 import { toast } from '@/shared/ui/Toast'
 import { parseApiError } from '@/features/auth/errors'
+import { slugify } from '@/shared/lib/slugify'
 import { PackageItemAutocomplete } from './PackageItemAutocomplete'
 import { ModificationPicker } from './ModificationPicker'
 import {
@@ -78,6 +79,11 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
   const [imagePreview, setImagePreview] = useState<string | null>(
     (initial as { image_url?: string | null })?.image_url ?? null,
   )
+  // Slug авто-генерится из названия латиницей, пока пользователь не правил поле
+  // руками. В edit-mode считаем, что slug уже задан (не перетираем).
+  const [slugEdited, setSlugEdited] = useState(
+    Boolean((initial as { slug?: string })?.slug),
+  )
 
   // Если предзаполнение пришло асинхронно (edit-mode), переустанавливаем values.
   useEffect(() => {
@@ -85,6 +91,7 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
       form.reset(mapServerToForm(initial))
       setImageFile(null)
       setImagePreview((initial as { image_url?: string | null }).image_url ?? null)
+      setSlugEdited(Boolean((initial as { slug?: string }).slug))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initial?.id])
@@ -94,6 +101,13 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
   const watchedDiscountType = form.watch('discount_type')
   const watchedPromotion = form.watch('has_promotion')
   const watchedModificationId = form.watch('modification_id')
+  const watchedTitle = form.watch('title')
+
+  // Пока slug не трогали вручную — держим его синхронным с названием (латиница).
+  useEffect(() => {
+    if (!slugEdited) form.setValue('slug', slugify(watchedTitle ?? ''))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedTitle, slugEdited])
 
   // Локальная метка вида «Toyota Camry — 2.5 AT (181 л.с.)», которую
   // показываем под полем после выбора через ModificationPicker. Хранится
@@ -102,6 +116,10 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
   const [modificationLabel, setModificationLabel] = useState<string>('')
 
   const computedSummary = computeLocalSummary(watchedItems)
+
+  // register для slug держим отдельно, чтобы дополнить onChange/onBlur:
+  // ручная правка отключает авто-синк с названием, а на blur приводим к латинице.
+  const slugField = form.register('slug')
 
   const onAddItem = (item: StaffPackageItemSearchResult) => {
     // Бэк требует price_id у каждой позиции состава (иначе — "Ошибка валидации
@@ -240,8 +258,16 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
           <Input
             label="Slug"
             placeholder="auto / latin / dashes"
-            {...form.register('slug')}
-            hint="Если пусто — сгенерируется автоматически на бэке"
+            {...slugField}
+            onChange={(e) => {
+              slugField.onChange(e)
+              setSlugEdited(true)
+            }}
+            onBlur={(e) => {
+              slugField.onBlur(e)
+              form.setValue('slug', slugify(e.target.value), { shouldDirty: true })
+            }}
+            hint="Только латиница. Если пусто — сгенерируется из названия."
           />
           <Input
             type="number"
@@ -530,12 +556,14 @@ export function PackageForm({ mode, packageId, initial }: PackageFormProps) {
               label="Заголовок акции"
               placeholder="Скидка −20% на работы"
               {...form.register('promotion_title')}
+              error={form.formState.errors.promotion_title?.message}
             />
             <Textarea
               label="Условия акции"
               rows={3}
               placeholder="Бесплатная диагностика ходовой при покупке пакета..."
               {...form.register('promotion_terms')}
+              error={form.formState.errors.promotion_terms?.message}
             />
           </div>
         )}
@@ -645,7 +673,8 @@ function mapFormToServer(values: PackageFormValues): StaffServicePackageWriteReq
     // ещё знает только старый modification_source_id, поэтому каст ниже.
     modification_id: Number(values.modification_id),
     title: values.title,
-    slug: values.slug || undefined,
+    // Страховка: slug всегда латиницей (бэк из кириллицы генерил кириллический).
+    slug: slugify(values.slug || values.title) || undefined,
     status: values.status,
     short_description: values.short_description,
     description: values.description,

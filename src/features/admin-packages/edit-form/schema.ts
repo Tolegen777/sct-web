@@ -68,6 +68,16 @@ export const packageFormSchema = z.object({
 
   // Состав
   package_items: z.array(packageItemRowSchema),
+}).superRefine((val, ctx) => {
+  // Если включена акция — заголовок обязателен (бэк это тоже проверяет и
+  // возвращает error.details.promotion_title). Ловим на фронте заранее.
+  if (val.has_promotion && !val.promotion_title.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['promotion_title'],
+      message: 'Если включена акция, укажите заголовок акции.',
+    })
+  }
 })
 
 export type PackageFormValues = z.infer<typeof packageFormSchema>
