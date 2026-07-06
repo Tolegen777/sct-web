@@ -118,7 +118,7 @@ export function TrimStep({ modificationId, selectedTrimSourceId, onSelect }: Tri
         onClick={() => onSelect(items.find((t) => !t.is_closed) ?? items[0])}
         className="mt-4 w-full rounded-sct border border-dashed border-borderLight px-4 py-3 text-[12px] font-800 uppercase tracking-widest text-textSecondary transition-colors hover:border-brandBlue hover:text-brandBlue"
       >
-        Не знаю комплектацию — пропустить
+        Пропустить
       </button>
     </div>
   )
