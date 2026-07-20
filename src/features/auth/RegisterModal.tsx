@@ -288,7 +288,6 @@ function PhoneVerifyStep({
 
       <Input
         label="Код из SMS"
-        placeholder="8888"
         autoComplete="one-time-code"
         inputMode="numeric"
         maxLength={8}
