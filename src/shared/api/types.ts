@@ -39,20 +39,3 @@ export type TokenRefreshRequest = Schemas['TokenRefreshRequest']
 export type TokenRefresh = Schemas['TokenRefresh']
 export type DiscountType = Schemas['DiscountTypeEnum']
 export type ItemType = Schemas['ItemTypeEnum']
-
-// --- Staff (для админки пакетов) ---
-export type StaffUser = Schemas['StaffUser']
-export type StaffLogin = Schemas['StaffLogin']
-export type StaffLoginRequest = Schemas['StaffLoginRequest']
-export type StaffServicePackageDetail = Schemas['StaffServicePackageDetail']
-export type StaffServicePackageList = Schemas['StaffServicePackageList']
-export type StaffServicePackageWriteRequest =
-  Schemas['StaffServicePackageWriteRequest']
-export type PatchedStaffServicePackageWriteRequest =
-  Schemas['PatchedStaffServicePackageWriteRequest']
-export type StaffPackageItemList = Schemas['StaffPackageItemList']
-export type StaffPackageItemDetail = Schemas['StaffPackageItemDetail']
-export type StaffCarDetailPageDataResponse =
-  Schemas['StaffCarDetailPageDataResponse']
-export type StaffCarsListPageDataResponse =
-  Schemas['StaffCarsListPageDataResponse']

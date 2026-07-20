@@ -10,8 +10,15 @@ export const endpoints = {
   // --- Клиент: авторизация ---
   clientLogin: '/api/v1/client_endpoints/auth/login/',
   clientRegister: '/api/v1/client_endpoints/auth/register/',
+  // Регистрация теперь двухэтапная: register → SMS → register/verify.
+  clientRegisterVerify: '/api/v1/client_endpoints/auth/register/verify/',
+  clientRegisterResend: '/api/v1/client_endpoints/auth/register/resend/',
   clientRefresh: '/api/v1/client_endpoints/auth/refresh/',
   clientProfile: '/api/v1/client_endpoints/auth/profile/',
+
+  // --- Клиент: восстановление пароля по SMS ---
+  clientPasswordResetRequest: '/api/v1/client_endpoints/auth/password-reset/request/',
+  clientPasswordResetConfirm: '/api/v1/client_endpoints/auth/password-reset/confirm/',
 
   // --- Клиент: гараж ---
   garageCars: '/api/v1/client_endpoints/garage/cars/',
@@ -49,56 +56,4 @@ export const endpoints = {
   carsFilters: '/api/v1/cars/filters/',
   carsModifications: '/api/v1/cars/modifications/',
   carsTrims: '/api/v1/cars/trims/',
-
-  // --- Staff (для админки пакетов) ---
-  staffLogin: '/api/v1/staff_endpoints/auth/login/',
-  staffLogout: '/api/v1/staff_endpoints/auth/logout/',
-  staffRefresh: '/api/v1/staff_endpoints/auth/refresh/',
-  staffProfile: '/api/v1/staff_endpoints/auth/profile/',
-  staffPackages: '/api/v1/staff_endpoints/packages/',
-  staffPackagesListPageData:
-    '/api/v1/staff_endpoints/packages/list-page-data/',
-  staffPackagesCreate: '/api/v1/staff_endpoints/packages/create/',
-  staffPackage: (id: number) => `/api/v1/staff_endpoints/packages/${id}/`,
-  staffPackageEdit: (id: number) =>
-    `/api/v1/staff_endpoints/packages/${id}/edit/`,
-  staffPackageDelete: (id: number) =>
-    `/api/v1/staff_endpoints/packages/${id}/delete/`,
-  staffPackageDuplicate: (id: number) =>
-    `/api/v1/staff_endpoints/packages/${id}/duplicate/`,
-  staffPackageDetailPageData: (id: number) =>
-    `/api/v1/staff_endpoints/packages/${id}/detail-page-data/`,
-  staffPackagesCarsListPageData:
-    '/api/v1/staff_endpoints/packages/cars-list-page-data/',
-  staffCarsListPageData: '/api/v1/staff_endpoints/cars/cars-list-page-data/',
-  staffCarDetailPageData: (sourceId: string) =>
-    `/api/v1/staff_endpoints/cars/${sourceId}/detail-page-data/`,
-  staffPackageItems: '/api/v1/staff_endpoints/packages/package-items/',
-  // Fuzzy-поиск товаров/услуг (нормализация + опечатки на бэке).
-  // Ответ: { query, normalized_query, count, results[] }.
-  staffPackageItemsSearch:
-    '/api/v1/staff_endpoints/packages/package-items/search/',
-
-  // --- Staff: записи на сервис (admin bookings) ---
-  // Бэк объединил все действия в один PATCH /staff/bookings/{id}/.
-  // Cancel остался отдельным POST. Options отдаёт справочники (СТО,
-  // пакеты, default-услуги) для модалок действий.
-  staffBookings: '/api/v1/staff_endpoints/bookings/',
-  staffBooking: (id: number) => `/api/v1/staff_endpoints/bookings/${id}/`,
-  staffBookingCancel: (id: number) =>
-    `/api/v1/staff_endpoints/bookings/${id}/cancel/`,
-  staffBookingsOptions: '/api/v1/staff_endpoints/bookings/options/',
-
-  // --- Staff: Telegram VIN-заявки (telegram_vehicle_requests) ---
-  // Касса шлёт через TG-бота фото госномера/VIN; менеджер вводит данные,
-  // ищет авто клиента (find-client-car) и присваивает VIN (assign-vin).
-  staffTelegramRequests: '/api/v1/staff_endpoints/telegram_vehicle_requests/',
-  staffTelegramRequest: (id: number) =>
-    `/api/v1/staff_endpoints/telegram_vehicle_requests/${id}/`,
-  staffTelegramRequestFindCar: (id: number) =>
-    `/api/v1/staff_endpoints/telegram_vehicle_requests/${id}/find-client-car/`,
-  staffTelegramRequestAssignVin: (id: number) =>
-    `/api/v1/staff_endpoints/telegram_vehicle_requests/${id}/assign-vin/`,
-  staffTelegramRequestsStats:
-    '/api/v1/staff_endpoints/telegram_vehicle_requests/stats/',
 } as const

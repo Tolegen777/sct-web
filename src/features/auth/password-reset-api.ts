@@ -1,57 +1,42 @@
 /**
- * Заготовки API-вызовов для восстановления пароля.
+ * Восстановление пароля по SMS — новый контракт бэка (2 эндпоинта).
  *
- * Сейчас бэк ещё не реализовал ни одного из трёх эндпоинтов (см.
- * BACKEND_NOTES.md, п. 4.1). Когда подключит — этот файл подключится
- * автоматически. URL'ы и payload'ы я указал предварительные; если бэк
- * назовёт ручки иначе — корректируем в одном месте.
+ *   request/  { phone }                       → всегда одинаковый ответ
+ *                                               (даже если номера нет).
+ *   confirm/  { phone, code, new_password }   → успех. JWT НЕ возвращается —
+ *                                               после смены пароля пользователь
+ *                                               логинится сам.
+ *
+ * Оба вызова — без авторизации (noAuth): пользователь по определению не
+ * залогинен.
  */
-import { http } from '@/shared/api/http'
-
-const URLS = {
-  request: '/api/v1/client_endpoints/auth/password-reset/request/',
-  verify: '/api/v1/client_endpoints/auth/password-reset/verify/',
-  confirm: '/api/v1/client_endpoints/auth/password-reset/confirm/',
-} as const
+import { noAuth } from '@/shared/api/http'
+import { endpoints } from '@/shared/api/endpoints'
 
 export interface ResetRequestPayload {
   phone: string
 }
-export interface ResetRequestResponse {
-  request_id: string
-  ttl?: number
-  attempts_left?: number
-}
-
-export interface ResetVerifyPayload {
-  request_id: string
-  code: string
-}
-export interface ResetVerifyResponse {
-  reset_token: string
-  ttl?: number
-}
 
 export interface ResetConfirmPayload {
-  reset_token: string
+  phone: string
+  code: string
   new_password: string
-}
-export interface ResetConfirmResponse {
-  access: string
-  refresh: string
 }
 
 export async function requestPasswordReset(payload: ResetRequestPayload) {
-  const response = await http.post<ResetRequestResponse>(URLS.request, payload)
-  return response.data
-}
-
-export async function verifyPasswordReset(payload: ResetVerifyPayload) {
-  const response = await http.post<ResetVerifyResponse>(URLS.verify, payload)
+  const response = await noAuth({
+    url: endpoints.clientPasswordResetRequest,
+    method: 'POST',
+    data: payload,
+  })
   return response.data
 }
 
 export async function confirmPasswordReset(payload: ResetConfirmPayload) {
-  const response = await http.post<ResetConfirmResponse>(URLS.confirm, payload)
+  const response = await noAuth({
+    url: endpoints.clientPasswordResetConfirm,
+    method: 'POST',
+    data: payload,
+  })
   return response.data
 }

@@ -15,9 +15,7 @@
 import { lazy } from 'react'
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom'
 import { Layout } from '@/app/Layout'
-import { StaffLayout } from '@/app/StaffLayout'
 import { RequireAuth } from '@/app/RequireAuth'
-import { RequireStaff } from '@/app/RequireStaff'
 
 const HomePage = lazy(() => import('@/pages/HomePage'))
 const ServicesPage = lazy(() => import('@/pages/ServicesPage'))
@@ -33,19 +31,6 @@ const BookingDetailPage = lazy(() => import('@/pages/BookingDetailPage'))
 const BookServicePage = lazy(() => import('@/pages/BookServicePage'))
 const DefaultServiceDetailPage = lazy(() => import('@/pages/DefaultServiceDetailPage'))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
-
-const StaffLoginPage = lazy(() => import('@/pages/admin/StaffLoginPage'))
-const AdminPackagesPage = lazy(() => import('@/pages/admin/AdminPackagesPage'))
-const AdminPackageDetailPage = lazy(() => import('@/pages/admin/AdminPackageDetailPage'))
-const AdminPackageEditPage = lazy(() => import('@/pages/admin/AdminPackageEditPage'))
-const AdminCarsPage = lazy(() => import('@/pages/admin/AdminCarsPage'))
-const AdminCarDetailPage = lazy(() => import('@/pages/admin/AdminCarDetailPage'))
-const AdminBookingsPage = lazy(() => import('@/pages/admin/AdminBookingsPage'))
-const AdminBookingDetailPage = lazy(() => import('@/pages/admin/AdminBookingDetailPage'))
-const AdminTelegramRequestsPage = lazy(() => import('@/pages/admin/AdminTelegramRequestsPage'))
-const AdminTelegramRequestDetailPage = lazy(
-  () => import('@/pages/admin/AdminTelegramRequestDetailPage'),
-)
 
 export const router = createBrowserRouter([
   {
@@ -80,31 +65,6 @@ export const router = createBrowserRouter([
       // Алиасы / 404
       { path: '/home', element: <Navigate to="/" replace /> },
       { path: '*', element: <NotFoundPage /> },
-    ],
-  },
-  // === Админка ===
-  // Логин — отдельной страницей без StaffLayout (header админки показывать
-  // нет смысла, пока стафф не вошёл).
-  { path: '/admin/login', element: <StaffLoginPage /> },
-  {
-    path: '/admin',
-    element: (
-      <RequireStaff>
-        <StaffLayout />
-      </RequireStaff>
-    ),
-    children: [
-      { index: true, element: <Navigate to="/admin/packages" replace /> },
-      { path: 'packages', element: <AdminPackagesPage /> },
-      { path: 'packages/new', element: <AdminPackageEditPage /> },
-      { path: 'packages/:id', element: <AdminPackageDetailPage /> },
-      { path: 'packages/:id/edit', element: <AdminPackageEditPage /> },
-      { path: 'cars', element: <AdminCarsPage /> },
-      { path: 'cars/:sourceId', element: <AdminCarDetailPage /> },
-      { path: 'bookings', element: <AdminBookingsPage /> },
-      { path: 'bookings/:id', element: <AdminBookingDetailPage /> },
-      { path: 'telegram', element: <AdminTelegramRequestsPage /> },
-      { path: 'telegram/:id', element: <AdminTelegramRequestDetailPage /> },
     ],
   },
 ])

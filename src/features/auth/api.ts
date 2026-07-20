@@ -20,9 +20,47 @@ export async function loginClient(payload: ClientLoginRequest) {
   return response.data
 }
 
+/**
+ * Ответ register/ теперь НЕ содержит JWT — только данные для экрана
+ * подтверждения телефона. Токены приезжают позже, из register/verify/.
+ */
+export interface RegisterInitResponse {
+  phone: string
+  verification_required: boolean
+  code_expires_in: number
+  /** через сколько секунд можно будет отправить SMS повторно */
+  resend_available_in: number
+}
+
 export async function registerClient(payload: ClientRegisterRequest) {
-  const response = await noAuth<ClientTokenResponse>({
+  const response = await noAuth<RegisterInitResponse>({
     url: endpoints.clientRegister,
+    method: 'POST',
+    data: payload,
+  })
+  return response.data
+}
+
+/**
+ * Второй шаг регистрации: подтверждение телефона кодом из SMS.
+ * Возвращает то, что раньше возвращал register/ — access, refresh, user.
+ */
+export async function verifyRegistration(payload: { phone: string; code: string }) {
+  const response = await noAuth<ClientTokenResponse>({
+    url: endpoints.clientRegisterVerify,
+    method: 'POST',
+    data: payload,
+  })
+  return response.data
+}
+
+/**
+ * Повторная отправка SMS-кода. Бэк может вернуть новый `resend_available_in`
+ * (для перезапуска таймера) — если нет, вызывающий код фолбэчит на дефолт.
+ */
+export async function resendRegistrationCode(payload: { phone: string }) {
+  const response = await noAuth<{ resend_available_in?: number }>({
+    url: endpoints.clientRegisterResend,
     method: 'POST',
     data: payload,
   })

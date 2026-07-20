@@ -1,26 +1,19 @@
 /**
- * Хранилище JWT-токенов. Поддерживает две независимые сессии:
- *   - client (обычный пользователь)
- *   - staff (админ панели)
- *
- * Это нужно, чтобы стафф-пользователь мог зайти в админку, не разлогинивая
- * клиента в соседней вкладке (и наоборот). Ключи разные, axios-инстансы
- * разные.
+ * Хранилище JWT-токенов клиентской сессии.
  *
  * Сейчас используется localStorage — этого достаточно для MVP. Если потом
  * перейдём на httpOnly cookies (безопаснее против XSS), меняем только этот
  * файл, остальной код не трогаем.
+ *
+ * Примечание: раньше здесь жила ещё и staff-сессия (админка). Админку вынесли
+ * в отдельный проект (sct-admin) на свой домен, поэтому тут остался только
+ * client-scope.
  */
 
-export type Scope = 'client' | 'staff'
+const KEYS = { access: 'sct_client_access', refresh: 'sct_client_refresh' }
 
-const KEYS: Record<Scope, { access: string; refresh: string }> = {
-  client: { access: 'sct_client_access', refresh: 'sct_client_refresh' },
-  staff: { access: 'sct_staff_access', refresh: 'sct_staff_refresh' },
-}
-
-function makeStorage(scope: Scope) {
-  const { access, refresh } = KEYS[scope]
+function makeStorage() {
+  const { access, refresh } = KEYS
   return {
     getAccess(): string | null {
       return localStorage.getItem(access)
@@ -45,9 +38,7 @@ function makeStorage(scope: Scope) {
   }
 }
 
-// Старая API для совместимости.
-export const tokenStorage = makeStorage('client')
+export const tokenStorage = makeStorage()
 
-// Новые scoped-хранилища.
+// Алиас для явного «client»-именования на месте использования.
 export const clientTokens = tokenStorage
-export const staffTokens = makeStorage('staff')

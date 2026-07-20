@@ -12,8 +12,7 @@
  * promise-toast, undo, или actions, можно безболезненно мигрировать на
  * sonner — API почти совместим.
  *
- * Где монтируется: в `Layout.tsx` (под Footer) и в `StaffLayout.tsx`
- * через `<ToastViewport />`.
+ * Где монтируется: в `Layout.tsx` (под Footer) через `<ToastViewport />`.
  */
 import {
   createContext,

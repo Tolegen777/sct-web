@@ -25,7 +25,7 @@ const phoneRegex = /^\+?[0-9\s\-()]{7,32}$/
  * две проверки можно сделать только на бэке — мы их не воспроизводим.
  * Если бэк отвергнет — переведённое сообщение покажем в красной плашке.
  */
-const passwordRules = z
+export const passwordRules = z
   .string()
   .min(8, 'Пароль должен быть не короче 8 символов')
   .refine((v) => /[a-zA-Zа-яА-ЯёЁ]/.test(v), {
@@ -52,6 +52,18 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Введите пароль'),
 })
 export type LoginFormValues = z.infer<typeof loginSchema>
+
+/**
+ * SMS-код подтверждения (регистрация / сброс пароля). На демо всегда 8888;
+ * допускаем 4–8 цифр, реальную длину проверит бэк.
+ */
+export const codeRules = z
+  .string()
+  .min(1, 'Введите код из SMS')
+  .regex(/^\d{4,8}$/, 'Код состоит из 4–8 цифр')
+
+export const verifyCodeSchema = z.object({ code: codeRules })
+export type VerifyCodeValues = z.infer<typeof verifyCodeSchema>
 
 /**
  * В обновлённом дизайне поле для имени одно — без split на имя/фамилию.
