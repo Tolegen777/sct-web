@@ -122,25 +122,35 @@ export function parseApiError(err: unknown, fallback: string): ParsedApiError {
     if (envelope && typeof envelope === 'object' && !Array.isArray(envelope)) {
       // Новый единый обработчик ошибок бэка:
       //   { success:false, error:{ code, message, field, details } }
-      // message обычно уже на русском; details — DRF-карта {поле:[сообщения]}.
+      // `message` часто — общая КАТЕГОРИЯ ошибки («Ошибка авторизации
+      // клиента.», «Ошибка валидации.»), а конкретика лежит в
+      // details.non_field_errors / details.detail. Раньше мы склеивали их
+      // и получалось «Ошибка X. <настоящее сообщение>» — мусорный префикс.
+      // Теперь: есть конкретное non_field/detail сообщение → показываем
+      // только его; общий `message` держим как фолбэк, когда конкретики нет.
       const e = envelope as Record<string, unknown>
-      if (typeof e.message === 'string') general = translateApiMessage(e.message)
+      const envelopeMessage =
+        typeof e.message === 'string' ? translateApiMessage(e.message) : null
 
       const details = e.details
+      const generalParts: string[] = []
+
       if (Array.isArray(details)) {
         const msg = joinList(details)
-        if (msg) general = general ? `${general} ${msg}` : msg
+        if (msg) generalParts.push(msg)
       } else if (details && typeof details === 'object') {
         for (const [key, value] of Object.entries(details as Record<string, unknown>)) {
           const msg = joinList(value)
           if (!msg) continue
           if (key === 'non_field_errors' || key === 'detail') {
-            general = general ? `${general} ${msg}` : msg
+            generalParts.push(msg)
           } else {
             fields[key] = msg
           }
         }
       }
+
+      general = generalParts.length ? generalParts.join(' ') : envelopeMessage
     } else {
       // Старый DRF-формат (немигрированные ручки / прочие API).
       if (typeof obj.detail === 'string') {
