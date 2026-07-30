@@ -20,12 +20,15 @@ interface ServiceCardProps {
 
 export function ServiceCard({ pkg, onChoose }: ServiceCardProps) {
   const title = getPackageShortTitle(pkg)
+  // Категория есть → тело ведёт на лендинг категории. Пакет без категории
+  // (например, service_package из произвольных товаров/услуг) лендинга не
+  // имеет — ведём на деталь самого пакета, как в PromoCard/FeaturedCard.
+  const to = pkg.category ? `/services/info/${pkg.category.code}` : `/services/${pkg.id}`
   return (
     <article className="group flex flex-col rounded-sct border border-borderLight bg-white p-5 transition-all hover:-translate-y-1 hover:border-brandBlue/50 hover:shadow-soft-card">
-      {/* Тело карточки ведёт на лендинг категории услуги */}
-      <Link to={`/services/info/${pkg.category.code}`} className="flex flex-col">
+      <Link to={to} className="flex flex-col">
         <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-brandBlue">
-          <CategoryIcon code={pkg.category.code} />
+          <CategoryIcon code={pkg.category?.code} />
         </div>
 
         <h3 className="line-clamp-2 text-base font-900 uppercase leading-tight tracking-tight text-textPrimary">
@@ -53,10 +56,10 @@ export function ServiceCard({ pkg, onChoose }: ServiceCardProps) {
   )
 }
 
-function CategoryIcon({ code }: { code: string }) {
+function CategoryIcon({ code }: { code?: string }) {
   // Минимальный mapping. Когда у нас будут реальные иконки от дизайнера —
-  // заменим на нужные SVG.
-  const c = code.toLowerCase()
+  // заменим на нужные SVG. Без кода (пакет без категории) — generic-шестерёнка.
+  const c = (code ?? '').toLowerCase()
   if (c.includes('engine_oil') || c.includes('oil')) return <IconOil />
   if (c.includes('brake')) return <IconBrake />
   if (c.includes('tire') || c.includes('wheel')) return <IconWheel />

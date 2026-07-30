@@ -9,7 +9,7 @@
  *   - Секция «Все услуги» (ServiceCard, 3 в ряд) — остальные regular
  */
 import { useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { usePackagesQuery } from '@/features/packages/queries'
 import { ActiveCarStrip } from '@/features/packages/ActiveCarStrip'
 import { PromoCard } from '@/features/packages/PromoCard'
@@ -25,6 +25,7 @@ import { cn } from '@/shared/lib/cn'
 
 export default function ServicesPage() {
   const isAuthed = useAuthStore((s) => s.phase === 'authed')
+  const navigate = useNavigate()
   const { data, isLoading, isError, refetch } = usePackagesQuery()
   // Категория, для которой открыта модалка выбора пакета.
   const [modalCode, setModalCode] = useState<string | null>(null)
@@ -147,7 +148,13 @@ export default function ServicesPage() {
           <SectionHeader title="Все услуги" accent="blue" />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {regulars.map((p) => (
-              <ServiceCard key={p.id} pkg={p} onChoose={() => setModalCode(p.category.code)} />
+              <ServiceCard
+                key={p.id}
+                pkg={p}
+                onChoose={() =>
+                  p.category ? setModalCode(p.category.code) : navigate(`/services/${p.id}`)
+                }
+              />
             ))}
           </div>
         </section>
@@ -168,9 +175,9 @@ export default function ServicesPage() {
         open={modalCode !== null}
         onClose={() => setModalCode(null)}
         categoryName={
-          regulars.find((p) => p.category.code === modalCode)?.category.name ?? 'Услуга'
+          regulars.find((p) => p.category?.code === modalCode)?.category?.name ?? 'Услуга'
         }
-        packages={regulars.filter((p) => p.category.code === modalCode)}
+        packages={regulars.filter((p) => p.category?.code === modalCode)}
       />
     </section>
   )

@@ -46,9 +46,11 @@ export function PromoCard({ pkg }: PromoCardProps) {
       </div>
 
       <div className="flex flex-1 flex-col p-4">
-        <p className="text-[9px] font-900 uppercase tracking-widest text-textSecondary">
-          {pkg.category.name}
-        </p>
+        {pkg.category?.name && (
+          <p className="text-[9px] font-900 uppercase tracking-widest text-textSecondary">
+            {pkg.category.name}
+          </p>
+        )}
         <h3 className="mt-1 line-clamp-2 text-[13px] font-900 uppercase leading-tight tracking-tight text-textPrimary">
           {title}
         </h3>
