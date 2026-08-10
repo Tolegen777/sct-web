@@ -11,17 +11,20 @@
  * пока держим как локальное состояние формы.
  */
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useMutation } from '@tanstack/react-query'
 import { useAuthStore } from '@/features/auth/store'
-import { updateClientProfile } from '@/features/auth/api'
+import { deleteClientAccount, updateClientProfile } from '@/features/auth/api'
 import { parseApiError } from '@/features/auth/errors'
 import { Card } from '@/shared/ui/Card'
 import { Input } from '@/shared/ui/Input'
+import { Modal } from '@/shared/ui/Modal'
 import { Select } from '@/shared/ui/Select'
 import { Toggle } from '@/shared/ui/Toggle'
+import { toast } from '@/shared/ui/Toast'
 import type { ClientProfile } from '@/shared/api/types'
 
 const schema = z
@@ -61,12 +64,39 @@ export default function ProfilePage() {
   const profile = useAuthStore((s) => s.profile)
   const setProfile = useAuthStore((s) => s.setProfile)
   const logout = useAuthStore((s) => s.logout)
+  const navigate = useNavigate()
 
   const [language, setLanguage] = useState('ru')
   const [pushEnabled, setPushEnabled] = useState(true)
   const [emailEnabled, setEmailEnabled] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+
+  // Удаление аккаунта (требование сторов).
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      setDeleteError('Введите пароль для подтверждения')
+      return
+    }
+    setDeleteError(null)
+    setDeleting(true)
+    try {
+      await deleteClientAccount(deletePassword)
+      setDeleteOpen(false)
+      logout()
+      toast.success('Аккаунт удалён')
+      navigate('/', { replace: true })
+    } catch (err) {
+      setDeleteError(parseApiError(err, 'Не удалось удалить аккаунт. Проверьте пароль.').general)
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   const {
     register,
@@ -156,6 +186,17 @@ export default function ProfilePage() {
               className="mt-4 w-full rounded-sct border border-red-200 py-3.5 text-[12px] font-900 uppercase tracking-widest text-red-600 transition-colors hover:bg-red-50"
             >
               Выйти из системы
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setDeleteError(null)
+                setDeletePassword('')
+                setDeleteOpen(true)
+              }}
+              className="mt-2 w-full py-2 text-[11px] font-bold uppercase tracking-widest text-textSecondary transition-colors hover:text-red-600"
+            >
+              Удалить аккаунт
             </button>
           </Card>
         </aside>
@@ -272,6 +313,46 @@ export default function ProfilePage() {
           </Card>
         </div>
       </div>
+
+      <Modal open={deleteOpen} onClose={() => !deleting && setDeleteOpen(false)} size="sm">
+        <div className="text-center">
+          <h2 className="text-xl font-900 uppercase tracking-tight text-textPrimary">
+            Удалить аккаунт
+          </h2>
+          <p className="mt-2 text-sm text-textSecondary">
+            Это действие необратимо. Активные записи будут отменены, автомобили —
+            заархивированы, а персональные данные удалены. Войти в этот аккаунт больше нельзя.
+          </p>
+        </div>
+        <div className="mt-5 space-y-4">
+          <Input
+            label="Введите пароль для подтверждения"
+            type="password"
+            autoComplete="current-password"
+            value={deletePassword}
+            onChange={(e) => setDeletePassword(e.target.value)}
+            error={deleteError ?? undefined}
+          />
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setDeleteOpen(false)}
+              disabled={deleting}
+              className="flex-1 rounded-sct border border-borderLight py-3 text-[12px] font-900 uppercase tracking-widest text-textSecondary transition-colors hover:bg-surfaceLight disabled:opacity-50"
+            >
+              Отмена
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteAccount}
+              disabled={deleting}
+              className="flex-1 rounded-sct bg-red-600 py-3 text-[12px] font-900 uppercase tracking-widest text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+            >
+              {deleting ? 'Удаляем…' : 'Удалить аккаунт'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </section>
   )
 }
