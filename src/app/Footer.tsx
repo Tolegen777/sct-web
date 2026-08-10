@@ -41,7 +41,7 @@ export function Footer() {
 
         {/* 3. Документы (страниц пока нет — заглушки) */}
         <FooterColumn title="Документы">
-          <FooterLink href="#">Политика конфиденциальности</FooterLink>
+          <FooterLink href="/privacy">Политика конфиденциальности</FooterLink>
           <FooterLink href="#">Публичная оферта</FooterLink>
           <FooterLink href="#">Правила сервиса</FooterLink>
           <FooterLink href="#">Реквизиты</FooterLink>
