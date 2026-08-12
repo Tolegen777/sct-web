@@ -4,6 +4,7 @@
  * 403/404 (видимо, не все логотипы залиты).
  */
 import { useState, type ImgHTMLAttributes, type ReactNode } from 'react'
+import { resolveMediaUrl } from '@/shared/lib/media'
 
 interface SafeImageProps extends ImgHTMLAttributes<HTMLImageElement> {
   fallback?: ReactNode
@@ -11,14 +12,15 @@ interface SafeImageProps extends ImgHTMLAttributes<HTMLImageElement> {
 
 export function SafeImage({ fallback, src, alt, className, ...rest }: SafeImageProps) {
   const [failed, setFailed] = useState(false)
+  const resolved = resolveMediaUrl(src)
 
-  if (!src || failed) {
+  if (!resolved || failed) {
     return <>{fallback ?? null}</>
   }
 
   return (
     <img
-      src={src}
+      src={resolved}
       alt={alt}
       className={className}
       onError={() => setFailed(true)}
