@@ -1,9 +1,8 @@
 /**
  * Контакты и филиалы SCT Service (по дизайну new_screens).
  *
- * Layout: «Наши филиалы» — карта слева + список филиалов справа (на desktop),
- * под картой — панель единой справочной службы. На мобиле всё стопкой:
- * карта → справочная → карточки филиалов.
+ * Layout: «Наши филиалы» — карта слева + список филиалов справа (на desktop).
+ * На мобиле всё стопкой: карта → карточки филиалов.
  *
  * Источник — GET /service_stations/. Часы выводим из расписания (сводно
  * «Ежедневно HH:MM–HH:MM», иначе — на сегодня). Соцсети — визуальные иконки
@@ -74,28 +73,6 @@ export default function ContactsPage() {
             stations={data.results}
             className="aspect-[4/3] overflow-hidden rounded-sct-lg border border-borderLight bg-surfaceLight md:aspect-[16/10]"
           />
-
-          <Card className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-[10px] font-900 uppercase tracking-widest text-textSecondary">
-                Единая справочная служба
-              </p>
-              <a
-                href="tel:+77273334455"
-                className="mt-1 block text-2xl font-900 tracking-tight text-textPrimary"
-              >
-                +7 (727) 333-44-55
-              </a>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <span className="rounded-md bg-surfaceMuted px-3 py-1.5 text-[10px] font-900 uppercase tracking-widest text-textSecondary">
-                Служба заботы 24/7
-              </span>
-              <span className="rounded-md bg-surfaceMuted px-3 py-1.5 text-[10px] font-900 uppercase tracking-widest text-textSecondary">
-                Алматы
-              </span>
-            </div>
-          </Card>
         </div>
 
         {/* Правая колонка: список филиалов */}

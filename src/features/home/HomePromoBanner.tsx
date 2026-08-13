@@ -2,14 +2,15 @@
  * Промо-баннер на главной (вариант под обновлённый дизайн).
  *
  * Структура: синий блок, слева текст + кнопки, справа — тёмная плашка с
- * countdown (DD HH MM). Дата окончания — конец текущего месяца, потом
- * заменим на end_date сущности Promo.
+ * countdown (DD HH MM). Для авторизованного пользователя контент акции месяца
+ * (лейбл, заголовок, описание, кнопки, дедлайн отсчёта) приходит с бэка —
+ * GET /api/v1/public/home-promotion/, редактируется из админки. Гость по-прежнему
+ * видит статичный оффер «для новых клиентов» с кнопкой регистрации.
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@/features/auth/store'
-
-const PROMO_END_ISO = endOfCurrentMonthISO()
+import { useHomePromotionQuery } from './queries'
 
 export function HomePromoBanner() {
   const phase = useAuthStore((s) => s.phase)
@@ -56,6 +57,7 @@ function GuestPromoBanner() {
 }
 
 function CountdownPromoBanner() {
+  const { data: promo } = useHomePromotionQuery()
   const [now, setNow] = useState(() => Date.now())
 
   useEffect(() => {
@@ -63,8 +65,15 @@ function CountdownPromoBanner() {
     return () => clearInterval(id)
   }, [])
 
-  const diffMs = useMemo(() => new Date(PROMO_END_ISO).getTime() - now, [now])
-  if (diffMs <= 0) return null
+  const deadlineMs = useMemo(
+    () => (promo ? new Date(promo.deadline).getTime() : 0),
+    [promo],
+  )
+
+  // Нет активной акции (бэк отдал пусто / выключена / истекла / таймер вышел)
+  // — баннер просто не показываем, как и раньше со статикой при diff <= 0.
+  const diffMs = deadlineMs - now
+  if (!promo || !promo.is_active || promo.is_expired || diffMs <= 0) return null
 
   const totalSeconds = Math.floor(diffMs / 1000)
   const days = Math.floor(totalSeconds / 86400)
@@ -79,28 +88,27 @@ function CountdownPromoBanner() {
         {/* Левая часть с текстом и кнопками */}
         <div className="md:col-span-8">
           <span className="inline-block rounded-md bg-brandYellow px-2.5 py-1 text-[10px] font-900 uppercase tracking-widest text-textPrimary">
-            Акция месяца
+            {promo.label}
           </span>
           <h2 className="mt-3 text-2xl font-900 uppercase leading-[1.05] tracking-tight md:text-3xl lg:text-4xl">
-            −20% НА ЗАМЕНУ МАСЛА<br />И ФИЛЬТРОВ
+            {promo.title}
           </h2>
           <p className="mt-3 max-w-xl text-sm font-medium opacity-80 md:text-base">
-            Для большинства авто доступен специальный пакет: масло, фильтр,
-            диагностика и работа мастера.
+            {promo.description}
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link
-              to="/services"
+            <PromoButton
+              to={promo.primary_button_url}
               className="rounded-sct bg-white px-5 py-3 text-[11px] font-900 uppercase tracking-widest text-brandBlue shadow-md transition-all hover:bg-brandYellow hover:text-textPrimary"
             >
-              Забронировать акцию
-            </Link>
-            <Link
-              to="/services"
+              {promo.primary_button_text}
+            </PromoButton>
+            <PromoButton
+              to={promo.secondary_button_url}
               className="rounded-sct border border-white/20 bg-white/5 px-5 py-3 text-[11px] font-900 uppercase tracking-widest text-white backdrop-blur transition-all hover:bg-white/10"
             >
-              Все акции
-            </Link>
+              {promo.secondary_button_text}
+            </PromoButton>
           </div>
         </div>
 
@@ -141,7 +149,29 @@ function CountSep() {
   return <span className="text-2xl font-900 text-white/30 md:text-3xl">:</span>
 }
 
-function endOfCurrentMonthISO(): string {
-  const d = new Date()
-  return new Date(d.getFullYear(), d.getMonth() + 1, 1, 0, 0, 0).toISOString()
+/**
+ * Кнопка промо: внутренний путь ("/services") → <Link>, а если из админки
+ * впишут абсолютный URL (http…) — обычная <a target="_blank">.
+ */
+function PromoButton({
+  to,
+  className,
+  children,
+}: {
+  to: string
+  className: string
+  children: ReactNode
+}) {
+  if (/^https?:\/\//i.test(to)) {
+    return (
+      <a href={to} target="_blank" rel="noopener noreferrer" className={className}>
+        {children}
+      </a>
+    )
+  }
+  return (
+    <Link to={to || '/services'} className={className}>
+      {children}
+    </Link>
+  )
 }

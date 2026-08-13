@@ -57,4 +57,7 @@ export const endpoints = {
   carsFilters: '/api/v1/cars/filters/',
   carsModifications: '/api/v1/cars/modifications/',
   carsTrims: '/api/v1/cars/trims/',
+
+  // --- Публичное: акция месяца на главной (без авторизации) ---
+  homePromotion: '/api/v1/public/home-promotion/',
 } as const

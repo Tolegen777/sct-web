@@ -39,21 +39,6 @@ export default function BlockedPage() {
           поддержкой, чтобы уточнить причину и восстановить доступ.
         </p>
 
-        <div className="mt-6 rounded-sct border border-borderLight bg-surfaceLight p-4 text-left text-sm">
-          <p className="text-[10px] font-900 uppercase tracking-widest text-textSecondary">
-            Колл-центр
-          </p>
-          <a
-            href="tel:+77273334455"
-            className="mt-1 block text-xl font-900 tracking-tighter text-brandBlue hover:underline"
-          >
-            +7 (727) 333-44-55
-          </a>
-          <p className="mt-1 text-[11px] text-textSecondary/70">
-            Пн–Сб 09:00 – 20:00
-          </p>
-        </div>
-
         <Button variant="ghost" className="mt-6" onClick={() => logout()}>
           Выйти из аккаунта
         </Button>

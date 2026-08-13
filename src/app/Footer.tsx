@@ -50,9 +50,6 @@ export function Footer() {
         {/* 4. Контакты */}
         <FooterColumn title="Контакты">
           <ContactRow icon="pin">г. Алматы, пр. Абая 150</ContactRow>
-          <ContactRow icon="phone" href="tel:+77273334455">
-            +7 (727) 333-44-55
-          </ContactRow>
           <ContactRow icon="mail" href="mailto:info@sct.kz">
             info@sct.kz
           </ContactRow>
