@@ -10,6 +10,7 @@
 import { Link } from 'react-router-dom'
 import type { ClientServicePackage } from '@/shared/api/types'
 import { formatMoney } from '@/shared/lib/format'
+import { SafeImage } from '@/shared/ui/SafeImage'
 import { getPackageShortTitle } from './lib'
 
 interface ServiceCardProps {
@@ -27,8 +28,13 @@ export function ServiceCard({ pkg, onChoose }: ServiceCardProps) {
   return (
     <article className="group flex flex-col rounded-sct border border-borderLight bg-white p-5 transition-all hover:-translate-y-1 hover:border-brandBlue/50 hover:shadow-soft-card">
       <Link to={to} className="flex flex-col">
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-brandBlue">
-          <CategoryIcon code={pkg.category?.code} />
+        <div className="mb-4 flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-blue-50 text-brandBlue">
+          <SafeImage
+            src={pkg.image_url}
+            alt={title}
+            className="h-full w-full object-cover"
+            fallback={<CategoryIcon code={pkg.category?.code} />}
+          />
         </div>
 
         <h3 className="line-clamp-2 text-base font-900 uppercase leading-tight tracking-tight text-textPrimary">
