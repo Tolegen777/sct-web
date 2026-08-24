@@ -16,6 +16,7 @@ import { useAuthStore } from '@/features/auth/store'
 import { Card } from '@/shared/ui/Card'
 import { Spinner } from '@/shared/ui/Spinner'
 import { Button } from '@/shared/ui/Button'
+import { SafeImage } from '@/shared/ui/SafeImage'
 import type { ServiceStation } from '@/features/service-stations/types'
 
 export default function ContactsPage() {
@@ -101,12 +102,21 @@ function StationCard({ station }: { station: ServiceStation }) {
   const hours = stationHours(station)
   return (
     <Card className="p-5">
-      <p className="text-[10px] font-900 uppercase tracking-widest text-brandBlue">
-        Сервис-центр
-      </p>
-      <h3 className="mt-1 text-lg font-900 uppercase tracking-tight text-textPrimary">
-        {station.name}
-      </h3>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-900 uppercase tracking-widest text-brandBlue">
+            Сервис-центр
+          </p>
+          <h3 className="mt-1 text-lg font-900 uppercase tracking-tight text-textPrimary">
+            {station.name}
+          </h3>
+        </div>
+        {station.photo && (
+          <div className="h-16 w-24 shrink-0 overflow-hidden rounded-lg border border-borderLight bg-surfaceLight">
+            <SafeImage src={station.photo} alt={station.name} className="h-full w-full object-cover" />
+          </div>
+        )}
+      </div>
 
       <ul className="mt-4 space-y-2.5 text-sm">
         <li className="flex items-start gap-3">
@@ -123,6 +133,19 @@ function StationCard({ station }: { station: ServiceStation }) {
               className="font-bold text-brandBlue hover:underline"
             >
               {station.phone}
+            </a>
+          </li>
+        )}
+        {station.two_gis_url && (
+          <li className="flex items-start gap-3">
+            <MapIcon />
+            <a
+              href={station.two_gis_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold text-brandBlue hover:underline"
+            >
+              Открыть в 2ГИС
             </a>
           </li>
         )}
