@@ -25,7 +25,7 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { to: '/', label: 'Главная', end: true },
-  { to: '/service-book', label: 'Сервисная книжка', authOnly: true },
+  { to: '/service-book', label: 'Авто', authOnly: true },
   { to: '/services', label: 'Услуги' },
   { to: '/contacts', label: 'Контакты' },
 ]

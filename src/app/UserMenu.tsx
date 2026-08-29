@@ -2,7 +2,7 @@
  * Выпадающее меню профиля в шапке (для авторизованного клиента).
  *
  * Триггер: клик по блоку «Пользователь / Имя» + аватарка.
- * Содержимое: «Личный кабинет», «Сервисная книжка», «Гараж», «Выйти».
+ * Содержимое: «Личный кабинет», «Авто», «Гараж», «Выйти».
  * Закрывается по: клик снаружи, Escape, переход по пункту.
  */
 import { useEffect, useRef, useState } from 'react'
@@ -100,7 +100,7 @@ export function UserMenu() {
               Личный кабинет
             </MenuItem>
             <MenuItem to="/service-book" icon="book" onClose={() => setOpen(false)}>
-              Сервисная книжка
+              Авто
             </MenuItem>
             <MenuItem to="/garage" icon="garage" onClose={() => setOpen(false)}>
               Гараж
