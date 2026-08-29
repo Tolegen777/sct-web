@@ -192,6 +192,22 @@ function RegisterFormStep({
         Зарегистрироваться
       </Button>
 
+      {/* Согласие на обработку ПД. Отдельного «пользовательского соглашения»
+          у нас нет — ссылаемся только на существующую политику. */}
+      <p className="text-center text-[12px] leading-relaxed text-textSecondary">
+        Регистрируясь, вы соглашаетесь на обработку персональных данных в
+        соответствии с{' '}
+        <a
+          href="/privacy/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-bold text-brandBlue underline underline-offset-2"
+        >
+          политикой конфиденциальности
+        </a>
+        .
+      </p>
+
       <div className="pt-2 text-center text-sm text-textSecondary">
         Уже зарегистрированы?{' '}
         <button
