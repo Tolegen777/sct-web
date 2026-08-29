@@ -1,10 +1,12 @@
 /**
  * Редактирование авто клиента.
  *
- * Через PATCH /garage/cars/{id}/ можно менять только nickname и mileage_km —
- * это подтвердил бэк. Госномер, VIN и сама модификация — readonly: чтобы
- * сменить модификацию, клиент удаляет авто и добавляет заново через
- * полный конфигуратор.
+ * Через PATCH /garage/cars/{id}/ бэк принимает nickname и mileage_km, но
+ * пробег из формы убран по просьбе заказчика (2026-08-29): его проставляет
+ * сервис при обслуживании, и от него считаются рекомендации — клиент не
+ * должен его трогать. Текущее значение показываем в шапке карточки только
+ * для чтения. Госномер, VIN и сама модификация тоже readonly: чтобы сменить
+ * модификацию, клиент удаляет авто и добавляет заново через конфигуратор.
  *
  * Дополнительно — действия:
  *   - «Сделать активным» (если не is_default)
@@ -36,11 +38,6 @@ const editSchema = z.object({
     .string()
     .trim()
     .max(255, 'Не больше 255 символов'),
-  mileage_km: z
-    .number({ message: 'Введите пробег числом' })
-    .int('Целое число')
-    .min(0, 'Пробег не может быть отрицательным')
-    .max(9_999_999, 'Слишком большое значение'),
 })
 type EditValues = z.infer<typeof editSchema>
 
@@ -66,16 +63,13 @@ export default function EditCarPage() {
     formState: { errors, isSubmitting, isDirty, dirtyFields },
   } = useForm<EditValues>({
     resolver: zodResolver(editSchema),
-    defaultValues: { nickname: '', mileage_km: 0 },
+    defaultValues: { nickname: '' },
   })
 
   // Подставляем серверные значения, когда машина прогрузится.
   useEffect(() => {
     if (car) {
-      reset({
-        nickname: car.nickname ?? '',
-        mileage_km: car.latest_mileage_km ?? 0,
-      })
+      reset({ nickname: car.nickname ?? '' })
     }
   }, [car, reset])
 
@@ -109,12 +103,7 @@ export default function EditCarPage() {
   const onSubmit = async (values: EditValues) => {
     setServerError(null)
     try {
-      // Шлём ТОЛЬКО реально изменённые поля. Иначе на каждом сохранении летел
-      // весь набор, и это ломалось в двух случаях:
-      //   1) у авто ещё нет пробега → в форме 0 → бэк отвечает 400
-      //      «Ensure this value is greater than or equal to 1», и переименовать
-      //      машину становится невозможно в принципе;
-      //   2) повторная отправка того же пробега без изменений.
+      // Шлём ТОЛЬКО реально изменённые поля — не тревожим бэк лишними.
       // openapi-typescript делает is_default обязательным в типе из-за
       // `default: false` в схеме, хотя PATCH partial. Передаём текущее
       // значение (поведение не меняется) — так обходимся без каста.
@@ -122,14 +111,13 @@ export default function EditCarPage() {
         is_default: car.is_default,
       }
       if (dirtyFields.nickname) payload.nickname = values.nickname
-      if (dirtyFields.mileage_km) payload.mileage_km = values.mileage_km
 
       await updateMut.mutateAsync(payload)
       setSavedAt(Date.now())
     } catch (err) {
       const parsed = parseApiError(err, 'Не удалось сохранить изменения.')
       for (const [field, message] of Object.entries(parsed.fields)) {
-        if (field === 'nickname' || field === 'mileage_km') {
+        if (field === 'nickname') {
           setError(field, { type: 'server', message })
         }
       }
@@ -237,16 +225,6 @@ export default function EditCarPage() {
             hint="Удобное имя для гаража. Не обязательно."
             {...register('nickname')}
             error={errors.nickname?.message}
-          />
-
-          <Input
-            type="number"
-            inputMode="numeric"
-            label="Текущий пробег, км *"
-            placeholder="84200"
-            hint="Сохраняется в историю пробега. На основании пробега считаются рекомендации сервиса."
-            {...register('mileage_km', { valueAsNumber: true })}
-            error={errors.mileage_km?.message}
           />
 
           {serverError && (
