@@ -63,7 +63,7 @@ export default function EditCarPage() {
     handleSubmit,
     reset,
     setError,
-    formState: { errors, isSubmitting, isDirty },
+    formState: { errors, isSubmitting, isDirty, dirtyFields },
   } = useForm<EditValues>({
     resolver: zodResolver(editSchema),
     defaultValues: { nickname: '', mileage_km: 0 },
@@ -109,14 +109,22 @@ export default function EditCarPage() {
   const onSubmit = async (values: EditValues) => {
     setServerError(null)
     try {
+      // Шлём ТОЛЬКО реально изменённые поля. Иначе на каждом сохранении летел
+      // весь набор, и это ломалось в двух случаях:
+      //   1) у авто ещё нет пробега → в форме 0 → бэк отвечает 400
+      //      «Ensure this value is greater than or equal to 1», и переименовать
+      //      машину становится невозможно в принципе;
+      //   2) повторная отправка того же пробега без изменений.
       // openapi-typescript делает is_default обязательным в типе из-за
       // `default: false` в схеме, хотя PATCH partial. Передаём текущее
       // значение (поведение не меняется) — так обходимся без каста.
-      await updateMut.mutateAsync({
-        nickname: values.nickname,
-        mileage_km: values.mileage_km,
+      const payload: Parameters<typeof updateMut.mutateAsync>[0] = {
         is_default: car.is_default,
-      })
+      }
+      if (dirtyFields.nickname) payload.nickname = values.nickname
+      if (dirtyFields.mileage_km) payload.mileage_km = values.mileage_km
+
+      await updateMut.mutateAsync(payload)
       setSavedAt(Date.now())
     } catch (err) {
       const parsed = parseApiError(err, 'Не удалось сохранить изменения.')
