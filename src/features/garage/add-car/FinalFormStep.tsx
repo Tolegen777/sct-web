@@ -1,35 +1,39 @@
 /**
  * Шаг 5 «Номер» (по дизайну new_screens): «Почти готово».
  *
- * Центрированная форма: Госномер (обязательно), Псевдоним (необязательно),
- * VIN (необязательно, подставляется из заранее введённого). Кнопка
- * «Добавить в гараж». Итоговая конфигурация показана в сайдбаре визарда,
- * поэтому правого summary-блока здесь нет.
+ * Центрированная форма: Госномер (обязательно) и VIN (необязательно,
+ * подставляется из заранее введённого). Кнопка «Добавить в гараж». Итоговая
+ * конфигурация показана в сайдбаре визарда, поэтому правого summary-блока
+ * здесь нет.
  *
- * Поля «пробег» и «сделать активным» по дизайну убраны: пробег вводится
- * позже через редактирование авто, новое авто становится активным по умолчанию.
+ * Убраны по просьбе заказчика: «пробег» и «сделать активным» (пробег
+ * проставляет сервис, новое авто становится активным по умолчанию), а также
+ * «псевдоним» — его можно задать позже в редактировании авто.
  *
- * Валидация привязана к patterns из OpenAPI:
- *   - license_plate: ^[A-ZА-Я0-9\-\s]{2,32}$
- *   - vin_code:      ^[A-HJ-NPR-Z0-9]{0,17}$ (max 17, без I/O/Q)
+ * Госномер проверяем по казахстанскому формату (3 цифры + 2–3 буквы +
+ * регион 01–20), см. shared/lib/license-plate. Раньше стоял почти пустой
+ * паттерн из OpenAPI, и в гараж проходили огрызки без региона.
+ *   - vin_code: ^[A-HJ-NPR-Z0-9]{0,17}$ (max 17, без I/O/Q)
  */
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Input } from '@/shared/ui/Input'
+import {
+  LICENSE_PLATE_ERROR,
+  isValidLicensePlate,
+  normalizeLicensePlate,
+} from '@/shared/lib/license-plate'
 import type { Mark, Model, Modification } from './types'
 import type { SpecsValues } from './SpecsStep'
 
-const licensePlateRegex = /^[A-ZА-ЯЁ0-9\-\s]{2,32}$/i
 const vinRegex = /^[A-HJ-NPR-Z0-9]{0,17}$/
 
 const finalSchema = z.object({
   license_plate: z
     .string()
-    .min(2, 'Минимум 2 символа')
-    .max(32, 'Максимум 32 символа')
-    .regex(licensePlateRegex, 'Только латинские/кириллические буквы, цифры, дефис'),
-  nickname: z.string().max(255, 'Максимум 255 символов').optional().or(z.literal('')),
+    .min(1, 'Введите госномер')
+    .refine(isValidLicensePlate, LICENSE_PLATE_ERROR),
   vin_code: z
     .string()
     .regex(vinRegex, 'VIN — только латиница (без I, O, Q) и цифры')
@@ -49,7 +53,6 @@ interface FinalFormStepProps {
   defaultIsDefault: boolean
   onSubmit: (values: {
     license_plate: string
-    nickname: string
     vin_code: string
     mileage_km: number | null
     is_default: boolean
@@ -71,15 +74,13 @@ export function FinalFormStep({
     resolver: zodResolver(finalSchema),
     defaultValues: {
       license_plate: '',
-      nickname: '',
       vin_code: defaultVin,
     },
   })
 
   const submit = handleSubmit(async (values) => {
     await onSubmit({
-      license_plate: values.license_plate.trim().toUpperCase(),
-      nickname: values.nickname?.trim() ?? '',
+      license_plate: normalizeLicensePlate(values.license_plate),
       vin_code: values.vin_code?.trim().toUpperCase() ?? '',
       mileage_km: null,
       is_default: defaultIsDefault,
@@ -98,18 +99,11 @@ export function FinalFormStep({
       <div className="mt-8 space-y-5">
         <Input
           label="Госномер (обязательно)"
-          placeholder="000 AAA 01"
+          placeholder="123ABC02"
           autoComplete="off"
           className="text-center text-lg font-900 uppercase tracking-[0.25em] placeholder:tracking-[0.25em]"
           {...register('license_plate')}
           error={errors.license_plate?.message}
-        />
-        <Input
-          label="Псевдоним авто (необязательно)"
-          placeholder="Напр: Моя машина"
-          autoComplete="off"
-          {...register('nickname')}
-          error={errors.nickname?.message}
         />
         <Input
           label="Введите VIN код (необязательно)"

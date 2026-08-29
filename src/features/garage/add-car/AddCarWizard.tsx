@@ -134,7 +134,6 @@ export function AddCarWizard() {
 
   const submit = async (values: {
     license_plate: string
-    nickname: string
     vin_code: string
     mileage_km: number | null
     is_default: boolean
@@ -145,10 +144,12 @@ export function AddCarWizard() {
       await createCar.mutateAsync({
         modification_trim_source_id: trim.source_id,
         license_plate: values.license_plate,
-        nickname: values.nickname,
         vin_code: values.vin_code,
         mileage_km: values.mileage_km,
         is_default: values.is_default,
+        // Год со шага «Поколение» — заказчик ждёт в гараже именно его,
+        // а не год начала поколения.
+        production_year: specs.year ?? null,
       })
       navigate('/garage', { replace: true })
     } catch (err) {
