@@ -81,6 +81,14 @@ export interface ParsedApiError {
   general: string | null
   /** Ошибки по полям — отдаём в RHF setError(name, { message }). */
   fields: Record<string, string>
+  /**
+   * Машиночитаемый код из конверта бэка (`error.code`): `conflict`,
+   * `validation_error`, `registration_verification_unavailable`…
+   * По нему ветвим логику, не разбирая русский текст сообщения.
+   */
+  code: string | null
+  /** HTTP-статус ответа — null, если ответа не было (сеть/таймаут). */
+  status: number | null
 }
 
 function joinList(value: unknown): string | null {
@@ -97,9 +105,10 @@ function joinList(value: unknown): string | null {
 export function parseApiError(err: unknown, fallback: string): ParsedApiError {
   const fields: Record<string, string> = {}
   let general: string | null = null
+  let code: string | null = null
 
   if (!(err instanceof AxiosError)) {
-    return { general: fallback, fields }
+    return { general: fallback, fields, code: null, status: null }
   }
 
   // Сетевые / таймаут / CORS — нет response.
@@ -109,6 +118,8 @@ export function parseApiError(err: unknown, fallback: string): ParsedApiError {
         ? 'Превышено время ожидания ответа сервера.'
         : 'Не удалось связаться с сервером. Проверьте интернет.',
       fields,
+      code: null,
+      status: null,
     }
   }
 
@@ -133,6 +144,7 @@ export function parseApiError(err: unknown, fallback: string): ParsedApiError {
       // Теперь: есть конкретное non_field/detail сообщение → показываем
       // только его; общий `message` держим как фолбэк, когда конкретики нет.
       const e = envelope as Record<string, unknown>
+      if (typeof e.code === 'string') code = e.code
       const envelopeMessage =
         typeof e.message === 'string' ? translateApiMessage(e.message) : null
 
@@ -178,7 +190,7 @@ export function parseApiError(err: unknown, fallback: string): ParsedApiError {
     general = status >= 500 ? 'Ошибка сервера. Попробуйте позже.' : fallback
   }
 
-  return { general, fields }
+  return { general, fields, code, status }
 }
 
 /**
