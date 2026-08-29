@@ -4,7 +4,7 @@
  * Layout: двухколоночный (8/4):
  *   Left:  CarHeroCompact → RecommendationStrip → BookServiceCTA →
  *          «Ближайший визит» (тёмная карточка) → «Запланированные визиты» →
- *          «Журнал обслуживания»
+ *          «История обслуживания»
  *   Right: MyGarageColumn (тот же, что на главной)
  *
  * Состояния `page_state`:

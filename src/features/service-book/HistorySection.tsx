@@ -1,5 +1,5 @@
 /**
- * Секция «Журнал обслуживания» (история).
+ * Секция «История обслуживания» (история).
  *
  * Если приходит pustoy список — рисуем большой плашку «История пуста».
  * Если есть записи — таблица-список с датой, услугой, филиалом, пробегом.
@@ -46,7 +46,7 @@ export function HistorySection({ history }: HistorySectionProps) {
     <Card className="overflow-hidden p-0">
       <header className="border-b border-borderLight px-5 py-4 md:px-6 md:py-5">
         <h3 className="text-base font-900 uppercase tracking-tight text-textPrimary md:text-lg">
-          Журнал обслуживания
+          История обслуживания
         </h3>
       </header>
       <ul className="divide-y divide-borderLight">
