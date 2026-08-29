@@ -20,7 +20,10 @@ interface CarHeroCompactProps {
 }
 
 export function CarHeroCompact({ car }: CarHeroCompactProps) {
-  const title = `${car.mark.display_name} ${car.model.name}${car.generation ? ` ${car.generation.year_from}` : ''}`
+  // Год: сначала реальный год выпуска экземпляра, и только если его нет —
+  // год начала поколения (это разные вещи, см. production_year в типах).
+  const year = car.production_year ?? car.generation?.year_from ?? null
+  const title = `${car.mark.display_name} ${car.model.name}${year ? ` ${year}` : ''}`
   return (
     <Card className="relative p-5 md:p-6">
       <Link
