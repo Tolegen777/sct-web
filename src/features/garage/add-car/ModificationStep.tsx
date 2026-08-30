@@ -9,6 +9,17 @@
  * Внимание (бэк): дизайн рисует мощность/объём диапазонами (100-150, 1.6 L…),
  * но API фильтрует по точным значениям engine_volume/horse_power, поэтому
  * показываем реальные доступные значения как чипы.
+ *
+ * ВАЖНО про список опций. `filters/` возвращает варианты С УЧЁТОМ уже
+ * выбранных фильтров. Если брать чипы оттуда, то после выбора «2.0 л» ручка
+ * вернёт engine_volumes: [2.0] — остальные объёмы просто исчезнут с экрана, и
+ * пользователь, ткнувший не туда, не сможет переключиться (жалоба заказчика:
+ * «случайно тыкаю 2, хотя у меня 1.5, и поменять не могу — надо всё начинать
+ * заново»). Поэтому список чипов берём из ОТДЕЛЬНОГО запроса без chip-фильтров
+ * (`optionsQuery` — только марка/модель/год/кузов/поколение), а ответ с полным
+ * набором фильтров используем лишь для того, чтобы пометить недоступные
+ * комбинации. Недоступные показываем приглушённо, но кликабельными: клик
+ * заменяет выбор, а не загоняет в тупик.
  */
 import { useMemo } from 'react'
 import { useFiltersQuery, useModificationsQuery } from './queries'
@@ -54,6 +65,20 @@ export function ModificationStep({
     [markId, modelId, specs],
   )
 
+  // Опции чипов — БЕЗ самих chip-фильтров, иначе выбранное значение остаётся
+  // единственным в списке и переключиться некуда.
+  const optionsQuery: CarsQuery = useMemo(
+    () => ({
+      mark: markId,
+      model: modelId,
+      year: specs.year,
+      body_type: specs.body_type,
+      generation: specs.generation,
+    }),
+    [markId, modelId, specs.year, specs.body_type, specs.generation],
+  )
+
+  const { data: allOptions } = useFiltersQuery(optionsQuery)
   const { data: filters } = useFiltersQuery(baseQuery)
   const {
     data: mods,
@@ -66,58 +91,107 @@ export function ModificationStep({
 
   const setFilter = (patch: Partial<SpecsValues>) => onSpecsChange({ ...specs, ...patch })
 
-  // Опции чипов из filters/?...
-  const fuelOpts: ChipOption[] = (filters?.fuel_types ?? []).map((f) => ({
+  // Полный список вариантов (не сужается выбором) + множество доступных сейчас.
+  const avail = <T,>(list: T[] | undefined, key: (v: T) => string) =>
+    new Set((list ?? []).map(key))
+
+  const fuelOpts: ChipOption[] = (allOptions?.fuel_types ?? []).map((f) => ({
     value: f.value,
     label: f.label || f.value,
   }))
-  const volumeOpts: ChipOption[] = (filters?.engine_volumes ?? []).map((o) => ({
+  const fuelAvail = avail(filters?.fuel_types, (f) => f.value)
+
+  const volumeOpts: ChipOption[] = (allOptions?.engine_volumes ?? []).map((o) => ({
     value: String(o.value),
     label: formatEngineVolume(o.value) ?? String(o.value),
   }))
-  const powerOpts: ChipOption[] = (filters?.horse_powers ?? []).map((o) => ({
+  const volumeAvail = avail(filters?.engine_volumes, (o) => String(o.value))
+
+  const powerOpts: ChipOption[] = (allOptions?.horse_powers ?? []).map((o) => ({
     value: String(o.value),
     label: String(o.value),
   }))
-  const transOpts = mapCodeName(filters?.transmission_types)
-  const driveOpts = mapCodeName(filters?.drive_types)
-  const steerOpts = mapCodeName(filters?.steering_positions)
+  const powerAvail = avail(filters?.horse_powers, (o) => String(o.value))
+
+  const transOpts = mapCodeName(allOptions?.transmission_types)
+  const transAvail = avail(filters?.transmission_types, (o) => o.value)
+  const driveOpts = mapCodeName(allOptions?.drive_types)
+  const driveAvail = avail(filters?.drive_types, (o) => o.value)
+  const steerOpts = mapCodeName(allOptions?.steering_positions)
+  const steerAvail = avail(filters?.steering_positions, (o) => o.value)
+
+  const hasAnyChipFilter =
+    specs.fuel_type !== undefined ||
+    specs.engine_volume !== undefined ||
+    specs.horse_power !== undefined ||
+    specs.transmission_type !== undefined ||
+    specs.drive_type !== undefined ||
+    specs.steering_wheel_position !== undefined
+
+  const resetChips = () =>
+    onSpecsChange({
+      ...specs,
+      fuel_type: undefined,
+      engine_volume: undefined,
+      horse_power: undefined,
+      transmission_type: undefined,
+      drive_type: undefined,
+      steering_wheel_position: undefined,
+    })
 
   return (
     <div className="space-y-8">
+      {hasAnyChipFilter && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={resetChips}
+            className="rounded-sct border border-borderLight bg-white px-4 py-2 text-[11px] font-900 uppercase tracking-widest text-textSecondary transition-all hover:border-brandBlue hover:text-brandBlue"
+          >
+            Сбросить фильтры
+          </button>
+        </div>
+      )}
+
       <ChipGroup
         label="Тип топлива"
         options={fuelOpts}
+        available={fuelAvail}
         value={specs.fuel_type}
         onToggle={(v) => setFilter({ fuel_type: v })}
       />
       <ChipGroup
         label="Объём двигателя"
         options={volumeOpts}
+        available={volumeAvail}
         value={specs.engine_volume !== undefined ? String(specs.engine_volume) : undefined}
         onToggle={(v) => setFilter({ engine_volume: v ? Number(v) : undefined })}
       />
       <ChipGroup
         label="Мощность (л.с.)"
         options={powerOpts}
+        available={powerAvail}
         value={specs.horse_power !== undefined ? String(specs.horse_power) : undefined}
         onToggle={(v) => setFilter({ horse_power: v ? Number(v) : undefined })}
       />
       <ChipGroup
         label="Коробка передач"
         options={transOpts}
+        available={transAvail}
         value={specs.transmission_type}
         onToggle={(v) => setFilter({ transmission_type: v })}
       />
       <ChipGroup
         label="Тип привода"
         options={driveOpts}
+        available={driveAvail}
         value={specs.drive_type}
         onToggle={(v) => setFilter({ drive_type: v })}
       />
       <ChipGroup
         label="Тип руля"
         options={steerOpts}
+        available={steerAvail}
         value={specs.steering_wheel_position}
         onToggle={(v) => setFilter({ steering_wheel_position: v })}
       />
@@ -195,11 +269,18 @@ export function ModificationStep({
 function ChipGroup({
   label,
   options,
+  available,
   value,
   onToggle,
 }: {
   label: string
   options: ChipOption[]
+  /**
+   * Значения, доступные при текущем наборе фильтров. Недоступные НЕ прячем и
+   * НЕ блокируем — приглушаем: клик по такому чипу заменяет выбор внутри своей
+   * группы, и человек не оказывается запертым после случайного нажатия.
+   */
+  available: Set<string>
   value: string | undefined
   onToggle: (value: string | undefined) => void
 }) {
@@ -212,16 +293,20 @@ function ChipGroup({
       <div className="flex flex-wrap gap-3">
         {options.map((o) => {
           const active = value === o.value
+          const dimmed = !active && !available.has(o.value)
           return (
             <button
               key={o.value}
               type="button"
+              title={dimmed ? 'Недоступно с текущими фильтрами — нажмите, чтобы выбрать вместо текущего' : undefined}
               onClick={() => onToggle(active ? undefined : o.value)}
               className={cn(
                 'min-w-[84px] rounded-sct border px-4 py-2.5 text-center text-[13px] font-bold transition-all',
                 active
                   ? 'border-brandBlue bg-blue-50/50 text-brandBlue shadow-soft-blue'
-                  : 'border-borderLight bg-white text-textPrimary hover:border-brandBlue/40',
+                  : dimmed
+                    ? 'border-borderLight bg-surfaceLight text-textSecondary/50 hover:border-brandBlue/40 hover:text-textSecondary'
+                    : 'border-borderLight bg-white text-textPrimary hover:border-brandBlue/40',
               )}
             >
               {o.label}
