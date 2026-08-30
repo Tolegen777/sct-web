@@ -46,18 +46,40 @@ interface SpecsStepProps {
 }
 
 export function SpecsStep({ markId, modelId, values, onChange, onBodyLabel, onNext }: SpecsStepProps) {
-  const query: CarsQuery = useMemo(
-    () => ({ mark: markId, model: modelId, ...values }),
-    [markId, modelId, values],
+  /**
+   * Три отдельных запроса вместо одного — иначе каждый список схлопывается сам
+   * в себя. `filters/` сужает варианты по всем переданным параметрам, поэтому
+   * запрос со всеми `values` возвращал ровно то, что уже выбрано: после клика
+   * по «2017» ручка отдавала years: [2017], остальные 50+ годов исчезали, и
+   * поменять год можно было только начав добавление авто заново.
+   * Проверено на публичном API: /cars/filters/?mark=44&model=371 отдаёт 52
+   * года, а с &year=2001 — ровно один.
+   *
+   * Каскад при этом сохраняем: кузова сужаются годом, поколения — годом и
+   * кузовом. Не сужаем только каждый список его собственным выбором.
+   */
+  const yearsQuery: CarsQuery = useMemo(
+    () => ({ mark: markId, model: modelId }),
+    [markId, modelId],
+  )
+  const bodyQuery: CarsQuery = useMemo(
+    () => ({ mark: markId, model: modelId, year: values.year }),
+    [markId, modelId, values.year],
+  )
+  const genQuery: CarsQuery = useMemo(
+    () => ({ mark: markId, model: modelId, year: values.year, body_type: values.body_type }),
+    [markId, modelId, values.year, values.body_type],
   )
 
-  const { data, isFetching, isError } = useFiltersQuery(query)
+  const { data, isFetching, isError } = useFiltersQuery(yearsQuery)
+  const { data: bodyData } = useFiltersQuery(bodyQuery)
+  const { data: genData } = useFiltersQuery(genQuery)
 
   const [showAllYears, setShowAllYears] = useState(false)
 
   const years = data?.years ?? []
-  const bodyTypes = data?.body_types ?? []
-  const generations = data?.generations ?? []
+  const bodyTypes = bodyData?.body_types ?? []
+  const generations = genData?.generations ?? []
 
   // Свежие года первыми (2026 → …), по умолчанию показываем 10, остальное под раскрытие.
   const sortedYears = useMemo(() => [...years].sort((a, b) => b - a), [years])
