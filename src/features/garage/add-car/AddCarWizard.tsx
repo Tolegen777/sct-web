@@ -148,8 +148,12 @@ export function AddCarWizard() {
         mileage_km: values.mileage_km,
         is_default: values.is_default,
         // Год со шага «Поколение» — заказчик ждёт в гараже именно его,
-        // а не год начала поколения.
-        production_year: specs.year ?? null,
+        // а не год начала поколения. Если шаг пропущен (это разрешено), поле
+        // НЕ отправляем вовсе: undefined выпадает при сериализации. Слать null
+        // рискованно — бэк валидирует это поле, а null он местами отвергает
+        // («This field may not be null» на nickname), и добавление авто без
+        // года легло бы целиком.
+        production_year: specs.year,
       })
       navigate('/garage', { replace: true })
     } catch (err) {
