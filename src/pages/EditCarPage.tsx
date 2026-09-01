@@ -53,7 +53,10 @@ export default function EditCarPage() {
 
   const [serverError, setServerError] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const [savedAt, setSavedAt] = useState<number | null>(null)
+  // Флаг «только что сохранили» — раньше здесь лежал Date.now(), но само
+  // значение времени нигде не использовалось (только truthy-проверка), а
+  // правило react-hooks/purity ругалось на вызов Date.now в теле компонента.
+  const [saved, setSaved] = useState(false)
 
   const {
     register,
@@ -113,7 +116,7 @@ export default function EditCarPage() {
       if (dirtyFields.nickname) payload.nickname = values.nickname
 
       await updateMut.mutateAsync(payload)
-      setSavedAt(Date.now())
+      setSaved(true)
     } catch (err) {
       const parsed = parseApiError(err, 'Не удалось сохранить изменения.')
       for (const [field, message] of Object.entries(parsed.fields)) {
@@ -128,7 +131,7 @@ export default function EditCarPage() {
   const onSetDefault = () => {
     if (car.is_default) return
     setDefaultMut.mutate(id, {
-      onSuccess: () => setSavedAt(Date.now()),
+      onSuccess: () => setSaved(true),
       onError: (err) =>
         setServerError(
           parseApiError(err, 'Не удалось сделать авто активным.').general,
@@ -150,16 +153,11 @@ export default function EditCarPage() {
     <section className="container-sct max-w-[900px] space-y-6 py-8 md:py-12">
       <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <Link
-            to="/garage"
-            className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-textSecondary hover:text-brandBlue"
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-            </svg>
-            К гаражу
-          </Link>
-          <h1 className="mt-3 text-3xl font-900 uppercase tracking-tight text-textPrimary md:text-4xl">
+          {/* Ссылка «‹ К гаражу» убрана по правке заказчика. Уйти со страницы
+              есть чем: кнопка «Отмена» под формой, пункт «Гараж» в меню
+              пользователя и кнопка «назад» браузера. В ветке «не удалось
+              загрузить авто» ссылка остаётся — там она единственный выход. */}
+          <h1 className="text-3xl font-900 uppercase tracking-tight text-textPrimary md:text-4xl">
             Редактирование авто
           </h1>
         </div>
@@ -233,7 +231,7 @@ export default function EditCarPage() {
             </div>
           )}
 
-          {savedAt && !isDirty && !serverError && (
+          {saved && !isDirty && !serverError && (
             <div className="rounded-sct border border-green-200 bg-green-50 p-3 text-sm font-medium text-green-700">
               Изменения сохранены.
             </div>
