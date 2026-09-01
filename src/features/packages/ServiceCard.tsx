@@ -37,7 +37,11 @@ export function ServiceCard({ pkg, onChoose }: ServiceCardProps) {
           />
         </div>
 
-        <h3 className="line-clamp-2 text-base font-900 uppercase leading-tight tracking-tight text-textPrimary">
+        {/* min-h под две строки: заголовок и так обрезается на второй
+            (line-clamp-2), но короткие названия делали карточку ниже, и в
+            карусели соседние карточки различались по высоте. Резервируем две
+            строки всегда — высота перестаёт зависеть от длины названия. */}
+        <h3 className="line-clamp-2 min-h-[2.5rem] text-base font-900 uppercase leading-tight tracking-tight text-textPrimary">
           {title}
         </h3>
 

@@ -206,11 +206,13 @@ export default function PackageDetailPage() {
         {/* === Сайдбар === */}
         <aside className="space-y-6 xl:col-span-4">
           <div className="overflow-hidden rounded-sct-lg border border-borderLight bg-white shadow-soft-card xl:sticky xl:top-28">
-            <div className="h-[200px] bg-surfaceLight md:h-[240px]">
+            {/* object-contain, а не cover: заказчик просил показывать картинку
+                пакета целиком — на cover обрезались края этикетки. */}
+            <div className="h-[200px] bg-white md:h-[240px]">
               <SafeImage
                 src={data.image_url || undefined}
                 alt={shortTitle}
-                className="h-full w-full object-cover"
+                className="h-full w-full object-contain"
                 fallback={
                   <div
                     className="flex h-full w-full items-center justify-center"
