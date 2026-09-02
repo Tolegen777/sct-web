@@ -40,6 +40,16 @@ export function getCarPhoto(car: ClientGarageCar): string | null {
   )
 }
 
+/**
+ * Фактический год выпуска. Бэк отдаёт `production_year` во всех ручках гаража
+ * (проверено на проде 2026-09-02), но в сгенерированной schema.ts поля нет —
+ * она отстала. Читаем безопасно, как и остальные поля этого объекта.
+ */
+export function getCarProductionYear(car: ClientGarageCar): number | null {
+  const v = (car as unknown as Record<string, unknown>).production_year
+  return typeof v === 'number' ? v : null
+}
+
 export function getCarTitle(car: ClientGarageCar): string {
   return car.full_car_title || car.display_name || 'Автомобиль'
 }

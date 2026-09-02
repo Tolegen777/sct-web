@@ -8,6 +8,11 @@
  *
  * Удаление авто вынесено на страницу редактирования (по дизайну на карточке
  * его нет). set-default выполняется на уровне родителя через коллбэк.
+ *
+ * Приведена к тому же виду, что «Мой гараж» на главной (правки заказчика от
+ * 01.09): фото машины из service-book (в /garage/cars/ снимка нет, поэтому
+ * раньше здесь была иконка-машинка), госномер и год выпуска — одинаковыми
+ * чёрными бейджами, клик по карточке открывает редактирование.
  */
 import { Link } from 'react-router-dom'
 import type { ClientGarageCar } from '@/shared/api/types'
@@ -15,6 +20,9 @@ import { Button } from '@/shared/ui/Button'
 import { SafeImage } from '@/shared/ui/SafeImage'
 import { cn } from '@/shared/lib/cn'
 import { getCarPhoto, getCarSubtitle, getCarTitle } from './lib'
+import { useCarYear } from './carYear'
+import { useCarPhoto } from '@/features/service-book/carPhoto'
+import { PlateBadge } from '@/features/service-book/CarHeroCompact'
 
 interface CarCardProps {
   car: ClientGarageCar
@@ -34,8 +42,11 @@ const editIcon = (
 )
 
 export function CarCard({ car, onSetDefault, isSettingDefault }: CarCardProps) {
-  const photo = getCarPhoto(car)
+  // Фото — из service-book; getCarPhoto оставлен фолбэком на случай, если бэк
+  // однажды начнёт отдавать снимок и в /garage/cars/.
+  const photo = useCarPhoto(car.id) ?? getCarPhoto(car)
   const title = getCarTitle(car)
+  const year = useCarYear(car.id)
   const subtitle = getCarSubtitle(car)
   const isActive = Boolean(car.is_default)
 
@@ -48,7 +59,8 @@ export function CarCard({ car, onSetDefault, isSettingDefault }: CarCardProps) {
           : 'border-borderLight hover:border-brandBlue/50 hover:shadow-soft-card',
       )}
     >
-      <div className="flex items-start gap-4">
+      {/* Клик по карточке ведёт в редактирование — как в «Моём гараже». */}
+      <Link to={`/garage/edit/${car.id}`} className="flex items-start gap-4">
         <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-borderLight bg-surfaceLight">
           <SafeImage
             src={photo ?? undefined}
@@ -66,8 +78,12 @@ export function CarCard({ car, onSetDefault, isSettingDefault }: CarCardProps) {
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="truncate text-lg font-900 uppercase tracking-tight text-textPrimary md:text-xl">
-              {car.nickname || title}
+            {/* Две строки, а не обрезка в одну: полное название модификации
+                длинное («BMW X7 I (G07) Рестайлинг Внедорожник…»), и в узкой
+                карточке от него оставалось «BMW X7 I (G…». min-h держит
+                карточки одной высоты. */}
+            <h3 className="line-clamp-2 min-h-[3.5rem] text-lg font-900 uppercase leading-tight tracking-tight text-textPrimary md:text-xl">
+              {title}
             </h3>
             {isActive && (
               <span className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-brandYellow px-2.5 py-1 text-[10px] font-900 uppercase tracking-widest text-textPrimary">
@@ -86,13 +102,12 @@ export function CarCard({ car, onSetDefault, isSettingDefault }: CarCardProps) {
               {subtitle}
             </p>
           )}
-          {car.license_plate && (
-            <span className="mt-2 inline-block rounded bg-textPrimary px-2 py-0.5 font-mono text-[10px] font-800 uppercase text-white">
-              {car.license_plate}
-            </span>
-          )}
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            {car.license_plate && <PlateBadge>{car.license_plate}</PlateBadge>}
+            {year && <PlateBadge>{String(year)}</PlateBadge>}
+          </div>
         </div>
-      </div>
+      </Link>
 
       <div className="mt-5 flex gap-2 border-t border-borderLight/60 pt-4">
         {!isActive && (

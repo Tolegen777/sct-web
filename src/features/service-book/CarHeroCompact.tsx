@@ -1,76 +1,79 @@
 /**
- * Компактная hero-карточка активной машины (горизонтальная).
+ * Плашка активного авто на странице «Авто» (сервисная книжка).
  *
- * Используется на главной (как часть dashboard) и на сервисной книжке.
- * Слева — квадратное фото машины с плашкой «активное авто», справа —
- * название (AUDI A4 2016 3.5 L), госномер плашкой, кнопка редактирования
- * (карандаш) в правом верхнем углу карточки.
+ * Переделана по правке заказчика (видео от 01.09): раньше это была высокая
+ * карточка с большим квадратным фото, крупным заголовком и карандашиком
+ * редактирования в углу. Просьба дословно — «верхний блок должен быть точно
+ * такой же, как в услугах: тоненький, маленький, аккуратненький, фотография
+ * машины, активное авто, госномер». Поэтому повторяем геометрию
+ * features/packages/ActiveCarStrip.
  *
- * Отличается от CarHero тем, что не имеет правого блока со счётчиком
- * «+N других машин» — этот функционал перенесён в правую колонку
- * MyGarageColumn.
+ * Справа — госномер в чёрной рамке, под ним год выпуска в такой же рамке
+ * (тоже правка: год, который человек вводит в редактировании авто, должен
+ * выводиться рядом с госномером).
+ *
+ * Вся карточка кликается и ведёт в редактирование — заказчик просил
+ * «редактирование по клику на авто, а не на карандашик». Карандаш убран.
  */
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import type { ServiceBookCar } from './types'
 import { Card } from '@/shared/ui/Card'
 import { SafeImage } from '@/shared/ui/SafeImage'
+import { useCarYear } from '@/features/garage/carYear'
 
 interface CarHeroCompactProps {
   car: ServiceBookCar
 }
 
 export function CarHeroCompact({ car }: CarHeroCompactProps) {
-  // Год: сначала реальный год выпуска экземпляра, и только если его нет —
-  // год начала поколения (это разные вещи, см. production_year в типах).
-  const year = car.production_year ?? car.generation?.year_from ?? null
-  const title = `${car.mark.display_name} ${car.model.name}${year ? ` ${year}` : ''}`
-  return (
-    <Card className="relative p-5 md:p-6">
-      <Link
-        to={`/garage/edit/${car.id}`}
-        className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-borderLight bg-white text-textSecondary transition-all hover:border-brandBlue hover:text-brandBlue"
-        title="Редактировать авто"
-        aria-label="Редактировать авто"
-      >
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2.5}
-            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-          />
-        </svg>
-      </Link>
+  // Год — через общий хук: page-data отдаёт production_year пустым, поэтому
+  // введённое человеком значение берётся из гаража (см. useCarYear).
+  const year = useCarYear(car.id)
+  // Полное название модификации — как в плашке на «Услугах», которую заказчик
+  // и просил повторить («BMW X7 I (G07) Рестайлинг Внедорожник…»). Год в
+  // заголовок не дублируем: он рядом, в отдельной рамке.
+  const title = car.full_car_title || car.display_name
 
-      <div className="flex items-center gap-5 md:gap-6">
-        <div className="h-24 w-24 shrink-0 overflow-hidden rounded-sct border border-borderLight bg-surfaceLight md:h-28 md:w-28">
+  return (
+    <Link to={`/garage/edit/${car.id}`} className="block">
+      <Card className="flex items-center gap-4 p-4 transition-all hover:border-brandBlue/50 hover:shadow-soft-card md:gap-5 md:p-5">
+        <div className="h-14 w-20 shrink-0 overflow-hidden rounded-sct border border-borderLight bg-surfaceLight">
           <SafeImage
             src={car.image_url ?? undefined}
             alt={title}
             className="h-full w-full object-cover"
             fallback={
-              <div className="flex h-full w-full items-center justify-center text-2xl font-900 uppercase text-borderLight">
-                {car.mark.name.slice(0, 2)}
+              <div className="flex h-full w-full items-center justify-center text-[10px] font-900 uppercase text-borderLight">
+                авто
               </div>
             }
           />
         </div>
 
         <div className="min-w-0 flex-1">
-          <span className="inline-flex items-center gap-2 rounded-md bg-brandBlue px-2 py-0.5 text-[10px] font-900 uppercase tracking-widest text-white">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brandYellow" />
-            Активное авто
-          </span>
-          <h2 className="mt-3 text-2xl font-900 uppercase leading-none tracking-tight text-textPrimary md:text-3xl">
-            {title.toUpperCase()}
+          <p className="text-[10px] font-900 uppercase tracking-widest text-brandBlue">
+            ● Активное авто
+          </p>
+          <h2 className="mt-1 line-clamp-2 text-base font-900 uppercase leading-tight tracking-tight text-textPrimary md:text-lg">
+            {title}
           </h2>
-          {car.license_plate && (
-            <span className="mt-3 inline-block rounded-md bg-textPrimary px-3 py-1 font-mono text-[12px] font-900 uppercase tracking-widest text-white">
-              {car.license_plate}
-            </span>
-          )}
         </div>
-      </div>
-    </Card>
+
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          {car.license_plate && <PlateBadge>{car.license_plate}</PlateBadge>}
+          {year && <PlateBadge>{String(year)}</PlateBadge>}
+        </div>
+      </Card>
+    </Link>
+  )
+}
+
+/** Чёрная рамка под госномер и год — одна на оба, чтобы совпадали пиксель в пиксель. */
+export function PlateBadge({ children }: { children: ReactNode }) {
+  return (
+    <span className="rounded-md bg-textPrimary px-3 py-1 font-mono text-[12px] font-900 uppercase tracking-widest text-white">
+      {children}
+    </span>
   )
 }

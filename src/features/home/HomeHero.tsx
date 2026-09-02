@@ -91,21 +91,18 @@ export function HomeHero({ hasCars }: HomeHeroProps) {
           </p>
 
           <div className="mt-7 flex flex-wrap gap-3">
+            {/* Кнопка «Добавить авто» убрана по правке заказчика: «с главной
+                добавлять авто не нужно, для этого есть вкладка Авто». Блок
+                заодно стал ниже — просили ужать его до кнопки «Записаться на
+                сервис». У клиента без машин вторая кнопка остаётся: иначе
+                добавить первое авто с главной будет нечем. */}
             {hasCars ? (
-              <>
-                <Link
-                  to="/services"
-                  className="rounded-sct bg-white px-5 py-3 text-[11px] font-900 uppercase tracking-widest text-textPrimary shadow-lg transition-all hover:bg-brandYellow"
-                >
-                  Записаться на сервис
-                </Link>
-                <Link
-                  to="/garage/add"
-                  className="rounded-sct border border-white/20 bg-white/5 px-5 py-3 text-[11px] font-900 uppercase tracking-widest text-white backdrop-blur transition-all hover:bg-white/10"
-                >
-                  Добавить авто
-                </Link>
-              </>
+              <Link
+                to="/services"
+                className="rounded-sct bg-white px-5 py-3 text-[11px] font-900 uppercase tracking-widest text-textPrimary shadow-lg transition-all hover:bg-brandYellow"
+              >
+                Записаться на сервис
+              </Link>
             ) : (
               <>
                 <Link

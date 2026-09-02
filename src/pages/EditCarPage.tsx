@@ -1,8 +1,15 @@
 /**
  * Редактирование авто клиента.
  *
- * Через PATCH /garage/cars/{id}/ бэк принимает nickname и mileage_km, но
- * пробег из формы убран по просьбе заказчика (2026-08-29): его проставляет
+ * Единственное редактируемое поле — ФАКТИЧЕСКИЙ ГОД ВЫПУСКА
+ * (`production_year`). Правка заказчика (2026-09-01): «вместо слова псевдоним
+ * напишем фактический год автомобиля, чтобы просто была циферка». Псевдоним из
+ * формы убран — им никто не пользовался, а поле занимало единственный слот.
+ * Год выводится рядом с госномером в такой же чёрной рамке (см. PlateBadge).
+ * Бэк валидирует год по границам поколения: для BMW 02 (E10) примет только
+ * 1966–1977, иначе вернёт 400 с текстом под полем. Это ожидаемо.
+ *
+ * Пробег из формы убран раньше (2026-08-29): его проставляет
  * сервис при обслуживании, и от него считаются рекомендации — клиент не
  * должен его трогать. Текущее значение показываем в шапке карточки только
  * для чтения. Госномер, VIN и сама модификация тоже readonly: чтобы сменить
@@ -31,13 +38,21 @@ import { Spinner } from '@/shared/ui/Spinner'
 import { SafeImage } from '@/shared/ui/SafeImage'
 import { parseApiError } from '@/features/auth/errors'
 import { formatMileage } from '@/shared/lib/format'
-import { getCarPhoto, getCarSubtitle, getCarTitle } from '@/features/garage/lib'
+import {
+  getCarPhoto,
+  getCarProductionYear,
+  getCarSubtitle,
+  getCarTitle,
+} from '@/features/garage/lib'
+import { useCarPhoto } from '@/features/service-book/carPhoto'
+import { PlateBadge } from '@/features/service-book/CarHeroCompact'
 
 const editSchema = z.object({
-  nickname: z
-    .string()
-    .trim()
-    .max(255, 'Не больше 255 символов'),
+  production_year: z
+    .number({ message: 'Введите год числом' })
+    .int('Только целое число')
+    .min(1900, 'Слишком ранний год')
+    .max(new Date().getFullYear() + 1, 'Слишком поздний год'),
 })
 type EditValues = z.infer<typeof editSchema>
 
@@ -47,6 +62,10 @@ export default function EditCarPage() {
   const navigate = useNavigate()
 
   const { data: car, isLoading, isError } = useCarQuery(id)
+  // Фото берём из service-book: в /garage/cars/ снимка нет. Хук обязан
+  // вызываться до ранних return'ов, поэтому берём id из роута, а не из
+  // ответа — на момент загрузки `car` ещё undefined.
+  const photoFromBook = useCarPhoto(id)
   const updateMut = useUpdateCarMutation(id ?? 0)
   const setDefaultMut = useSetDefaultCarMutation()
   const deleteMut = useDeleteCarMutation()
@@ -66,13 +85,13 @@ export default function EditCarPage() {
     formState: { errors, isSubmitting, isDirty, dirtyFields },
   } = useForm<EditValues>({
     resolver: zodResolver(editSchema),
-    defaultValues: { nickname: '' },
+    defaultValues: { production_year: undefined },
   })
 
   // Подставляем серверные значения, когда машина прогрузится.
   useEffect(() => {
     if (car) {
-      reset({ nickname: car.nickname ?? '' })
+      reset({ production_year: getCarProductionYear(car) ?? undefined })
     }
   }, [car, reset])
 
@@ -99,7 +118,7 @@ export default function EditCarPage() {
     )
   }
 
-  const photo = getCarPhoto(car)
+  const photo = photoFromBook ?? getCarPhoto(car)
   const title = getCarTitle(car)
   const subtitle = getCarSubtitle(car)
 
@@ -110,17 +129,19 @@ export default function EditCarPage() {
       // openapi-typescript делает is_default обязательным в типе из-за
       // `default: false` в схеме, хотя PATCH partial. Передаём текущее
       // значение (поведение не меняется) — так обходимся без каста.
-      const payload: Parameters<typeof updateMut.mutateAsync>[0] = {
+      // production_year бэк принимает и валидирует, но в сгенерированной
+      // schema.ts поля ещё нет — она отстала, поэтому расширяем тип вручную.
+      const payload = {
         is_default: car.is_default,
-      }
-      if (dirtyFields.nickname) payload.nickname = values.nickname
+      } as Parameters<typeof updateMut.mutateAsync>[0] & { production_year?: number }
+      if (dirtyFields.production_year) payload.production_year = values.production_year
 
       await updateMut.mutateAsync(payload)
       setSaved(true)
     } catch (err) {
       const parsed = parseApiError(err, 'Не удалось сохранить изменения.')
       for (const [field, message] of Object.entries(parsed.fields)) {
-        if (field === 'nickname') {
+        if (field === 'production_year') {
           setError(field, { type: 'server', message })
         }
       }
@@ -192,9 +213,12 @@ export default function EditCarPage() {
               {subtitle}
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <span className="rounded-lg bg-textPrimary px-3 py-1 font-mono text-[12px] font-900 uppercase text-white">
-                {car.license_plate || '—'}
-              </span>
+              <PlateBadge>{car.license_plate || '—'}</PlateBadge>
+              {/* Год в такой же рамке, как на «Авто», «Главной», в гараже и
+                  «Услугах» — единый бейдж на всех экранах. */}
+              {getCarProductionYear(car) && (
+                <PlateBadge>{String(getCarProductionYear(car))}</PlateBadge>
+              )}
               {car.vin_code && (
                 <span className="font-mono text-[10px] uppercase tracking-widest text-textSecondary">
                   VIN: {car.vin_code}
@@ -218,11 +242,15 @@ export default function EditCarPage() {
           </h3>
 
           <Input
-            label="Псевдоним"
-            placeholder="Например: моя машина"
-            hint="Удобное имя для гаража. Не обязательно."
-            {...register('nickname')}
-            error={errors.nickname?.message}
+            label="Фактический год автомобиля"
+            placeholder="2019"
+            inputMode="numeric"
+            maxLength={4}
+            hint="Год выпуска именно вашего автомобиля — показывается рядом с госномером."
+            {...register('production_year', {
+              setValueAs: (v) => (v === '' || v == null ? undefined : Number(v)),
+            })}
+            error={errors.production_year?.message}
           />
 
           {serverError && (
@@ -238,11 +266,22 @@ export default function EditCarPage() {
           )}
 
           <div className="flex flex-col-reverse gap-3 md:flex-row md:justify-end">
-            <Link to="/garage">
-              <Button type="button" variant="ghost">
-                Отмена
-              </Button>
-            </Link>
+            {/* «Отмена» возвращает туда, откуда пришли (главная, «Авто»,
+                гараж), а не всегда в гараж: в редактирование попадают кликом по
+                карточке авто с разных экранов, и уводить человека в гараж —
+                значит терять его место. Прямой заход по ссылке (истории нет) —
+                фолбэк на гараж. `idx` в history.state проставляет react-router. */}
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0
+                if (idx > 0) navigate(-1)
+                else navigate('/garage')
+              }}
+            >
+              Отмена
+            </Button>
             <Button type="submit" loading={isSubmitting || updateMut.isPending} disabled={!isDirty}>
               Сохранить
             </Button>

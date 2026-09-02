@@ -25,7 +25,14 @@ export function PromoCard({ pkg }: PromoCardProps) {
       to={`/services/${pkg.id}`}
       className="group flex h-full flex-col overflow-hidden rounded-sct border border-borderLight bg-white transition-all hover:-translate-y-1 hover:border-brandBlue/50 hover:shadow-soft-card"
     >
-      <div className="relative aspect-square bg-surfaceLight">
+      {/* Соотношение 2:1 по правке заказчика («все картинки пакетов делать
+          только 2к1»). Раньше был квадрат с object-cover — канистры и коробки
+          фильтров обрезались по краям, на что и жаловался Нурсултан. */}
+      {/* overflow-hidden обязателен: без него у элемента `min-height: auto`, и
+          высокая картинка (канистра «в портрет») раздувает блок выше 2:1 —
+          соседние карточки в карусели встают разной высоты. С overflow
+          min-height считается нулевым, и aspect-ratio становится главным. */}
+      <div className="relative aspect-[2/1] overflow-hidden bg-blue-50">
         {pkg.has_promotion && (
           <span className="absolute left-3 top-3 z-10 rounded-md bg-brandYellow px-2.5 py-1 text-[10px] font-900 uppercase tracking-widest text-textPrimary">
             Акция
@@ -34,7 +41,7 @@ export function PromoCard({ pkg }: PromoCardProps) {
         <SafeImage
           src={pkg.image_url || undefined}
           alt={title}
-          className="h-full w-full object-cover"
+          className="h-full w-full object-contain"
           fallback={
             <div className="flex h-full w-full items-center justify-center bg-blue-50 text-textSecondary">
               <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -18,16 +18,23 @@
  */
 import { Link } from 'react-router-dom'
 import { useServiceBookQuery } from '@/features/service-book/queries'
-import { findRecommendation, sortRecommendationsByUrgency } from '@/features/service-book/recommendations'
+import { sortRecommendationsByUrgency } from '@/features/service-book/recommendations'
+import { CarSpecChips } from '@/features/service-book/CarSpecChips'
+import { PlateBadge } from '@/features/service-book/CarHeroCompact'
+import { useCarYear } from '@/features/garage/carYear'
+import { BookServiceCTA } from '@/features/service-book/BookServiceCTA'
 import { Card } from '@/shared/ui/Card'
 import { Button } from '@/shared/ui/Button'
 import { SafeImage } from '@/shared/ui/SafeImage'
 import { Skeleton } from '@/shared/ui/Skeleton'
-import { formatMileage, formatDateTime } from '@/shared/lib/format'
+import { formatMileage } from '@/shared/lib/format'
 
 export function ActiveCarBlock() {
   // page-data больше не принимает status/period/limit/offset — только car_id.
   const { data, isLoading } = useServiceBookQuery({})
+  // Хук обязан вызываться до ранних return'ов: на момент загрузки
+  // selected_car ещё нет, поэтому id берём аккуратно.
+  const year = useCarYear(data?.selected_car?.id)
 
   if (isLoading) {
     return (
@@ -71,13 +78,10 @@ export function ActiveCarBlock() {
 
   const car = data.selected_car
   const rec = data.service_recommendations
-  const engineOil = findRecommendation(rec?.recommendations, 'engine_oil')
   const topRec = sortRecommendationsByUrgency(rec?.recommendations ?? [])[0]
-  const nextVisitDt =
-    data.next_appointment?.final_datetime ??
-    data.next_appointment?.scheduled_datetime ??
-    data.next_appointment?.preferred_datetime
-  const carTitle = `${car.mark.display_name} ${car.model.name}`.toUpperCase()
+  // Полное название модификации — то же, что в плашках на «Авто» и «Услугах»,
+  // чтобы машина везде называлась одинаково.
+  const carTitle = (car.full_car_title || car.display_name).toUpperCase()
   const carShortSpecs = car.generation?.name
     ? car.generation.name + (car.configuration?.name ? ` · ${car.configuration.name}` : '')
     : car.configuration?.name ?? ''
@@ -145,28 +149,17 @@ export function ActiveCarBlock() {
             </p>
           )}
 
-          <div className="mt-5 grid grid-cols-3 gap-2 md:gap-3">
-            <SpecChip
-              label="Пробег"
-              value={
-                typeof car.latest_mileage_km === 'number' && car.latest_mileage_km > 0
-                  ? formatMileage(car.latest_mileage_km)
-                  : '—'
-              }
-            />
-            <SpecChip
-              label="Замена масла в ДВС"
-              value={
-                engineOil?.next_service_mileage_km != null
-                  ? formatMileage(engineOil.next_service_mileage_km)
-                  : '—'
-              }
-            />
-            <SpecChip
-              label="Ближайший визит"
-              value={nextVisitDt ? formatDateTime(nextVisitDt) : 'Нет'}
-              accent={Boolean(nextVisitDt)}
-            />
+          {/* Госномер и год — те же чёрные рамки, что на «Авто», в «Моём
+              гараже» и в «Услугах»: единый бейдж на всех экранах. */}
+          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+            {car.license_plate && <PlateBadge>{car.license_plate}</PlateBadge>}
+            {year && <PlateBadge>{String(year)}</PlateBadge>}
+          </div>
+
+          {/* Плашки Пробег / Замена масла / Ближайший визит — общий компонент,
+              он же на странице «Авто», чтобы вёрстка не разъезжалась. */}
+          <div className="mt-5">
+            <CarSpecChips />
           </div>
 
           {/* Рекомендация-плашка — самое срочное обслуживание */}
@@ -181,35 +174,15 @@ export function ActiveCarBlock() {
               }
             />
           ) : null}
+
+          {/* Та же кнопка, что на странице «Авто» — заказчик просил, чтобы с
+              блока активного авто можно было записаться сразу. */}
+          <div className="mt-5">
+            <BookServiceCTA />
+          </div>
         </div>
       </div>
     </Card>
-  )
-}
-
-function SpecChip({
-  label,
-  value,
-  accent,
-}: {
-  label: string
-  value: string
-  accent?: boolean
-}) {
-  return (
-    <div className="rounded-sct border border-borderLight bg-surfaceLight px-3 py-2.5">
-      <p className="truncate text-[9px] font-900 uppercase tracking-widest text-textSecondary">
-        {label}
-      </p>
-      <p
-        className={
-          'mt-0.5 text-base font-900 leading-none tracking-tighter ' +
-          (accent ? 'text-brandBlue' : 'text-textPrimary')
-        }
-      >
-        {value}
-      </p>
-    </div>
   )
 }
 
@@ -224,7 +197,7 @@ function RecommendationStrip({ message }: { message: string }) {
       </div>
       <Link
         to="/services"
-        className="shrink-0 rounded-md bg-textPrimary px-3 py-2 text-[10px] font-900 uppercase tracking-widest text-white hover:bg-brandBlue"
+        className="shrink-0 rounded-md bg-brandBlue px-3 py-2 text-[10px] font-900 uppercase tracking-widest text-white hover:bg-brandBlueDark"
       >
         Посмотреть пакет
       </Link>

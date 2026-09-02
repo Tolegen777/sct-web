@@ -13,6 +13,8 @@
 import { useServiceBookQuery } from '@/features/service-book/queries'
 import { Card } from '@/shared/ui/Card'
 import { SafeImage } from '@/shared/ui/SafeImage'
+import { useCarYear } from '@/features/garage/carYear'
+import { PlateBadge } from '@/features/service-book/CarHeroCompact'
 import type { ClientActiveCar } from '@/shared/api/types'
 
 interface ActiveCarStripProps {
@@ -23,6 +25,7 @@ export function ActiveCarStrip({ activeCar }: ActiveCarStripProps) {
   const { data: book } = useServiceBookQuery({})
   const selected = book?.selected_car
   const photo = selected && selected.id === activeCar.id ? selected.image_url : null
+  const year = useCarYear(activeCar.id)
 
   return (
     <Card className="flex flex-col items-start gap-4 p-4 md:flex-row md:items-center md:gap-5 md:p-5">
@@ -46,11 +49,11 @@ export function ActiveCarStrip({ activeCar }: ActiveCarStripProps) {
           Услуги для <span className="text-brandBlue">{activeCar.car_title}</span>
         </h2>
       </div>
-      {activeCar.license_plate && (
-        <span className="rounded-md bg-textPrimary px-3 py-1 font-mono text-[12px] font-900 uppercase tracking-widest text-white">
-          {activeCar.license_plate}
-        </span>
-      )}
+      {/* Госномер и год — те же рамки, что на «Авто» и в гараже. */}
+      <div className="flex shrink-0 flex-col items-end gap-1">
+        {activeCar.license_plate && <PlateBadge>{activeCar.license_plate}</PlateBadge>}
+        {year && <PlateBadge>{String(year)}</PlateBadge>}
+      </div>
     </Card>
   )
 }

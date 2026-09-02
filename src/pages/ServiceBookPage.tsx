@@ -2,7 +2,7 @@
  * Сервисная книжка — главный экран ЛК клиента (dashboard).
  *
  * Layout: двухколоночный (8/4):
- *   Left:  CarHeroCompact → RecommendationStrip → BookServiceCTA →
+ *   Left:  CarHeroCompact → CarSpecChips → RecommendationStrip → BookServiceCTA →
  *          «Ближайший визит» (тёмная карточка) → «Запланированные визиты» →
  *          «История обслуживания»
  *   Right: MyGarageColumn (тот же, что на главной)
@@ -31,6 +31,7 @@ import { useServiceBookQuery } from '@/features/service-book/queries'
 import { useBookingsQuery } from '@/features/bookings/queries'
 import { splitBookings } from '@/features/bookings/lib'
 import { CarHeroCompact } from '@/features/service-book/CarHeroCompact'
+import { CarSpecChips } from '@/features/service-book/CarSpecChips'
 import { RecommendationStrip } from '@/features/service-book/RecommendationStrip'
 import { BookServiceCTA } from '@/features/service-book/BookServiceCTA'
 import { AppointmentRow } from '@/features/service-book/AppointmentRow'
@@ -104,6 +105,10 @@ export default function ServiceBookPage() {
         {/* Основная колонка */}
         <div className="space-y-5 lg:col-span-8 lg:space-y-6">
           <CarHeroCompact car={data.selected_car} />
+
+          {/* Плашки пробег/замена масла/ближайший визит — тот же компонент, что
+              на «Главной». Заказчик просил, чтобы они были и здесь. */}
+          <CarSpecChips />
 
           <RecommendationStrip recommendations={data.service_recommendations} />
 
