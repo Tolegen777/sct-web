@@ -17,7 +17,13 @@ export function HistorySection({ history }: HistorySectionProps) {
   if (history.length === 0) {
     return (
       <Card className="border-2 border-dashed border-borderLight bg-surfaceLight/30 p-10 text-center md:p-14">
-        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-inner">
+        {/* Порядок по правке заказчика: сначала надпись, потом кружок с
+            иконкой по центру, затем пояснение. */}
+        <h3 className="text-xl font-900 uppercase tracking-tight text-textPrimary">
+          История пуста
+        </h3>
+
+        <div className="mx-auto my-5 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-inner">
           <svg
             className="h-8 w-8 text-textSecondary/30"
             fill="none"
@@ -32,10 +38,7 @@ export function HistorySection({ history }: HistorySectionProps) {
             />
           </svg>
         </div>
-        <h3 className="text-xl font-900 uppercase tracking-tight text-textPrimary">
-          История пуста
-        </h3>
-        <p className="mt-2 text-sm font-medium text-textSecondary opacity-60">
+        <p className="text-sm font-medium text-textSecondary opacity-60">
           Здесь появится список выполненных работ после визита.
         </p>
       </Card>

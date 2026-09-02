@@ -208,7 +208,7 @@ export default function PackageDetailPage() {
           <div className="overflow-hidden rounded-sct-lg border border-borderLight bg-white shadow-soft-card xl:sticky xl:top-28">
             {/* object-contain, а не cover: заказчик просил показывать картинку
                 пакета целиком — на cover обрезались края этикетки. */}
-            <div className="h-[200px] bg-white md:h-[240px]">
+            <div className="aspect-[2/1] bg-white">
               <SafeImage
                 src={data.image_url || undefined}
                 alt={shortTitle}

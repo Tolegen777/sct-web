@@ -34,7 +34,8 @@ export function getCarPhoto(car: ClientGarageCar): string | null {
     readString(c, 'photo_url') ??
     readString(c, 'image_url') ??
     readString(c, 'image') ??
-    readString(readNested(c, 'mark'), 'logo_url') ??
+    // Фолбэк на mark.logo_url убран (как в мобилке): он рисовал кружки
+    // марок вместо фото машин, на что жаловался заказчик.
     null
   )
 }

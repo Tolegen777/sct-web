@@ -28,11 +28,14 @@ export function ServiceCard({ pkg, onChoose }: ServiceCardProps) {
   return (
     <article className="group flex flex-col rounded-sct border border-borderLight bg-white p-5 transition-all hover:-translate-y-1 hover:border-brandBlue/50 hover:shadow-soft-card">
       <Link to={to} className="flex flex-col">
-        <div className="mb-4 flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-blue-50 text-brandBlue">
+        {/* Соотношение 2:1 по правке заказчика («все картинки пакетов делать
+            только 2к1»). Раньше был квадрат 48×48 с object-cover — канистры
+            обрезались по краям. */}
+        <div className="mb-4 flex aspect-[2/1] w-full items-center justify-center overflow-hidden rounded-xl bg-blue-50 text-brandBlue">
           <SafeImage
             src={pkg.image_url}
             alt={title}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain"
             fallback={<CategoryIcon code={pkg.category?.code} />}
           />
         </div>
@@ -58,7 +61,7 @@ export function ServiceCard({ pkg, onChoose }: ServiceCardProps) {
       <button
         type="button"
         onClick={onChoose}
-        className="mt-5 inline-flex items-center justify-center rounded-sct bg-textPrimary px-4 py-3 text-[11px] font-900 uppercase tracking-widest text-white transition-all group-hover:bg-brandBlue"
+        className="mt-5 inline-flex items-center justify-center rounded-sct bg-brandBlue px-4 py-3 text-[11px] font-900 uppercase tracking-widest text-white transition-all group-hover:bg-brandBlueDark"
       >
         Выбрать услугу
       </button>

@@ -45,7 +45,7 @@ export function DefaultServiceCard({ service }: DefaultServiceCardProps) {
 
       <Link
         to={to}
-        className="mt-5 inline-flex items-center justify-center rounded-sct bg-textPrimary px-4 py-3 text-[11px] font-900 uppercase tracking-widest text-white transition-all group-hover:bg-brandBlue"
+        className="mt-5 inline-flex items-center justify-center rounded-sct bg-brandBlue px-4 py-3 text-[11px] font-900 uppercase tracking-widest text-white transition-all group-hover:bg-brandBlueDark"
       >
         Рассчитать стоимость
       </Link>
