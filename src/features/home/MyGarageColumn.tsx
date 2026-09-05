@@ -154,7 +154,7 @@ function CarRow({
  * ссылку нельзя.
  */
 const garageButtonClass =
-  'flex w-full items-center justify-center gap-1.5 rounded-md bg-brandBlue px-3 py-2 text-[10px] font-900 uppercase tracking-widest text-white transition-colors hover:bg-brandBlueDark'
+  'flex w-full items-center justify-center gap-1.5 rounded-sct bg-brandBlue px-3 py-2 text-[10px] font-900 uppercase tracking-widest text-white transition-colors hover:bg-brandBlueDark'
 
 function IconCheck() {
   return (

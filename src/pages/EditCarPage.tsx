@@ -1,19 +1,29 @@
 /**
  * Редактирование авто клиента.
  *
- * Единственное редактируемое поле — ФАКТИЧЕСКИЙ ГОД ВЫПУСКА
- * (`production_year`). Правка заказчика (2026-09-01): «вместо слова псевдоним
+ * Редактируемые поля — ГОСНОМЕР и ФАКТИЧЕСКИЙ ГОД ВЫПУСКА.
+ *
+ * Год (`production_year`) — правка заказчика от 01.09: «вместо слова псевдоним
  * напишем фактический год автомобиля, чтобы просто была циферка». Псевдоним из
  * формы убран — им никто не пользовался, а поле занимало единственный слот.
+ *
+ * Госномер (`license_plate`) — правка от 05.09, шеф просил лично: «если я
+ * завтра повешу на эту же машину другой номер, я должен мочь его тут
+ * отредактировать». Проверка та же, что при добавлении авто (казахстанский
+ * формат с регионом), значение нормализуется перед отправкой.
  * Год выводится рядом с госномером в такой же чёрной рамке (см. PlateBadge).
  * Бэк валидирует год по границам поколения: для BMW 02 (E10) примет только
  * 1966–1977, иначе вернёт 400 с текстом под полем. Это ожидаемо.
  *
- * Пробег из формы убран раньше (2026-08-29): его проставляет
- * сервис при обслуживании, и от него считаются рекомендации — клиент не
- * должен его трогать. Текущее значение показываем в шапке карточки только
- * для чтения. Госномер, VIN и сама модификация тоже readonly: чтобы сменить
- * модификацию, клиент удаляет авто и добавляет заново через конфигуратор.
+ * Пробег из формы убран раньше (2026-08-29): его проставляет сервис при
+ * обслуживании, и от него считаются рекомендации — клиент не должен его
+ * трогать. Текущее значение видно в сводке сверху, только для чтения. VIN и
+ * сама модификация остаются readonly: чтобы сменить модификацию, клиент
+ * удаляет авто и добавляет заново через конфигуратор.
+ *
+ * Сверху — CarSummaryCard: тот же модуль, что на «Главной» (большое фото,
+ * название, номер, год, пробег/замена масла/ближайший визит), но без кнопки
+ * «Записаться на сервис» — правка заказчика от 05.09.
  *
  * Дополнительно — действия:
  *   - «Сделать активным» (если не is_default)
@@ -35,24 +45,29 @@ import { Input } from '@/shared/ui/Input'
 import { Button } from '@/shared/ui/Button'
 import { Modal } from '@/shared/ui/Modal'
 import { Spinner } from '@/shared/ui/Spinner'
-import { SafeImage } from '@/shared/ui/SafeImage'
 import { parseApiError } from '@/features/auth/errors'
-import { formatMileage } from '@/shared/lib/format'
 import {
-  getCarPhoto,
-  getCarProductionYear,
-  getCarSubtitle,
-  getCarTitle,
-} from '@/features/garage/lib'
-import { useCarPhoto } from '@/features/service-book/carPhoto'
-import { PlateBadge } from '@/features/service-book/CarHeroCompact'
+  LICENSE_PLATE_ERROR,
+  isValidLicensePlate,
+  normalizeLicensePlate,
+} from '@/shared/lib/license-plate'
+import { getCarProductionYear } from '@/features/garage/lib'
+import { CarSummaryCard } from '@/features/garage/CarSummaryCard'
 
 const editSchema = z.object({
+  // Формат госномера проверяем НЕ здесь, а в onSubmit и только если поле
+  // трогали: у машин, заведённых до 29.08.2026, в базе лежат огрызки вроде
+  // «577AXG» без региона, и строгая схема не давала бы такому владельцу
+  // сохранить даже год, пока он не перепишет номер.
+  license_plate: z.string().min(1, 'Введите госномер'),
+  // Год необязателен: у большинства машин `production_year` пустой, и
+  // требовать его ради правки одного госномера нельзя.
   production_year: z
     .number({ message: 'Введите год числом' })
     .int('Только целое число')
     .min(1900, 'Слишком ранний год')
-    .max(new Date().getFullYear() + 1, 'Слишком поздний год'),
+    .max(new Date().getFullYear() + 1, 'Слишком поздний год')
+    .optional(),
 })
 type EditValues = z.infer<typeof editSchema>
 
@@ -62,10 +77,6 @@ export default function EditCarPage() {
   const navigate = useNavigate()
 
   const { data: car, isLoading, isError } = useCarQuery(id)
-  // Фото берём из service-book: в /garage/cars/ снимка нет. Хук обязан
-  // вызываться до ранних return'ов, поэтому берём id из роута, а не из
-  // ответа — на момент загрузки `car` ещё undefined.
-  const photoFromBook = useCarPhoto(id)
   const updateMut = useUpdateCarMutation(id ?? 0)
   const setDefaultMut = useSetDefaultCarMutation()
   const deleteMut = useDeleteCarMutation()
@@ -85,13 +96,16 @@ export default function EditCarPage() {
     formState: { errors, isSubmitting, isDirty, dirtyFields },
   } = useForm<EditValues>({
     resolver: zodResolver(editSchema),
-    defaultValues: { production_year: undefined },
+    defaultValues: { license_plate: '', production_year: undefined },
   })
 
   // Подставляем серверные значения, когда машина прогрузится.
   useEffect(() => {
     if (car) {
-      reset({ production_year: getCarProductionYear(car) ?? undefined })
+      reset({
+        license_plate: car.license_plate ?? '',
+        production_year: getCarProductionYear(car) ?? undefined,
+      })
     }
   }, [car, reset])
 
@@ -118,9 +132,6 @@ export default function EditCarPage() {
     )
   }
 
-  const photo = photoFromBook ?? getCarPhoto(car)
-  const title = getCarTitle(car)
-  const subtitle = getCarSubtitle(car)
 
   const onSubmit = async (values: EditValues) => {
     setServerError(null)
@@ -134,14 +145,23 @@ export default function EditCarPage() {
       const payload = {
         is_default: car.is_default,
       } as Parameters<typeof updateMut.mutateAsync>[0] & { production_year?: number }
-      if (dirtyFields.production_year) payload.production_year = values.production_year
+      if (dirtyFields.license_plate) {
+        if (!isValidLicensePlate(values.license_plate)) {
+          setError('license_plate', { type: 'validate', message: LICENSE_PLATE_ERROR })
+          return
+        }
+        payload.license_plate = normalizeLicensePlate(values.license_plate)
+      }
+      if (dirtyFields.production_year && values.production_year != null) {
+        payload.production_year = values.production_year
+      }
 
       await updateMut.mutateAsync(payload)
       setSaved(true)
     } catch (err) {
       const parsed = parseApiError(err, 'Не удалось сохранить изменения.')
       for (const [field, message] of Object.entries(parsed.fields)) {
-        if (field === 'production_year') {
+        if (field === 'production_year' || field === 'license_plate') {
           setError(field, { type: 'server', message })
         }
       }
@@ -190,49 +210,8 @@ export default function EditCarPage() {
         )}
       </header>
 
-      {/* Hero авто */}
-      <Card className="p-5 md:p-6">
-        <div className="flex flex-col gap-5 md:flex-row md:items-center">
-          <div className="h-24 w-24 overflow-hidden rounded-sct-lg border border-borderLight bg-surfaceLight md:h-32 md:w-32">
-            <SafeImage
-              src={photo ?? undefined}
-              alt={title}
-              className="h-full w-full object-cover"
-              fallback={
-                <div className="flex h-full w-full items-center justify-center text-2xl font-900 uppercase text-borderLight">
-                  {title.slice(0, 2)}
-                </div>
-              }
-            />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-2xl font-900 uppercase tracking-tight text-textPrimary md:text-3xl">
-              {title}
-            </h2>
-            <p className="mt-1 text-sm font-bold uppercase tracking-tight text-textSecondary">
-              {subtitle}
-            </p>
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              <PlateBadge>{car.license_plate || '—'}</PlateBadge>
-              {/* Год в такой же рамке, как на «Авто», «Главной», в гараже и
-                  «Услугах» — единый бейдж на всех экранах. */}
-              {getCarProductionYear(car) && (
-                <PlateBadge>{String(getCarProductionYear(car))}</PlateBadge>
-              )}
-              {car.vin_code && (
-                <span className="font-mono text-[10px] uppercase tracking-widest text-textSecondary">
-                  VIN: {car.vin_code}
-                </span>
-              )}
-              {typeof car.latest_mileage_km === 'number' && car.latest_mileage_km > 0 && (
-                <span className="text-[10px] font-bold uppercase tracking-widest text-textSecondary">
-                  Пробег: {formatMileage(car.latest_mileage_km)}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      </Card>
+      {/* Сводка по авто — модуль с «Главной» без кнопки записи (правка 05.09). */}
+      <CarSummaryCard car={car} />
 
       {/* Форма редактирования */}
       <form onSubmit={handleSubmit(onSubmit)}>
@@ -240,6 +219,14 @@ export default function EditCarPage() {
           <h3 className="text-base font-900 uppercase tracking-tight text-textPrimary">
             Редактируемые поля
           </h3>
+
+          <Input
+            label="Госномер"
+            placeholder="123ABC02"
+            hint="Как в техпаспорте, вместе с регионом."
+            {...register('license_plate')}
+            error={errors.license_plate?.message}
+          />
 
           <Input
             label="Фактический год автомобиля"
